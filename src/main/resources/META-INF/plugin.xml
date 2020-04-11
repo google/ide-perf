@@ -1,0 +1,19 @@
+<idea-plugin>
+    <id>com.android.tools.studio.idea-diagnostic-plugin</id>
+    <name>IDEA platform diagnostics</name>
+    <vendor>Google</vendor>
+    <description>
+        This is meant for developers working on the IDE itself to get
+        real-time insight into the performance of their code.
+    </description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add extensions here -->
+    </extensions>
+
+    <actions>
+        <!-- Add actions here -->
+    </actions>
+</idea-plugin>
