@@ -10,10 +10,9 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Add extensions here -->
+        <toolWindow
+                anchor="right"
+                id="Diagnostics [internal]"
+                factoryClass="com.android.tools.diagnostics.DiagnosticsWindowFactory"/>
     </extensions>
-
-    <actions>
-        <!-- Add actions here -->
-    </actions>
 </idea-plugin>
