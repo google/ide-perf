@@ -44,7 +44,7 @@ class MutableCallTree(
     /** Accumulates the data from another call tree into this one. */
     fun accumulate(other: CallTree) {
         require(other.tracepoint == tracepoint) {
-            "doesn't make sense to sum two call tree nodes representing different tracepoints"
+            "Doesn't make sense to sum call tree nodes representing different tracepoints"
         }
 
         callCount += other.callCount
