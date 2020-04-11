@@ -3,8 +3,8 @@ package com.android.tools.diagnostics
 // Things to improve:
 // - GC the state for dead threads.
 
-/** Builds and manages the call tree for each active thread. */
-object Tracer {
+/** Builds and manages the call trees for active threads. */
+object CallTreeManager {
 
     // Synchronized by monitor lock.
     private class ThreadState {
