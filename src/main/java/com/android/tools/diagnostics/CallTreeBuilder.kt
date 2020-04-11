@@ -1,15 +1,15 @@
 package com.android.tools.diagnostics
 
 // Things to improve:
+// - Make sure we are not leaking Thread instances.
 // - Think about the behavior we want for recursive calls.
+// - Keep track of CPU time too by using ManagementFactory.getThreadMXBean().
 // - Consider cheaper alternatives to LinkedHashMap (e.g., use list if few elements).
 // - Consider caching recent call paths since they are likely to be repeated.
 // - Return an object from push() so that we can have better assertions in pop().
 // - Consider logging errors instead of throwing exceptions.
 // - Consider subtracting buildAndReset() overhead from time measurements.
 // - Reduce allocations by keeping old tree nodes around after buildAndReset() and using a 'dirty' flag.
-// - Keep track of CPU time too by using ManagementFactory.getThreadMXBean().
-// - Make sure we are not leaking Thread instances.
 
 /** Builds a call tree for a single thread from a sequence of push() and pop() calls. */
 class CallTreeBuilder(private val thread: Thread) {
