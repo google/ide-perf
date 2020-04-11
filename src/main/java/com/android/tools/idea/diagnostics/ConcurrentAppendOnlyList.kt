@@ -1,4 +1,4 @@
-package com.android.tools.diagnostics
+package com.android.tools.idea.diagnostics
 
 /**
  * A list supporting only two operations: [append] and [get].

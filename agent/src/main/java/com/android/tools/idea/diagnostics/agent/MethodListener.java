@@ -1,4 +1,4 @@
-package com.android.tools.diagnostics.agent;
+package com.android.tools.idea.diagnostics.agent;
 
 /** Handler for method entry/exit events coming from instrumented bytecode. */
 public interface MethodListener {

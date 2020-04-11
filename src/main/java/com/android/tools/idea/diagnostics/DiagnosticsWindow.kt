@@ -1,4 +1,4 @@
-package com.android.tools.diagnostics
+package com.android.tools.idea.diagnostics
 
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project

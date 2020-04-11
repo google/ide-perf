@@ -1,5 +1,5 @@
 <idea-plugin>
-    <id>com.android.tools.studio.idea-diagnostic-plugin</id>
+    <id>com.android.tools.idea.diagnostic-plugin</id>
     <name>IDEA platform diagnostics</name>
     <vendor>Google</vendor>
     <description>
@@ -13,6 +13,6 @@
         <toolWindow
                 anchor="right"
                 id="Diagnostics [internal]"
-                factoryClass="com.android.tools.diagnostics.DiagnosticsWindowFactory"/>
+                factoryClass="com.android.tools.idea.diagnostics.DiagnosticsWindowFactory"/>
     </extensions>
 </idea-plugin>

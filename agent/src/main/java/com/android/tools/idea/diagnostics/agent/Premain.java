@@ -1,4 +1,4 @@
-package com.android.tools.diagnostics.agent;
+package com.android.tools.idea.diagnostics.agent;
 
 import java.lang.instrument.Instrumentation;
 

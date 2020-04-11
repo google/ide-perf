@@ -1,4 +1,4 @@
-package com.android.tools.diagnostics
+package com.android.tools.idea.diagnostics
 
 // Things to improve:
 // - GC the state for dead threads.
@@ -8,7 +8,8 @@ object CallTreeManager {
 
     // Synchronized by monitor lock.
     private class ThreadState {
-        var callTreeBuilder: CallTreeBuilder = CallTreeBuilder(Thread.currentThread())
+        var callTreeBuilder: CallTreeBuilder =
+            CallTreeBuilder(Thread.currentThread())
     }
 
     private val threadState: ThreadLocal<ThreadState> = ThreadLocal.withInitial {

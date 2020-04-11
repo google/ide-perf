@@ -1,4 +1,4 @@
-package com.android.tools.diagnostics
+package com.android.tools.idea.diagnostics
 
 /** A call tree, represented recursively. */
 interface CallTree {
@@ -67,7 +67,8 @@ class MutableCallTree(
  * A call tree representing the result of merging several other call trees.
  * The list of trees to merge must be nonempty, and the roots must share the same tracepoint.
  */
-class MergedCallTree(nodes: Iterable<CallTree>) : CallTree {
+class MergedCallTree(nodes: Iterable<CallTree>) :
+    CallTree {
 
     init {
         val first = nodes.firstOrNull()

@@ -1,4 +1,4 @@
-package com.android.tools.diagnostics
+package com.android.tools.idea.diagnostics
 
 // Things to improve:
 // - Make sure we are not leaking Thread instances.

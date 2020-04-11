@@ -1,4 +1,4 @@
-package com.android.tools.diagnostics.agent;
+package com.android.tools.idea.diagnostics.agent;
 
 /**
  * We cannot emit bytecode which calls directly into the tracer, because the tracer is loaded

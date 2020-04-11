@@ -1,4 +1,4 @@
-package com.android.tools.diagnostics
+package com.android.tools.idea.diagnostics
 
 class Tracepoint(private val name: String) {
     override fun toString(): String = name

@@ -1,4 +1,4 @@
-package com.android.tools.diagnostics
+package com.android.tools.idea.diagnostics
 
 // A peculiar omission from the Kotlin standard library.
 internal inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
