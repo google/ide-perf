@@ -98,8 +98,8 @@ class CallTableView(private val model: CallTableModel) : JBTable(model) {
                                 return super.setValue(value)
                             }
                             val formatted = when (col) {
-                                WALL_TIME -> NumberFormatter.formatNsInMs(value)
-                                else -> NumberFormatter.formatNum(value)
+                                WALL_TIME -> formatNsInMs(value)
+                                else -> formatNum(value)
                             }
                             super.setValue(formatted)
                         }
