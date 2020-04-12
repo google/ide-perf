@@ -5,12 +5,12 @@ import java.lang.instrument.Instrumentation;
 public class AgentMain {
     public static Instrumentation savedInstrumentationInstance;
 
-    /** This is called by the JVM when the agent is loaded at startup. */
+    // Called by the JVM when the agent is loaded at startup.
     public static void premain(String agentArgs, Instrumentation instrumentation) {
         agentmain(agentArgs, instrumentation);
     }
 
-    /** This is called by the JVM when the agent is loaded at runtime. */
+    // Called by the JVM when the agent is loaded at runtime.
     public static void agentmain(String agentArgs, Instrumentation instrumentation) {
         // We just save the Instrumentation instance for later use by the tracer.
         savedInstrumentationInstance = instrumentation;
