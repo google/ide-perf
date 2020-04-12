@@ -1,6 +1,7 @@
 package com.android.tools.idea.diagnostics.instrumentation
 
 import com.android.tools.idea.diagnostics.agent.Trampoline
+import com.intellij.openapi.diagnostic.Logger
 import org.jetbrains.org.objectweb.asm.*
 import org.jetbrains.org.objectweb.asm.ClassReader.SKIP_FRAMES
 import org.jetbrains.org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
@@ -16,9 +17,10 @@ import kotlin.reflect.jvm.javaMethod
 // - Reconsider which ASM API to use (does it matter?).
 
 /** Inserts calls (within JVM byte code) to the trampoline. */
-internal class MethodTracingTransformer(private val classFilter: ClassFilter) : ClassFileTransformer {
+class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFileTransformer {
 
     companion object {
+        private val LOG = Logger.getInstance(MethodTracingTransformer::class.java)
         private const val ASM_API = ASM5
 
         private val TRAMPOLINE_CLASS_NAME: String = Type.getType(Trampoline::class.java).internalName
@@ -34,22 +36,23 @@ internal class MethodTracingTransformer(private val classFilter: ClassFilter) : 
         classfileBuffer: ByteArray
     ): ByteArray? {
         return try {
-            val methodFilter = classFilter.getMethodFilter(className) ?: return null
-            tryTransform(classfileBuffer, methodFilter)
+            if (!methodFilter.shouldInstrumentClass(className)) return null
+            tryTransform(className, classfileBuffer)
         }
         catch (e: Throwable) {
-            RuntimeException("Failed to instrument class $className", e).printStackTrace()
+            LOG.warn("Failed to instrument class $className", e)
             throw e
         }
     }
 
     private fun tryTransform(
-        classBytes: ByteArray,
-        methodFilter: MethodFilter
+        className: String,
+        classBytes: ByteArray
     ): ByteArray? {
         val reader = ClassReader(classBytes)
         val writer = ClassWriter(reader, COMPUTE_FRAMES)
 
+        LOG.info("Instrumenting: $className")
         val classVisitor = object : ClassVisitor(ASM_API, writer) {
 
             override fun visitMethod(
@@ -60,9 +63,9 @@ internal class MethodTracingTransformer(private val classFilter: ClassFilter) : 
                 exceptions: Array<out String>?
             ): MethodVisitor? {
                 val methodWriter = cv.visitMethod(access, method, desc, signature, exceptions)
-                val id = methodFilter.getMethodId(method) ?: return methodWriter
-                println("Instrumenting: $method") // TODO
+                val id = methodFilter.getMethodId(className, method) ?: return methodWriter
 
+                LOG.info("Instrumenting: $className#$method")
                 return object : AdviceAdapter(ASM_API, methodWriter, access, method, desc) {
                     val methodStart = Label()
                     val methodEnd = Label()
