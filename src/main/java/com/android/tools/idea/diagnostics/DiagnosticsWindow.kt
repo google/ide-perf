@@ -11,6 +11,10 @@ import javax.swing.BoxLayout
 
 // TODO: Reconcile the fact that DiagnosticsController is application-level, whereas tool windows are project-level.
 
+// Things to improve:
+// - Reconsider whether this needs to be a tool window. It could instead be an internal action, for example.
+// - Add a tool window icon.
+
 class DiagnosticsWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val contentManager = toolWindow.contentManager
