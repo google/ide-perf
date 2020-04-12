@@ -8,8 +8,7 @@ object CallTreeManager {
 
     // Synchronized by monitor lock.
     private class ThreadState {
-        var callTreeBuilder: CallTreeBuilder =
-            CallTreeBuilder(Thread.currentThread())
+        var callTreeBuilder: CallTreeBuilder = CallTreeBuilder()
     }
 
     private val threadState: ThreadLocal<ThreadState> = ThreadLocal.withInitial {
