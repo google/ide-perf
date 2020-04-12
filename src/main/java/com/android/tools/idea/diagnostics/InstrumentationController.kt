@@ -1,8 +1,5 @@
-package com.android.tools.idea.diagnostics.instrumentation
+package com.android.tools.idea.diagnostics
 
-import com.android.tools.idea.diagnostics.CallTreeManager
-import com.android.tools.idea.diagnostics.ConcurrentAppendOnlyList
-import com.android.tools.idea.diagnostics.Tracepoint
 import com.android.tools.idea.diagnostics.agent.AgentMain
 import com.android.tools.idea.diagnostics.agent.MethodListener
 import com.android.tools.idea.diagnostics.agent.Trampoline

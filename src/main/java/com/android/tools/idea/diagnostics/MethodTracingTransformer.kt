@@ -1,4 +1,4 @@
-package com.android.tools.idea.diagnostics.instrumentation
+package com.android.tools.idea.diagnostics
 
 import com.android.tools.idea.diagnostics.agent.Trampoline
 import com.intellij.openapi.diagnostic.Logger

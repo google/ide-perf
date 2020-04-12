@@ -1,6 +1,5 @@
 package com.android.tools.idea.diagnostics
 
-import com.android.tools.idea.diagnostics.instrumentation.InstrumentationController
 import com.intellij.openapi.application.invokeLater
 import com.intellij.util.concurrency.AppExecutorUtil
 import java.util.concurrent.TimeUnit
