@@ -6,10 +6,12 @@ import com.android.tools.idea.diagnostics.Tracepoint
 import com.android.tools.idea.diagnostics.agent.AgentMain
 import com.android.tools.idea.diagnostics.agent.MethodListener
 import com.android.tools.idea.diagnostics.agent.Trampoline
+import com.intellij.openapi.diagnostic.Logger
 import java.util.concurrent.ConcurrentHashMap
 
 // Things to improve:
 // - Fail gracefully if agent not available.
+// - Try to avoid querying 'instrumentation.allLoadedClasses' for every call to instrumentMethod().
 // - Account for full method signature, not just name.
 // - Add some logging.
 // - Catch some more exceptions thrown by Instrumentation.
@@ -18,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 /** Handles requests to instrument Java methods. */
 object InstrumentationController {
+    private val log = Logger.getInstance(InstrumentationController::class.java)
     private val instrumentation = AgentMain.savedInstrumentationInstance
     private val instrumentedTracepoints = ConcurrentAppendOnlyList<Tracepoint>()
 
@@ -28,13 +31,17 @@ object InstrumentationController {
     private val methodsToInstrument = ConcurrentHashMap<String, ConcurrentHashMap<String, Int>>()
 
     init {
-        Trampoline.methodListener = object : MethodListener {
-            override fun enter(id: Int): Unit = CallTreeManager.enter(instrumentedTracepoints.get(id))
-            override fun leave(id: Int): Unit = CallTreeManager.leave(instrumentedTracepoints.get(id))
-        }
+        Trampoline.methodListener = MyMethodListener()
         instrumentation.addTransformer(MethodTracingTransformer(MyClassFilter()), true)
     }
 
+    /** Dispatches method entry/exit events to the CallTreeManager. */
+    private class MyMethodListener : MethodListener {
+        override fun enter(id: Int): Unit = CallTreeManager.enter(instrumentedTracepoints.get(id))
+        override fun leave(id: Int): Unit = CallTreeManager.leave(instrumentedTracepoints.get(id))
+    }
+
+    /** Filters class loading events based on [methodsToInstrument]. */
     private class MyClassFilter : ClassFilter {
 
         // Called by EntryExitTransformer during class loading.
@@ -49,7 +56,7 @@ object InstrumentationController {
     }
 
     fun instrumentMethod(className: String, methodName: String, tracepoint: Tracepoint) {
-        println("Attempting to instrument $className#$methodName") // TODO
+        log.info("Attempting to instrument $className#$methodName")
         val internalClassName = className.replace('.', '/')
         val methodMap = methodsToInstrument.getOrPut(internalClassName) { ConcurrentHashMap() }
         methodMap[methodName] = instrumentedTracepoints.append(tracepoint)
