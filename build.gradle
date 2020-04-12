@@ -21,8 +21,7 @@ intellij {
     pluginName = "IDEA diagnostic plugin"
     version '2020.1'
 
-    // Disable the (slow) 'buildSearchableOptions' build task;
-    // we don't need it yet anyway.
+    // Disable the (slow) 'buildSearchableOptions' build task; we don't need it yet anyway.
     buildSearchableOptions.enabled = false
 }
 
