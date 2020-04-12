@@ -3,13 +3,13 @@ package com.android.tools.idea.diagnostics.instrumentation
 import com.android.tools.idea.diagnostics.CallTreeManager
 import com.android.tools.idea.diagnostics.ConcurrentAppendOnlyList
 import com.android.tools.idea.diagnostics.Tracepoint
+import com.android.tools.idea.diagnostics.agent.AgentMain
 import com.android.tools.idea.diagnostics.agent.MethodListener
-import com.android.tools.idea.diagnostics.agent.Premain
 import com.android.tools.idea.diagnostics.agent.Trampoline
-import java.lang.instrument.Instrumentation
 import java.util.concurrent.ConcurrentHashMap
 
 // Things to improve:
+// - Fail gracefully if agent not available.
 // - Account for full method signature, not just name.
 // - Add some logging.
 // - Catch some more exceptions thrown by Instrumentation.
@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 /** Handles requests to instrument Java methods. */
 object InstrumentationController {
-    private val instrumentation: Instrumentation = Premain.savedInstrumentationInstance
+    private val instrumentation = AgentMain.savedInstrumentationInstance
     private val instrumentedTracepoints = ConcurrentAppendOnlyList<Tracepoint>()
 
     /**

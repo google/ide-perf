@@ -1,6 +1,0 @@
-Manifest-Version: 1.0
-Premain-Class: com.android.tools.idea.diagnostics.agent.Premain
-Can-Redefine-Classes: true
-Can-Retransform-Classes: true
-Implementation-Title: "IDEA diagnostics agent"
-Boot-Class-Path: agent.jar
