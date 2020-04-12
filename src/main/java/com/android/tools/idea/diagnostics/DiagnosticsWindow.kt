@@ -20,6 +20,7 @@ class DiagnosticsWindowFactory : ToolWindowFactory, DumbAware {
 }
 
 class DiagnosticsWindow : JBPanel<DiagnosticsWindow>() {
+    private val listView = CallTableView(CallTableModel())
 
     init {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
@@ -29,5 +30,14 @@ class DiagnosticsWindow : JBPanel<DiagnosticsWindow>() {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
         }
         add(commandLine)
+
+        // TODO: remove this example code.
+        // val child = ImmutableCallTree(Tracepoint("child"), 1, 10, emptyMap())
+        // val root = ImmutableCallTree(Tracepoint.ROOT, 1, 10, mapOf(child.tracepoint to child))
+        // val trees = mutableListOf(root, child)
+        // listView.setCallTrees(trees)
+
+        // Call list.
+        add(listView)
     }
 }
