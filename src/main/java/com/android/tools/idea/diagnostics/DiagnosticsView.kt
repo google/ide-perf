@@ -36,6 +36,7 @@ class DiagnosticsView : JBPanel<DiagnosticsView>() {
         // Command line.
         val commandLine = JBTextField().apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+            toolTipText = "Example: trace com.example.Class#method"
             addActionListener { e ->
                 text = ""
                 controller.handleRawCommandFromEdt(e.actionCommand)
