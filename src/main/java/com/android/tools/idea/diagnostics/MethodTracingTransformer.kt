@@ -52,7 +52,6 @@ class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFi
         val reader = ClassReader(classBytes)
         val writer = ClassWriter(reader, COMPUTE_FRAMES)
 
-        LOG.info("Instrumenting class: $className")
         val classVisitor = object : ClassVisitor(ASM_API, writer) {
 
             override fun visitMethod(
@@ -65,7 +64,6 @@ class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFi
                 val methodWriter = cv.visitMethod(access, method, desc, signature, exceptions)
                 val id = methodFilter.getMethodId(className, method) ?: return methodWriter
 
-                LOG.info("Instrumenting method: $className#$method")
                 return object : AdviceAdapter(ASM_API, methodWriter, access, method, desc) {
                     val methodStart = Label()
                     val methodEnd = Label()

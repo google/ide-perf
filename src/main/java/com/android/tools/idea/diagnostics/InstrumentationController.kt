@@ -55,7 +55,7 @@ object InstrumentationController {
     }
 
     fun instrumentMethod(className: String, methodName: String, tracepoint: Tracepoint) {
-        LOG.info("Attempting to instrument $className#$methodName")
+        LOG.info("Instrumenting $className#$methodName")
         val internalClassName = className.replace('.', '/')
         val methodMap = methodsToInstrument.getOrPut(internalClassName) { ConcurrentHashMap() }
         methodMap[methodName] = instrumentedTracepoints.append(tracepoint)
