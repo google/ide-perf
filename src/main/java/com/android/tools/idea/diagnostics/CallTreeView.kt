@@ -120,7 +120,7 @@ class CallTableView(private val model: CallTableModel) : JBTable(model) {
                 sortKeys = listOf(SortKey(col, order))
             }
         }
-        rowSorter.toggleSortOrder(TRACEPOINT)
+        rowSorter.toggleSortOrder(WALL_TIME)
     }
 
     fun setCallTrees(newTrees: List<CallTree>?) {
