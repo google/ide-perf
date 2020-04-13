@@ -27,9 +27,7 @@ intellij {
 }
 
 patchPluginXml {
-    changeNotes """
-      TODO
-    """
+    // Eventually: set changeNotes.
 }
 
 prepareSandbox {
@@ -40,6 +38,9 @@ prepareSandbox {
 }
 
 runIde {
+    // Disable auto-reload until we make sure it works correctly for this plugin.
+    systemProperty('idea.auto.reload.plugins', 'false')
+
     // Always enable assertions.
     jvmArgs "-ea"
 
