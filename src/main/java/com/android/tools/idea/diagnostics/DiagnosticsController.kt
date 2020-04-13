@@ -7,6 +7,7 @@ import com.intellij.util.concurrency.AppExecutorUtil
 import java.util.concurrent.TimeUnit
 
 // Things to improve:
+// - Audit overall overhead and memory usage.
 // - Make sure CPU overhead is minimal when the diagnostics window is not showing.
 // - Make sure UI updates finish before scheduling new ones.
 // - Add some logging.
