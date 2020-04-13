@@ -9,6 +9,7 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import java.awt.Dimension
 import javax.swing.BoxLayout
+import javax.swing.JProgressBar
 
 // TODO: Reconcile the fact that DiagnosticsController is application-level, whereas tool windows are project-level.
 
@@ -28,6 +29,7 @@ class DiagnosticsWindowFactory : ToolWindowFactory, DumbAware {
 
 class DiagnosticsView : JBPanel<DiagnosticsView>() {
     private val controller = DiagnosticsController(this)
+    val progressBar: JProgressBar
     val listView = CallTableView(CallTableModel())
 
     init {
@@ -43,6 +45,14 @@ class DiagnosticsView : JBPanel<DiagnosticsView>() {
             }
         }
         add(commandLine)
+
+        // Progress bar.
+        progressBar = JProgressBar().apply {
+            isIndeterminate = true
+            isVisible = false
+            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+        }
+        add(progressBar)
 
         // Call list.
         add(JBScrollPane(listView))

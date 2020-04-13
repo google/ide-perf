@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 // - Detect repeated instrumentation requests with the same spec.
 // - Add visual indicator for the 'paused' state.
 // - More principled command parsing.
+// - Add a proper progress indicator (subclass of ProgressIndicator) which displays text status.
 
 private const val SAMPLING_PERIOD_MS: Long = 30
 
@@ -23,6 +24,7 @@ class DiagnosticsController(
     private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("DiagnosticsController", 1)
     private var callTree = MutableCallTree(Tracepoint.ROOT) // Access from [executor].
     private var paused = false // Access from [executor].
+    private var tasksInProgress = 0
 
     init {
         executor.scheduleWithFixedDelay(this::dataRefreshLoop, 0, SAMPLING_PERIOD_MS, TimeUnit.MILLISECONDS)
@@ -73,9 +75,11 @@ class DiagnosticsController(
             updateUi()
         }
         else if (cmd == "trace psi finders" || cmd == "psi finders") {
-            val psiFinders = PsiElementFinder.EP.getExtensions(ProjectManager.getInstance().defaultProject)
-            for (psiFinder in psiFinders) {
-                handleCommandInBackground("trace ${psiFinder.javaClass.name}#findClass")
+            runWithProgressBar {
+                val psiFinders = PsiElementFinder.EP.getExtensions(ProjectManager.getInstance().defaultProject)
+                for (psiFinder in psiFinders) {
+                    handleCommandInBackground("trace ${psiFinder.javaClass.name}#findClass")
+                }
             }
         }
         else if (cmd.startsWith("trace")) {
@@ -85,8 +89,9 @@ class DiagnosticsController(
             val classShortName = className.substringAfterLast('.')
             val displayName = "$classShortName.$methodName()"
             val tracepoint = Tracepoint(displayName)
-            // TODO: Add loading bar.
-            InstrumentationController.instrumentMethod(className, methodName, tracepoint)
+            runWithProgressBar {
+                InstrumentationController.instrumentMethod(className, methodName, tracepoint)
+            }
         }
         else if (cmd.contains('#')) {
             // Implicit trace command.
@@ -94,6 +99,19 @@ class DiagnosticsController(
         }
         else {
             println("Unknown command: $cmd") // TODO
+        }
+    }
+
+    private fun <T> runWithProgressBar(action: () -> T) {
+        if (++tasksInProgress == 1) {
+            invokeLater { view.progressBar.isVisible = true }
+        }
+        try {
+            action()
+        } finally {
+            if (--tasksInProgress == 0) {
+                invokeLater { view.progressBar.isVisible = false }
+            }
         }
     }
 }

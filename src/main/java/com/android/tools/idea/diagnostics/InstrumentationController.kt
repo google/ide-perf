@@ -54,6 +54,7 @@ object InstrumentationController {
         }
     }
 
+    // This method can be slow! Call it in a background thread with a progress indicator.
     fun instrumentMethod(className: String, methodName: String, tracepoint: Tracepoint) {
         LOG.info("Instrumenting $className#$methodName")
         val internalClassName = className.replace('.', '/')
