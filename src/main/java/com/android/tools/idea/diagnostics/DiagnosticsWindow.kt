@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.components.JBPanel
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import java.awt.Dimension
 import javax.swing.BoxLayout
@@ -43,6 +44,6 @@ class DiagnosticsWindow : JBPanel<DiagnosticsWindow>() {
         add(commandLine)
 
         // Call list.
-        add(listView)
+        add(JBScrollPane(listView))
     }
 }
