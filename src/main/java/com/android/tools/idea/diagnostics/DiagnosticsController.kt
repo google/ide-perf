@@ -19,13 +19,9 @@ private const val SAMPLING_PERIOD_MS: Long = 30
 class DiagnosticsController(
     private val view: DiagnosticsView // Access from EDT.
 ) {
-    /** For simplicity we run all tasks on a single-threaded executor. */
+    // For simplicity we run all tasks on a single-threaded executor.
     private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("DiagnosticsController", 1)
-
-    /** The main call tree, periodically updated by all threads. */
     private var callTree = MutableCallTree(Tracepoint.ROOT) // Access from [executor].
-
-    /** When the tracer is paused, incoming tracing data is discarded. */
     private var paused = false // Access from [executor].
 
     init {
