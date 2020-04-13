@@ -1,6 +1,8 @@
 package com.android.tools.idea.diagnostics
 
 import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.project.ProjectManager
+import com.intellij.psi.PsiElementFinder
 import com.intellij.util.concurrency.AppExecutorUtil
 import java.util.concurrent.TimeUnit
 
@@ -73,6 +75,12 @@ class DiagnosticsController(
         else if (cmd == "reset") {
             callTree = MutableCallTree(Tracepoint.ROOT)
             updateUi()
+        }
+        else if (cmd == "trace psi finders" || cmd == "psi finders") {
+            val psiFinders = PsiElementFinder.EP.getExtensions(ProjectManager.getInstance().defaultProject)
+            for (psiFinder in psiFinders) {
+                handleCommandInBackground("trace ${psiFinder.javaClass.name}#findClass")
+            }
         }
         else if (cmd.startsWith("trace")) {
             // Trace the given method via bytecode instrumentation.

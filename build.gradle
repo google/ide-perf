@@ -20,6 +20,7 @@ compileTestKotlin.kotlinOptions.jvmTarget = "1.8"
 intellij {
     pluginName = "IDEA diagnostic plugin"
     version '2020.1'
+    plugins = ['java'] // Used for the PsiElementFinder demo.
 
     // Disable the (slow) 'buildSearchableOptions' build task; we don't need it yet anyway.
     buildSearchableOptions.enabled = false

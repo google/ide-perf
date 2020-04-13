@@ -9,6 +9,9 @@
 
     <depends>com.intellij.modules.platform</depends>
 
+    <!-- Used for the PsiElementFinder demo. -->
+    <depends>com.intellij.modules.java</depends>
+
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow
                 anchor="right"
