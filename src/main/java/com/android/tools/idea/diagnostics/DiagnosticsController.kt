@@ -52,14 +52,13 @@ class DiagnosticsController(
         }
     }
 
-    // Invoked by the view when the user enters a command.
     fun handleRawCommandFromEdt(rawCmd: String) {
         if (rawCmd.isBlank()) return
         val cmd = rawCmd.trim()
-        executor.execute { handleCommandInBackground(cmd) }
+        executor.execute { handleCommand(cmd) }
     }
 
-    private fun handleCommandInBackground(cmd: String) {
+    private fun handleCommand(cmd: String) {
         if (cmd == "p" || cmd == "pause") {
             paused = true
         }
@@ -78,7 +77,7 @@ class DiagnosticsController(
             runWithProgressBar {
                 val psiFinders = PsiElementFinder.EP.getExtensions(ProjectManager.getInstance().defaultProject)
                 for (psiFinder in psiFinders) {
-                    handleCommandInBackground("trace ${psiFinder.javaClass.name}#findClass")
+                    handleCommand("trace ${psiFinder.javaClass.name}#findClass")
                 }
             }
         }
@@ -95,7 +94,7 @@ class DiagnosticsController(
         }
         else if (cmd.contains('#')) {
             // Implicit trace command.
-            handleCommandInBackground("trace $cmd")
+            handleCommand("trace $cmd")
         }
         else {
             println("Unknown command: $cmd") // TODO
