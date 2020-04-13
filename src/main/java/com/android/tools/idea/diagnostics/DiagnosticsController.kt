@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 private const val SAMPLING_PERIOD_MS: Long = 30
 
 class DiagnosticsController(
-    private val view: DiagnosticsWindow // Access from EDT.
+    private val view: DiagnosticsView // Access from EDT.
 ) {
     /** For simplicity we run all tasks on a single-threaded executor. */
     private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("DiagnosticsController", 1)

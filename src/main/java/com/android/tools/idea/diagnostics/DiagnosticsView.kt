@@ -20,13 +20,13 @@ class DiagnosticsWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val contentManager = toolWindow.contentManager
         contentManager.removeAllContents(true)
-        val panel = DiagnosticsWindow()
+        val panel = DiagnosticsView()
         val content = contentManager.factory.createContent(panel, null, false)
         contentManager.addContent(content)
     }
 }
 
-class DiagnosticsWindow : JBPanel<DiagnosticsWindow>() {
+class DiagnosticsView : JBPanel<DiagnosticsView>() {
     private val controller = DiagnosticsController(this)
     val listView = CallTableView(CallTableModel())
 
