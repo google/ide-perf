@@ -50,6 +50,7 @@ object InstrumentationController {
         }
 
         override fun getMethodId(className: String, methodName: String): Int? {
+            // TODO: This conflates methods with the same name.
             return methodsToInstrument[className]?.get(methodName)
         }
     }
