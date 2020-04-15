@@ -1,6 +1,7 @@
 package com.android.tools.idea.diagnostics
 
 import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.concurrency.AppExecutorUtil
@@ -17,14 +18,16 @@ import java.util.concurrent.TimeUnit
 // - Add a proper progress indicator (subclass of ProgressIndicator) which displays text status.
 
 private const val SAMPLING_PERIOD_MS: Long = 30
+private val LOG = Logger.getInstance(DiagnosticsController::class.java)
 
 class DiagnosticsController(
-    private val view: DiagnosticsView // Access from EDT.
+    private val view: DiagnosticsView // Access from EDT only.
 ) {
-    // For simplicity we run all tasks on a single-threaded executor.
+    // For simplicity we run all tasks on a single-thread executor.
+    // The data structures below are assumed to be accessed only from this executor.
     private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("DiagnosticsController", 1)
-    private var callTree = MutableCallTree(Tracepoint.ROOT) // Access from [executor].
-    private var paused = false // Access from [executor].
+    private var callTree = MutableCallTree(Tracepoint.ROOT)
+    private var paused = false
     private var tasksInProgress = 0
 
     init {
@@ -98,7 +101,7 @@ class DiagnosticsController(
             handleCommand("trace $cmd")
         }
         else {
-            println("Unknown command: $cmd") // TODO
+            LOG.info("Unknown command: $cmd")
         }
     }
 
