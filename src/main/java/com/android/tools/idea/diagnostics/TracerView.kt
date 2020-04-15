@@ -13,6 +13,7 @@ import javax.swing.JComponent
 import javax.swing.JProgressBar
 import javax.swing.border.Border
 
+/** Invoked by the user via the "Trace" action. */
 class TracerAction : DumbAwareAction() {
     override fun actionPerformed(e: AnActionEvent) {
         // TODO: Handle case where the action is performed multiple times.
@@ -20,6 +21,7 @@ class TracerAction : DumbAwareAction() {
     }
 }
 
+/** The dialog window that pops up via the "Trace" action. */
 class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
     init {
         title = "Tracer"
@@ -35,6 +37,7 @@ class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false
     // TODO: Override dispose().
 }
 
+/** The content filling the tracer dialog window. */
 class TracerView : JBPanel<TracerView>() {
     private val controller = TracerController(this)
     val progressBar: JProgressBar
