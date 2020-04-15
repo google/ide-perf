@@ -18,4 +18,10 @@
                 id="Diagnostics [internal]"
                 factoryClass="com.android.tools.idea.diagnostics.DiagnosticsWindowFactory"/>
     </extensions>
+
+    <application-components>
+        <component>
+            <implementation-class>com.android.tools.idea.diagnostics.HackForDisablingPluginUnloading</implementation-class>
+        </component>
+    </application-components>
 </idea-plugin>
