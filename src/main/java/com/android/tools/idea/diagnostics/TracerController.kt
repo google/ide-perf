@@ -22,7 +22,7 @@ class TracerController(
 ) {
     // For simplicity we run all tasks on a single-thread executor.
     // The data structures below are assumed to be accessed only from this executor.
-    private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("DiagnosticsController", 1)
+    private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("Tracer", 1)
     private var callTree = MutableCallTree(Tracepoint.ROOT)
     private var paused = false
     private var tasksInProgress = 0
