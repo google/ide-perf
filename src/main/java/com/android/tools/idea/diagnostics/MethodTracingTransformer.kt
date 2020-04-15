@@ -40,7 +40,7 @@ class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFi
             tryTransform(className, classfileBuffer)
         }
         catch (e: Throwable) {
-            LOG.warn("Failed to instrument class $className", e)
+            LOG.error("Failed to instrument class $className", e)
             throw e
         }
     }
