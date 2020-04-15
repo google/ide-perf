@@ -1,34 +1,42 @@
 package com.android.tools.idea.diagnostics
 
-import com.intellij.openapi.project.DumbAware
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.wm.ToolWindow
-import com.intellij.openapi.wm.ToolWindowFactory
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import java.awt.Dimension
+import javax.swing.Action
 import javax.swing.BoxLayout
+import javax.swing.JComponent
 import javax.swing.JProgressBar
+import javax.swing.border.Border
 
-// TODO: Reconcile the fact that DiagnosticsController is application-level, whereas tool windows are project-level.
-
-// Things to improve:
-// - Reconsider whether this needs to be a tool window. It could instead be an internal action, for example.
-// - Add a tool window icon.
-
-class DiagnosticsWindowFactory : ToolWindowFactory, DumbAware {
-    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val contentManager = toolWindow.contentManager
-        contentManager.removeAllContents(true)
-        val panel = DiagnosticsView()
-        val content = contentManager.factory.createContent(panel, null, false)
-        contentManager.addContent(content)
+class TracerAction : DumbAwareAction() {
+    override fun actionPerformed(e: AnActionEvent) {
+        // TODO: Handle case where the action is performed multiple times.
+        TracerDialog().show()
     }
 }
 
-class DiagnosticsView : JBPanel<DiagnosticsView>() {
-    private val controller = DiagnosticsController(this)
+class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
+    init {
+        title = "Tracer"
+        isModal = false
+        init()
+    }
+
+    override fun createCenterPanel(): JComponent = TracerView()
+    override fun createContentPaneBorder(): Border? = null // No border.
+    override fun getDimensionServiceKey(): String = "com.android.tools.idea.diagnostics.Tracer"
+    override fun createActions(): Array<Action> = emptyArray()
+
+    // TODO: Override dispose().
+}
+
+class TracerView : JBPanel<TracerView>() {
+    private val controller = TracerController(this)
     val progressBar: JProgressBar
     val listView = CallTableView(CallTableModel())
 
@@ -38,7 +46,6 @@ class DiagnosticsView : JBPanel<DiagnosticsView>() {
         // Command line.
         val commandLine = JBTextField().apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-            toolTipText = "Example: trace com.example.Class#method"
             addActionListener { e ->
                 text = ""
                 controller.handleRawCommandFromEdt(e.actionCommand)

@@ -17,11 +17,8 @@ import java.util.concurrent.TimeUnit
 // - More principled command parsing.
 // - Add a proper progress indicator (subclass of ProgressIndicator) which displays text status.
 
-private const val SAMPLING_PERIOD_MS: Long = 30
-private val LOG = Logger.getInstance(DiagnosticsController::class.java)
-
-class DiagnosticsController(
-    private val view: DiagnosticsView // Access from EDT only.
+class TracerController(
+    private val view: TracerView // Access from EDT only.
 ) {
     // For simplicity we run all tasks on a single-thread executor.
     // The data structures below are assumed to be accessed only from this executor.
@@ -29,6 +26,11 @@ class DiagnosticsController(
     private var callTree = MutableCallTree(Tracepoint.ROOT)
     private var paused = false
     private var tasksInProgress = 0
+
+    companion object {
+        private const val SAMPLING_PERIOD_MS: Long = 30
+        private val LOG = Logger.getInstance(TracerController::class.java)
+    }
 
     init {
         executor.scheduleWithFixedDelay(this::dataRefreshLoop, 0, SAMPLING_PERIOD_MS, TimeUnit.MILLISECONDS)

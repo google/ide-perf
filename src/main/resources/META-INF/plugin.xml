@@ -12,12 +12,15 @@
     <!-- Used for the PsiElementFinder demo. -->
     <depends>com.intellij.modules.java</depends>
 
-    <extensions defaultExtensionNs="com.intellij">
-        <toolWindow
-                anchor="right"
-                id="Diagnostics [internal]"
-                factoryClass="com.android.tools.idea.diagnostics.DiagnosticsWindowFactory"/>
-    </extensions>
+    <actions>
+        <action text="Tracer..."
+                id="com.android.tools.idea.diagnostics.Tracer"
+                class="com.android.tools.idea.diagnostics.TracerAction"
+                description="Trace IDE code to get overhead measurements and call counts in real time">
+            <add-to-group group-id="HelpDiagnosticTools" anchor="after"
+                          relative-to-action="Performance.ActivityMonitor"/>
+        </action>
+    </actions>
 
     <application-components>
         <component>
