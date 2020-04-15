@@ -1,6 +1,7 @@
 package com.android.tools.idea.diagnostics
 
 import com.intellij.ui.table.JBTable
+import com.intellij.util.ui.JBUI
 import sun.swing.table.DefaultTableCellHeaderRenderer
 import java.awt.Font
 import javax.swing.ListSelectionModel
@@ -63,6 +64,7 @@ class CallTableModel : AbstractTableModel() {
 class CallTableView(private val model: CallTableModel) : JBTable(model) {
 
     init {
+        font = JBUI.Fonts.create(Font.MONOSPACED, font.size)
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
         setShowGrid(false)
 
@@ -90,7 +92,6 @@ class CallTableView(private val model: CallTableModel) : JBTable(model) {
                     tableColumn.cellRenderer = object : DefaultTableCellRenderer() {
                         init {
                             horizontalAlignment = SwingConstants.RIGHT
-                            font = Font(Font.MONOSPACED, font.style, font.size)
                         }
 
                         override fun setValue(value: Any?) {
