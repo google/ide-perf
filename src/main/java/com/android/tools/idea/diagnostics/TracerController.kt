@@ -90,8 +90,10 @@ class TracerController(
         else if (cmd == "trace psi finders" || cmd == "psi finders") {
             runWithProgressBar {
                 val psiFinders = PsiElementFinder.EP.getExtensions(ProjectManager.getInstance().defaultProject)
+                val methodName = PsiElementFinder::findClass.name
                 for (psiFinder in psiFinders) {
-                    handleCommand("trace ${psiFinder.javaClass.name}#findClass")
+                    val className = psiFinder.javaClass.name
+                    handleCommand("trace $className#$methodName")
                 }
             }
         }
