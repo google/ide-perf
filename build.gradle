@@ -32,7 +32,7 @@ intellij {
 }
 
 patchPluginXml {
-    // Eventually: set changeNotes.
+    sinceBuild = '19.3' // TODO: Test on earlier versions.
 }
 
 prepareSandbox {
