@@ -38,8 +38,7 @@ class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFi
         return try {
             if (!methodFilter.shouldInstrumentClass(className)) return null
             tryTransform(className, classfileBuffer)
-        }
-        catch (e: Throwable) {
+        } catch (e: Throwable) {
             LOG.error("Failed to instrument class $className", e)
             throw e
         }
