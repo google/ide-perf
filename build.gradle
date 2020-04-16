@@ -72,9 +72,14 @@ runIde {
 dependencies {
     compileOnly project(':agent') // Using 'compileOnly' because the agent is already added to the boot classpath.
 
-    implementation "org.ow2.asm:asm-commons:7.0"
+    implementation("org.ow2.asm:asm:8.0.1")
+    implementation("org.ow2.asm:asm-commons:8.0.1") {
+         exclude(group: "org.ow2.asm", module: "asm-tree")
+         exclude(group: "org.ow2.asm", module: "asm-analysis")
+    }
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "org.jetbrains.kotlin:kotlin-reflect"
 
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation "junit:junit:4.12"
 }

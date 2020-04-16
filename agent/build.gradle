@@ -10,7 +10,7 @@ repositories {
 }
 
 jar {
-    archiveName "agent.jar"
+    archiveFileName.set("agent.jar")
     manifest.attributes(
             "Manifest-Version": "1.0",
             "Premain-Class": "com.android.tools.idea.diagnostics.agent.AgentMain",
@@ -20,8 +20,4 @@ jar {
             "Implementation-Title": "IDEA diagnostics agent",
             "Boot-Class-Path": archiveFileName,
     )
-}
-
-dependencies {
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
