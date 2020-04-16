@@ -8,6 +8,7 @@ import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import java.awt.Dimension
+import java.lang.ref.WeakReference
 import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
@@ -16,9 +17,17 @@ import javax.swing.border.Border
 
 /** Invoked by the user via the "Trace" action. */
 class TracerAction : DumbAwareAction() {
+    private var currentTracer: WeakReference<TracerDialog>? = null
+
     override fun actionPerformed(e: AnActionEvent) {
-        // TODO: Handle case where the action is performed multiple times.
-        TracerDialog().show()
+        val tracer = currentTracer?.get()
+        if (tracer != null && !tracer.isDisposed) {
+            tracer.toFront()
+        } else {
+            val newTracer = TracerDialog()
+            newTracer.show()
+            currentTracer = WeakReference(newTracer)
+        }
     }
 }
 
