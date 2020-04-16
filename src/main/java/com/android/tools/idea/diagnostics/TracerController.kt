@@ -1,8 +1,10 @@
 package com.android.tools.idea.diagnostics
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.rd.attachChild
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.concurrency.AppExecutorUtil
 import java.util.concurrent.TimeUnit
@@ -18,8 +20,9 @@ import java.util.concurrent.TimeUnit
 // - Add a proper progress indicator (subclass of ProgressIndicator) which displays text status.
 
 class TracerController(
-    private val view: TracerView // Access from EDT only.
-) {
+    private val view: TracerView, // Access from EDT only.
+    parentDisposable: Disposable
+): Disposable {
     // For simplicity we run all tasks on a single-thread executor.
     // The data structures below are assumed to be accessed only from this executor.
     private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("Tracer", 1)
@@ -33,8 +36,13 @@ class TracerController(
     }
 
     init {
+        CallTreeManager.swapBuffers() // Clear any call trees that have accumulated since the tracer was last closed.
         executor.scheduleWithFixedDelay(this::dataRefreshLoop, 0, SAMPLING_PERIOD_MS, TimeUnit.MILLISECONDS)
-        // TODO: Call executor.shutdownNow() at some point.
+        parentDisposable.attachChild(this)
+    }
+
+    override fun dispose() {
+        executor.shutdownNow()
     }
 
     private fun dataRefreshLoop() {

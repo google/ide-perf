@@ -1,5 +1,6 @@
 package com.android.tools.idea.diagnostics
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.ui.DialogWrapper
@@ -29,17 +30,15 @@ class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false
         init()
     }
 
-    override fun createCenterPanel(): JComponent = TracerView()
+    override fun createCenterPanel(): JComponent = TracerView(disposable)
     override fun createContentPaneBorder(): Border? = null // No border.
     override fun getDimensionServiceKey(): String = "com.android.tools.idea.diagnostics.Tracer"
     override fun createActions(): Array<Action> = emptyArray()
-
-    // TODO: Override dispose().
 }
 
 /** The content filling the tracer dialog window. */
-class TracerView : JBPanel<TracerView>() {
-    private val controller = TracerController(this)
+class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
+    private val controller: TracerController = TracerController(this, parentDisposable)
     val progressBar: JProgressBar
     val listView = CallTableView(CallTableModel())
 
