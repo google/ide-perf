@@ -96,9 +96,13 @@ class TracerController(
             }
         }
         else if (cmd.startsWith("trace")) {
-            // Trace the given method via bytecode instrumentation.
             val spec = cmd.substringAfter("trace").trim()
-            val (className, methodName) = spec.split('#').takeIf { it.size == 2 } ?: return // TODO
+            val split = spec.split('#')
+            if (split.size != 2) {
+                LOG.warn("Invalid trace request format; expected com.example.Class#method")
+                return
+            }
+            val (className, methodName) = split
             val classShortName = className.substringAfterLast('.')
             val displayName = "$classShortName.$methodName()"
             val tracepoint = Tracepoint(displayName)
@@ -111,7 +115,7 @@ class TracerController(
             handleCommand("trace $cmd")
         }
         else {
-            LOG.info("Unknown command: $cmd")
+            LOG.warn("Unknown command: $cmd")
         }
     }
 
