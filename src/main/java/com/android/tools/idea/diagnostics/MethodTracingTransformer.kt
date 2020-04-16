@@ -2,12 +2,12 @@ package com.android.tools.idea.diagnostics
 
 import com.android.tools.idea.diagnostics.agent.Trampoline
 import com.intellij.openapi.diagnostic.Logger
-import org.jetbrains.org.objectweb.asm.*
-import org.jetbrains.org.objectweb.asm.ClassReader.SKIP_FRAMES
-import org.jetbrains.org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
-import org.jetbrains.org.objectweb.asm.Opcodes.ASM5
-import org.jetbrains.org.objectweb.asm.commons.AdviceAdapter
-import org.jetbrains.org.objectweb.asm.commons.Method
+import org.objectweb.asm.*
+import org.objectweb.asm.ClassReader.SKIP_FRAMES
+import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
+import org.objectweb.asm.Opcodes.ASM5
+import org.objectweb.asm.commons.AdviceAdapter
+import org.objectweb.asm.commons.Method
 import java.lang.instrument.ClassFileTransformer
 import java.security.ProtectionDomain
 import kotlin.reflect.jvm.javaMethod
