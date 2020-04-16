@@ -15,6 +15,7 @@ import kotlin.reflect.jvm.javaMethod
 // Things to improve:
 // - Should be possible to do without COMPUTE_FRAMES (but then also remove SKIP_FRAMES.)
 // - Reconsider which ASM API to use (does it matter?).
+// - Stress-test this transformer by running it on a lot of classes.
 
 /** Inserts calls (within JVM byte code) to the trampoline. */
 class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFileTransformer {
