@@ -51,7 +51,7 @@ class CallTableModel : AbstractTableModel() {
     override fun getValueAt(row: Int, col: Int): Any {
         val callTree = trees!![row]
         return when (col) {
-            TRACEPOINT -> callTree.tracepoint.toString()
+            TRACEPOINT -> callTree.tracepoint.displayName
             CALLS -> callTree.callCount
             WALL_TIME -> callTree.wallTime
             else -> error(col)

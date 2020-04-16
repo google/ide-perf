@@ -61,7 +61,9 @@ class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFi
                 exceptions: Array<out String>?
             ): MethodVisitor? {
                 val methodWriter = cv.visitMethod(access, method, desc, signature, exceptions)
-                val id = methodFilter.getMethodId(className, method) ?: return methodWriter
+                val id = methodFilter.getMethodId(className, method, desc) ?: return methodWriter
+
+                LOG.info("Instrumenting $className$method$desc")
 
                 return object : AdviceAdapter(ASM_API, methodWriter, access, method, desc) {
                     val methodStart = Label()

@@ -105,11 +105,8 @@ class TracerController(
                 return
             }
             val (className, methodName) = split
-            val classShortName = className.substringAfterLast('.')
-            val displayName = "$classShortName.$methodName()"
-            val tracepoint = Tracepoint(displayName)
             runWithProgressBar {
-                InstrumentationController.instrumentMethod(className, methodName, tracepoint)
+                InstrumentationController.instrumentMethod(className, methodName)
             }
         }
         else if (cmd.contains('#')) {
