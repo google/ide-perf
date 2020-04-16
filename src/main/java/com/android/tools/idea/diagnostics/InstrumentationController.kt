@@ -3,6 +3,8 @@ package com.android.tools.idea.diagnostics
 import com.android.tools.idea.diagnostics.agent.AgentMain
 import com.android.tools.idea.diagnostics.agent.MethodListener
 import com.android.tools.idea.diagnostics.agent.Trampoline
+import org.objectweb.asm.Type
+import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
@@ -91,6 +93,11 @@ object InstrumentationController {
         instrumentation.allLoadedClasses.asSequence()
             .filter { it.name == className }
             .forEach { instrumentation.retransformClasses(it) }
+    }
+
+    // This method can be slow! Call it in a background thread with a progress indicator.
+    fun instrumentMethod(method: Method) {
+        instrumentMethod(method.declaringClass.name, method.name, Type.getMethodDescriptor(method))
     }
 
     private fun createTracepoint(classJvmName: String, methodName: String, methodDesc: String): Tracepoint {

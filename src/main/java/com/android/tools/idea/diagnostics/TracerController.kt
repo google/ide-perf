@@ -8,6 +8,7 @@ import com.intellij.openapi.rd.attachChild
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.concurrency.AppExecutorUtil
 import java.util.concurrent.TimeUnit
+import kotlin.reflect.jvm.javaMethod
 
 // Things to improve:
 // - Audit overall overhead and memory usage.
@@ -90,10 +91,10 @@ class TracerController(
         else if (cmd == "trace psi finders" || cmd == "psi finders") {
             runWithProgressBar {
                 val psiFinders = PsiElementFinder.EP.getExtensions(ProjectManager.getInstance().defaultProject)
-                val methodName = PsiElementFinder::findClass.name
+                val baseMethod = PsiElementFinder::findClass.javaMethod!!
                 for (psiFinder in psiFinders) {
-                    val className = psiFinder.javaClass.name
-                    handleCommand("trace $className#$methodName")
+                    val method = psiFinder.javaClass.getMethod(baseMethod.name, *baseMethod.parameterTypes)
+                    InstrumentationController.instrumentMethod(method)
                 }
             }
         }
