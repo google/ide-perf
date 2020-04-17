@@ -10,10 +10,6 @@ interface CallTree {
     val selfWallTime: Long
         get() = wallTime - children.values.sumByLong(CallTree::wallTime)
 
-    fun allNodesInSubtree(): Sequence<CallTree> {
-        return sequenceOf(this) + children.values.asSequence().flatMap(CallTree::allNodesInSubtree)
-    }
-
     /** Returns an immutable deep copy of this tree. */
     fun snapshot(): CallTree {
         return ImmutableCallTree(
@@ -94,4 +90,29 @@ class MergedCallTree(nodes: Iterable<CallTree>) : CallTree {
             .mapValues { (_, childrenToMerge) ->
                 childrenToMerge.singleOrNull() ?: MergedCallTree(childrenToMerge)
             }
+}
+
+object TreeAlgorithms {
+    /**
+     * Returns all nodes in the tree, *except* those sharing a tracepoint with an ancestor.
+     * Use this to avoid double-counting the time spent in recursive method calls.
+     */
+    fun allNonRecursiveNodes(root: CallTree): Sequence<CallTree> {
+        val seen = HashSet<Tracepoint>()
+        return sequence { yieldNonRecursiveNodes(root, seen) }
+    }
+
+    private suspend fun SequenceScope<CallTree>.yieldNonRecursiveNodes(root: CallTree, seen: MutableSet<Tracepoint>) {
+        val nonRecursive = !seen.contains(root.tracepoint)
+        if (nonRecursive) {
+            yield(root)
+            seen.add(root.tracepoint)
+        }
+        for (child in root.children.values) {
+            yieldNonRecursiveNodes(child, seen)
+        }
+        if (nonRecursive) {
+            seen.remove(root.tracepoint)
+        }
+    }
 }
