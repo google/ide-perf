@@ -60,7 +60,7 @@ class TracerController(
         val mergedByTracepoint = TreeAlgorithms.allNonRecursiveNodes(treeSnapshot)
             .filter { it.tracepoint != Tracepoint.ROOT }
             .groupBy(CallTree::tracepoint)
-            .map { (_, group) -> group.singleOrNull() ?: MergedCallTree(group) }
+            .map { (_, group) -> TreeAlgorithms.mergeNodes(group) }
 
         invokeLater {
             view.listView.setCallTrees(mergedByTracepoint)

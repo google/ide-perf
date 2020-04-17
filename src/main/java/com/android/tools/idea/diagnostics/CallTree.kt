@@ -59,39 +59,6 @@ class MutableCallTree(
     }
 }
 
-/**
- * A call tree representing the result of merging several other call trees.
- * The list of trees to merge must be nonempty, and the roots must share the same tracepoint.
- */
-class MergedCallTree(nodes: Iterable<CallTree>) : CallTree {
-
-    init {
-        val first = nodes.firstOrNull()
-        require(first != null) {
-            "The list of merged nodes must be nonempty"
-        }
-
-        val sharedTracepoint = first.tracepoint
-        require(nodes.all { it.tracepoint == sharedTracepoint }) {
-            "The nodes being merged must share the same tracepoint"
-        }
-    }
-
-    override val tracepoint: Tracepoint = nodes.first().tracepoint
-
-    override val callCount: Long = nodes.sumByLong { it.callCount }
-
-    override val wallTime: Long = nodes.sumByLong { it.wallTime }
-
-    override val children: Map<Tracepoint, CallTree> =
-        nodes.asSequence()
-            .flatMap { it.children.values.asSequence() }
-            .groupBy { it.tracepoint }
-            .mapValues { (_, childrenToMerge) ->
-                childrenToMerge.singleOrNull() ?: MergedCallTree(childrenToMerge)
-            }
-}
-
 object TreeAlgorithms {
     /**
      * Returns all nodes in the tree, *except* those sharing a tracepoint with an ancestor.
@@ -114,5 +81,33 @@ object TreeAlgorithms {
         if (nonRecursive) {
             seen.remove(root.tracepoint)
         }
+    }
+
+    /**
+     * Merge several call trees into one.
+     * The roots must all have the same tracepoint.
+     */
+    fun mergeNodes(nodes: Collection<CallTree>): CallTree {
+        require(nodes.isNotEmpty())
+
+        if (nodes.size == 1) {
+            return nodes.single()
+        }
+
+        val tracepoint = nodes.first().tracepoint
+        val allHaveSameTracepoint = nodes.all { it.tracepoint == tracepoint }
+        require(allHaveSameTracepoint)
+
+        val mergedChildren = nodes.asSequence()
+            .flatMap { it.children.values.asSequence() }
+            .groupBy { it.tracepoint }
+            .mapValues { (_, childrenToMerge) -> mergeNodes(childrenToMerge) }
+
+        return ImmutableCallTree(
+            tracepoint = tracepoint,
+            callCount = nodes.sumByLong(CallTree::callCount),
+            wallTime = nodes.sumByLong(CallTree::wallTime),
+            children = mergedChildren
+        )
     }
 }
