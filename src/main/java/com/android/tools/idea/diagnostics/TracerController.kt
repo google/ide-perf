@@ -57,8 +57,9 @@ class TracerController(
     private fun updateUi() {
         val treeSnapshot = callTree.snapshot()
 
-        val mergedByTracepoint = treeSnapshot.children.values.asSequence()
-            .flatMap(CallTree::allNodesInSubtree)
+        // TODO: This does not handle recursive calls correctly.
+        val mergedByTracepoint = treeSnapshot.allNodesInSubtree()
+            .filter { it.tracepoint != Tracepoint.ROOT }
             .groupBy(CallTree::tracepoint)
             .map { (_, group) -> group.singleOrNull() ?: MergedCallTree(group) }
 
