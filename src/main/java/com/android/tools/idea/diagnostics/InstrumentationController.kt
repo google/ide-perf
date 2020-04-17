@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentMap
 // - Catch some more exceptions thrown by Instrumentation.
 // - Support line-number-based tracepoints.
 // - What happens if a class is being loaded *during* the call to instrumentMethod()?
+// - Pretty-print method descriptors for better UX.
 
 /**
  * Instruments Java methods with tracing hooks and delegates tracing events to [CallTreeManager].
