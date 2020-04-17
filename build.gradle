@@ -23,7 +23,7 @@ targetCompatibility = 1.8
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-    pluginName = "IDEA diagnostic plugin"
+    pluginName "idea-diagnostics"
     version '2020.1'
     plugins = ['java'] // Used for the PsiElementFinder demo.
 
