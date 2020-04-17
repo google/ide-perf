@@ -78,8 +78,10 @@ dependencies {
          exclude(group: "org.ow2.asm", module: "asm-analysis")
     }
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    implementation "org.jetbrains.kotlin:kotlin-reflect"
+    // TODO: Find a way to attach the Kotlin stdlib sources without declaring a 'compileOnly' dependency.
+    //  See https://github.com/JetBrains/gradle-intellij-plugin/issues/264.
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compileOnly "org.jetbrains.kotlin:kotlin-reflect"
 
     testImplementation "junit:junit:4.12"
 }
