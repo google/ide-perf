@@ -67,8 +67,7 @@ class MutableCallTree(
  * A call tree representing the result of merging several other call trees.
  * The list of trees to merge must be nonempty, and the roots must share the same tracepoint.
  */
-class MergedCallTree(nodes: Iterable<CallTree>) :
-    CallTree {
+class MergedCallTree(nodes: Iterable<CallTree>) : CallTree {
 
     init {
         val first = nodes.firstOrNull()
