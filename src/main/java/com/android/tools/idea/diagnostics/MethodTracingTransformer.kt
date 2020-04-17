@@ -6,6 +6,7 @@ import org.objectweb.asm.*
 import org.objectweb.asm.ClassReader.SKIP_FRAMES
 import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
 import org.objectweb.asm.Opcodes.ASM5
+import org.objectweb.asm.Opcodes.ASM8
 import org.objectweb.asm.commons.AdviceAdapter
 import org.objectweb.asm.commons.Method
 import java.lang.instrument.ClassFileTransformer
@@ -14,7 +15,6 @@ import kotlin.reflect.jvm.javaMethod
 
 // Things to improve:
 // - Should be possible to do without COMPUTE_FRAMES (but then also remove SKIP_FRAMES.)
-// - Reconsider which ASM API to use (does it matter?).
 // - Stress-test this transformer by running it on a lot of classes.
 
 /** Inserts calls (within JVM byte code) to the trampoline. */
@@ -22,7 +22,7 @@ class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFi
 
     companion object {
         private val LOG = Logger.getInstance(MethodTracingTransformer::class.java)
-        private const val ASM_API = ASM5
+        private const val ASM_API = ASM8
 
         private val TRAMPOLINE_CLASS_NAME: String = Type.getType(Trampoline::class.java).internalName
         private val TRAMPOLINE_ENTER_METHOD: Method = Method.getMethod(Trampoline::enter.javaMethod)
