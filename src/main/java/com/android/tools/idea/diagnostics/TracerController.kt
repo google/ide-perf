@@ -54,16 +54,12 @@ class TracerController(
         }
     }
 
+    /** Refreshes the UI with the current state of [callTree]. */
     private fun updateUi() {
-        val treeSnapshot = callTree.snapshot()
-
-        val mergedByTracepoint = TreeAlgorithms.allNonRecursiveNodes(treeSnapshot)
-            .filter { it.tracepoint != Tracepoint.ROOT }
-            .groupBy(CallTree::tracepoint)
-            .map { (_, group) -> TreeAlgorithms.mergeNodes(group) }
-
+        val allStats = TreeAlgorithms.computeFlatTracepointStats(callTree)
+        val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
         invokeLater {
-            view.listView.setCallTrees(mergedByTracepoint)
+            view.listView.setTracepointStats(visibleStats)
         }
     }
 

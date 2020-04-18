@@ -23,11 +23,10 @@ private const val COL_COUNT = 3
 
 /** Table model for a flat list of methods. */
 class CallTableModel : AbstractTableModel() {
-    var trees: List<CallTree>? = null
-        private set
+    private var data: List<TracepointStats>? = null
 
-    fun setCallTrees(newTrees: List<CallTree>?) {
-        trees = newTrees
+    fun setTracepointStats(newStats: List<TracepointStats>?) {
+        data = newStats
         fireTableDataChanged()
     }
 
@@ -46,14 +45,14 @@ class CallTableModel : AbstractTableModel() {
         else -> error(col)
     }
 
-    override fun getRowCount(): Int = trees?.size ?: 0
+    override fun getRowCount(): Int = data?.size ?: 0
 
     override fun getValueAt(row: Int, col: Int): Any {
-        val callTree = trees!![row]
+        val stats = data!![row]
         return when (col) {
-            TRACEPOINT -> callTree.tracepoint.displayName
-            CALLS -> callTree.callCount
-            WALL_TIME -> callTree.wallTime
+            TRACEPOINT -> stats.tracepoint.displayName
+            CALLS -> stats.callCount
+            WALL_TIME -> stats.wallTime
             else -> error(col)
         }
     }
@@ -124,10 +123,10 @@ class CallTableView(private val model: CallTableModel) : JBTable(model) {
         rowSorter.toggleSortOrder(WALL_TIME)
     }
 
-    fun setCallTrees(newTrees: List<CallTree>?) {
+    fun setTracepointStats(newStats: List<TracepointStats>?) {
         // Changing table data clears the current row selection, so we have to restore it manually.
         val selection = selectionModel.leadSelectionIndex
-        model.setCallTrees(newTrees)
+        model.setTracepointStats(newStats)
         if (selection != -1 && selection < model.rowCount) {
             selectionModel.setSelectionInterval(selection, selection)
         }

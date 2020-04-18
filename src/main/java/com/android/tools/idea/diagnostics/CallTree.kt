@@ -6,19 +6,6 @@ interface CallTree {
     val callCount: Long
     val wallTime: Long
     val children: Map<Tracepoint, CallTree>
-
-    val selfWallTime: Long
-        get() = wallTime - children.values.sumByLong(CallTree::wallTime)
-
-    /** Returns an immutable deep copy of this tree. */
-    fun snapshot(): CallTree {
-        return ImmutableCallTree(
-            tracepoint = tracepoint,
-            callCount = callCount,
-            wallTime = wallTime,
-            children = children.mapValues { (_, child) -> child.snapshot() }
-        )
-    }
 }
 
 /** An immutable call tree implementation. */
@@ -59,55 +46,41 @@ class MutableCallTree(
     }
 }
 
+/** Encapsulates aggregate statistic for a single tracepoint. */
+class TracepointStats(
+    val tracepoint: Tracepoint,
+    var callCount: Long = 0,
+    var wallTime: Long = 0
+)
+
 object TreeAlgorithms {
     /**
-     * Returns all nodes in the tree, *except* those sharing a tracepoint with an ancestor.
-     * Use this to avoid double-counting the time spent in recursive method calls.
+     * Computes aggregate statistics for each tracepoint,
+     * being careful not to double-count the time spent in recursive calls.
      */
-    fun allNonRecursiveNodes(root: CallTree): Sequence<CallTree> {
-        val seen = HashSet<Tracepoint>()
-        return sequence { yieldNonRecursiveNodes(root, seen) }
-    }
+    fun computeFlatTracepointStats(root: CallTree): List<TracepointStats> {
+        val allStats = mutableMapOf<Tracepoint, TracepointStats>()
+        val ancestors = mutableSetOf<Tracepoint>()
 
-    private suspend fun SequenceScope<CallTree>.yieldNonRecursiveNodes(root: CallTree, seen: MutableSet<Tracepoint>) {
-        val nonRecursive = !seen.contains(root.tracepoint)
-        if (nonRecursive) {
-            yield(root)
-            seen.add(root.tracepoint)
-        }
-        for (child in root.children.values) {
-            yieldNonRecursiveNodes(child, seen)
-        }
-        if (nonRecursive) {
-            seen.remove(root.tracepoint)
-        }
-    }
-
-    /**
-     * Merge several call trees into one.
-     * The roots must all have the same tracepoint.
-     */
-    fun mergeNodes(nodes: Collection<CallTree>): CallTree {
-        require(nodes.isNotEmpty())
-
-        if (nodes.size == 1) {
-            return nodes.single()
+        fun bfs(node: CallTree) {
+            val nonRecursive = node.tracepoint !in ancestors
+            val stats = allStats.getOrPut(node.tracepoint) { TracepointStats(node.tracepoint) }
+            stats.callCount += node.callCount
+            if (nonRecursive) {
+                stats.wallTime += node.wallTime
+                ancestors.add(node.tracepoint)
+            }
+            for (child in node.children.values) {
+                bfs(child)
+            }
+            if (nonRecursive) {
+                ancestors.remove(node.tracepoint)
+            }
         }
 
-        val tracepoint = nodes.first().tracepoint
-        val allHaveSameTracepoint = nodes.all { it.tracepoint == tracepoint }
-        require(allHaveSameTracepoint)
+        bfs(root)
+        assert(ancestors.isEmpty())
 
-        val mergedChildren = nodes.asSequence()
-            .flatMap { it.children.values.asSequence() }
-            .groupBy { it.tracepoint }
-            .mapValues { (_, childrenToMerge) -> mergeNodes(childrenToMerge) }
-
-        return ImmutableCallTree(
-            tracepoint = tracepoint,
-            callCount = nodes.sumByLong(CallTree::callCount),
-            wallTime = nodes.sumByLong(CallTree::wallTime),
-            children = mergedChildren
-        )
+        return allStats.values.toList()
     }
 }
