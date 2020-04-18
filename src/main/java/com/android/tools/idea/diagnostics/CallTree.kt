@@ -8,14 +8,6 @@ interface CallTree {
     val children: Map<Tracepoint, CallTree>
 }
 
-/** An immutable call tree implementation. */
-class ImmutableCallTree(
-    override val tracepoint: Tracepoint,
-    override val callCount: Long,
-    override val wallTime: Long,
-    override val children: Map<Tracepoint, CallTree>
-) : CallTree
-
 /** A mutable call tree implementation. */
 class MutableCallTree(
     override val tracepoint: Tracepoint
