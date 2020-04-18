@@ -73,4 +73,103 @@ class CallTreeTest {
 
         assertEquals(expected, allStats)
     }
+
+    @Test
+    fun testCallTreeBuilder() {
+        class TestClock : CallTreeBuilder.Clock {
+            var time = 0L
+            override fun sample(): Long = time
+        }
+
+        val clock = TestClock()
+        val builder = CallTreeBuilder(clock)
+
+        val simple1 = Tracepoint("simple1")
+        val simple2 = Tracepoint("simple2")
+        val simple3 = Tracepoint("simple3")
+
+        val selfRecursion = Tracepoint("selfRecursion")
+
+        val mutualRecursion1 = Tracepoint("mutualRecursion1")
+        val mutualRecursion2 = Tracepoint("mutualRecursion2")
+
+        // Simple.
+        builder.push(simple1)
+        builder.push(simple2)
+        builder.push(simple3); clock.time++
+        builder.pop(simple3)
+        builder.pop(simple2); clock.time++
+        builder.pop(simple1)
+
+        // Self recursion.
+        builder.push(selfRecursion); clock.time++
+        builder.push(selfRecursion); clock.time++
+        builder.push(selfRecursion); clock.time++
+        builder.pop(selfRecursion); clock.time++
+        builder.pop(selfRecursion); clock.time++
+        builder.pop(selfRecursion)
+
+        // Mutual recursion.
+        builder.push(mutualRecursion1); clock.time++
+        builder.push(mutualRecursion2); clock.time++
+        builder.push(mutualRecursion1); clock.time++
+        builder.push(mutualRecursion2); clock.time++
+        builder.pop(mutualRecursion2)
+        builder.pop(mutualRecursion1)
+        builder.pop(mutualRecursion2);
+        builder.pop(mutualRecursion1)
+
+        fun StringBuilder.printTree(node: CallTree, indent: String) {
+            with(node) {
+                appendln("$indent$tracepoint: $callCount calls, $wallTime ns")
+            }
+            for (child in node.children.values) {
+                printTree(child, "$indent  ")
+            }
+        }
+
+        fun buildAndCheckTree(expected: String) {
+            val tree = builder.buildAndReset()
+            val treeStr = buildString { printTree(tree, "") }
+            assertEquals(expected, treeStr.trim())
+        }
+
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 11 ns
+              simple1: 1 calls, 2 ns
+                simple2: 1 calls, 1 ns
+                  simple3: 1 calls, 1 ns
+              selfRecursion: 1 calls, 5 ns
+                selfRecursion: 1 calls, 3 ns
+                  selfRecursion: 1 calls, 1 ns
+              mutualRecursion1: 1 calls, 4 ns
+                mutualRecursion2: 1 calls, 3 ns
+                  mutualRecursion1: 1 calls, 2 ns
+                    mutualRecursion2: 1 calls, 1 ns
+            """.trimIndent()
+        )
+
+        builder.push(simple1); clock.time++
+        builder.push(simple2); clock.time++
+        builder.push(simple3); clock.time++
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 3 ns
+              simple1: 1 calls, 3 ns
+                simple2: 1 calls, 2 ns
+                  simple3: 1 calls, 1 ns
+            """.trimIndent()
+        )
+
+        clock.time += 10
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 10 ns
+              simple1: 0 calls, 10 ns
+                simple2: 0 calls, 10 ns
+                  simple3: 0 calls, 10 ns
+            """.trimIndent()
+        )
+    }
 }

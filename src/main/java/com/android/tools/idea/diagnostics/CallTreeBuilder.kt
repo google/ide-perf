@@ -1,5 +1,7 @@
 package com.android.tools.idea.diagnostics
 
+import com.intellij.openapi.util.Clock
+
 // Things to improve:
 // - Think about the behavior we want for recursive calls.
 // - Keep track of CPU time too by using ManagementFactory.getThreadMXBean().
@@ -11,12 +13,22 @@ package com.android.tools.idea.diagnostics
 // - Reduce allocations by keeping old tree nodes around after buildAndReset() and using a 'dirty' flag.
 
 /** Builds a call tree for a single thread from a sequence of push() and pop() calls. */
-class CallTreeBuilder {
+class CallTreeBuilder(
+    private val clock: Clock = SystemClock
+) {
     private var root = Tree(Tracepoint.ROOT, parent = null)
     private var currentNode = root
 
     init {
-        root.startWallTime = System.nanoTime()
+        root.startWallTime = clock.sample()
+    }
+
+    interface Clock {
+        fun sample(): Long
+    }
+
+    object SystemClock : Clock {
+        override fun sample(): Long = System.nanoTime()
     }
 
     private class Tree(
@@ -41,7 +53,7 @@ class CallTreeBuilder {
         val child = parent.children.getOrPut(tracepoint) { Tree(tracepoint, parent) }
 
         child.callCount++
-        child.startWallTime = System.nanoTime()
+        child.startWallTime = clock.sample()
         currentNode = child
     }
 
@@ -62,13 +74,13 @@ class CallTreeBuilder {
             """.trimIndent()
         }
 
-        child.wallTime += System.nanoTime() - child.startWallTime
+        child.wallTime += clock.sample() - child.startWallTime
         currentNode = parent
     }
 
     fun buildAndReset(): CallTree {
         // Update timing data for nodes still on the stack.
-        val now = System.nanoTime()
+        val now = clock.sample()
         val stack = generateSequence(currentNode, Tree::parent).toList().asReversed()
         for (node in stack) {
             node.wallTime += now - node.startWallTime
