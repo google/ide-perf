@@ -37,7 +37,7 @@ class TracerController(
     }
 
     init {
-        CallTreeManager.swapBuffers() // Clear any call trees that have accumulated since the tracer was last closed.
+        CallTreeManager.collectAndReset() // Clear any call trees that have accumulated while the tracer was closed.
         executor.scheduleWithFixedDelay(this::dataRefreshLoop, 0, SAMPLING_PERIOD_MS, TimeUnit.MILLISECONDS)
         parentDisposable.attachChild(this)
     }
@@ -47,7 +47,7 @@ class TracerController(
     }
 
     private fun dataRefreshLoop() {
-        val treeDeltas = CallTreeManager.swapBuffers()
+        val treeDeltas = CallTreeManager.collectAndReset()
         if (treeDeltas.isNotEmpty() && !paused) {
             treeDeltas.forEach(callTree::accumulate)
             updateUi()

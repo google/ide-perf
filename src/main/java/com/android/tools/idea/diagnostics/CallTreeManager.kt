@@ -37,7 +37,7 @@ object CallTreeManager {
     }
 
     /** Collect and reset the call trees from all threads. */
-    fun swapBuffers(): List<CallTree> {
+    fun collectAndReset(): List<CallTree> {
         val allState = synchronized(allThreadState) { ArrayList(allThreadState) }
         val oldTrees = ArrayList<CallTree>(allState.size)
         for (state in allState) {
