@@ -17,7 +17,6 @@ import kotlin.reflect.jvm.javaMethod
 // - Make sure CPU overhead is minimal when the diagnostics window is not showing.
 // - Add some logging.
 // - Detect repeated instrumentation requests with the same spec.
-// - Add visual indicator for the 'paused' state.
 // - More principled command parsing.
 // - Add a proper progress indicator (subclass of ProgressIndicator) which displays text status.
 // - Consider moving callTree to CallTreeManager so that it persists after the Tracer window closes.
@@ -30,7 +29,6 @@ class TracerController(
     // Most data structures below are assumed to be accessed only from this executor.
     private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("Tracer", 1)
     private var callTree = MutableCallTree(Tracepoint.ROOT)
-    private var paused = false
     private var tasksInProgress = 0
     private val dataRefreshLoopStarted = AtomicBoolean()
 
@@ -55,7 +53,7 @@ class TracerController(
 
     private fun dataRefreshLoop() {
         val treeDeltas = CallTreeManager.collectAndReset()
-        if (treeDeltas.isNotEmpty() && !paused) {
+        if (treeDeltas.isNotEmpty()) {
             treeDeltas.forEach(callTree::accumulate)
             updateUi()
         }
@@ -78,13 +76,7 @@ class TracerController(
     }
 
     private fun handleCommand(cmd: String) {
-        if (cmd == "p" || cmd == "pause") {
-            paused = true
-        }
-        else if (cmd == "r" || cmd == "resume") {
-            paused = false
-        }
-        else if (cmd == "c" || cmd == "clear") {
+        if (cmd == "c" || cmd == "clear") {
             callTree.clear()
             updateUi()
         }
