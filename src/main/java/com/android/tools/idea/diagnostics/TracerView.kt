@@ -3,12 +3,12 @@ package com.android.tools.idea.diagnostics
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import java.awt.Dimension
-import java.lang.ref.WeakReference
 import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
@@ -17,16 +17,18 @@ import javax.swing.border.Border
 
 /** Invoked by the user via the "Trace" action. */
 class TracerAction : DumbAwareAction() {
-    private var currentTracer: WeakReference<TracerDialog>? = null
+    private var currentTracer: TracerDialog? = null
 
     override fun actionPerformed(e: AnActionEvent) {
-        val tracer = currentTracer?.get()
-        if (tracer != null && !tracer.isDisposed) {
+        val tracer = currentTracer
+        if (tracer != null) {
+            check(!tracer.isDisposed)
             tracer.toFront()
         } else {
             val newTracer = TracerDialog()
+            currentTracer = newTracer
+            newTracer.disposable.attach { currentTracer = null }
             newTracer.show()
-            currentTracer = WeakReference(newTracer)
         }
     }
 }
