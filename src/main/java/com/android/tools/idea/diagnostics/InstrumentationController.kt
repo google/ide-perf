@@ -5,6 +5,7 @@ import com.android.tools.idea.diagnostics.agent.MethodListener
 import com.android.tools.idea.diagnostics.agent.Trampoline
 import com.intellij.openapi.diagnostic.Logger
 import org.objectweb.asm.Type
+import java.lang.instrument.UnmodifiableClassException
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -99,14 +100,11 @@ object InstrumentationController {
         // Retransform loaded classes.
         val classes = instrumentation.allLoadedClasses.asSequence().filter { it.name == className }
         for (clazz in classes) {
-            if (!instrumentation.isModifiableClass(clazz)) {
-                LOG.warn("Cannot instrument non-modifiable class: ${clazz.name}")
-                continue
-            }
             try {
                 instrumentation.retransformClasses(clazz)
+            } catch (e: UnmodifiableClassException) {
+                LOG.warn("Cannot instrument non-modifiable class: ${clazz.name}")
             } catch (e: Throwable) {
-                // ClassFormatError, UnsupportedClassVersionError, LinkageError, etc.
                 LOG.error("Failed to retransform class: ${clazz.name}", e)
             }
         }
