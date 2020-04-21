@@ -8,6 +8,7 @@ object CallTreeManager {
 
     // Synchronized by monitor lock.
     private class ThreadState {
+        var busy = false // Whether this thread is currently inside enter() or leave().
         var callTreeBuilder: CallTreeBuilder = CallTreeBuilder()
     }
 
@@ -25,14 +26,33 @@ object CallTreeManager {
     fun enter(tracepoint: Tracepoint) {
         val state = threadState.get()
         synchronized(state) {
-            state.callTreeBuilder.push(tracepoint)
+            doPreventingRecursion(state) {
+                state.callTreeBuilder.push(tracepoint)
+            }
         }
     }
 
     fun leave(tracepoint: Tracepoint) {
         val state = threadState.get()
         synchronized(state) {
-            state.callTreeBuilder.pop(tracepoint)
+            doPreventingRecursion(state) {
+                state.callTreeBuilder.pop(tracepoint)
+            }
+        }
+    }
+
+    /**
+     * Runs [action] unless doing so would cause infinite recursion. This helps prevent a StackOverflowError
+     * in the case where the user has instrumented a callee of [enter] or [leave].
+     */
+    private inline fun doPreventingRecursion(state: ThreadState, action: () -> Unit) {
+        if (!state.busy) {
+            state.busy = true
+            try {
+                action()
+            } finally {
+                state.busy = false
+            }
         }
     }
 
