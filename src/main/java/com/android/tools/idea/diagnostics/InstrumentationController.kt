@@ -3,6 +3,7 @@ package com.android.tools.idea.diagnostics
 import com.android.tools.idea.diagnostics.agent.AgentMain
 import com.android.tools.idea.diagnostics.agent.MethodListener
 import com.android.tools.idea.diagnostics.agent.Trampoline
+import com.intellij.openapi.diagnostic.Logger
 import org.objectweb.asm.Type
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
@@ -14,7 +15,6 @@ import java.util.concurrent.ConcurrentMap
 // - Make sure we're handling inner classes correctly (and lambdas, etc.)
 // - Try to avoid querying 'instrumentation.allLoadedClasses' for every call to instrumentMethod().
 // - Add some logging.
-// - Catch some more exceptions thrown by Instrumentation.
 // - Support line-number-based tracepoints.
 // - What happens if a class is being loaded *during* the call to instrumentMethod()?
 // - Pretty-print method descriptors for better UX.
@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentMap
  * This is the only class that should interact with the agent directly.
  */
 object InstrumentationController {
+    private val LOG = Logger.getInstance(InstrumentationController::class.java)
     private val instrumentation = AgentMain.savedInstrumentationInstance
 
     // Used by instrumented bytecode as a map from method id to the corresponding Tracepoint instance.
@@ -42,7 +43,11 @@ object InstrumentationController {
 
     init {
         Trampoline.methodListener = MyMethodListener()
-        instrumentation.addTransformer(MethodTracingTransformer(MyMethodFilter()), true)
+        if (instrumentation.isRetransformClassesSupported) {
+            instrumentation.addTransformer(MethodTracingTransformer(MyMethodFilter()), true)
+        } else {
+            LOG.error("The current JVM configuration does not support class retransformation")
+        }
     }
 
     /** Dispatches method entry/exit events to the [CallTreeManager]. */
@@ -91,9 +96,20 @@ object InstrumentationController {
             classInfo.methodNames.add(methodName)
         }
 
-        instrumentation.allLoadedClasses.asSequence()
-            .filter { it.name == className }
-            .forEach { instrumentation.retransformClasses(it) }
+        // Retransform loaded classes.
+        val classes = instrumentation.allLoadedClasses.asSequence().filter { it.name == className }
+        for (clazz in classes) {
+            if (!instrumentation.isModifiableClass(clazz)) {
+                LOG.warn("Cannot instrument non-modifiable class: ${clazz.name}")
+                continue
+            }
+            try {
+                instrumentation.retransformClasses(clazz)
+            } catch (e: Throwable) {
+                // ClassFormatError, UnsupportedClassVersionError, LinkageError, etc.
+                LOG.error("Failed to retransform class: ${clazz.name}", e)
+            }
+        }
     }
 
     // This method can be slow! Call it in a background thread with a progress indicator.
