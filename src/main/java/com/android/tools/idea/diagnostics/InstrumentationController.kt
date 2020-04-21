@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentMap
 // - Support line-number-based tracepoints.
 // - What happens if a class is being loaded *during* the call to instrumentMethod()?
 // - Pretty-print method descriptors for better UX.
+// - Fail gracefully upon StackOverflowError caused by instrumenting code used by MyMethodListener.
 
 /**
  * Instruments Java methods with tracing hooks and delegates tracing events to [CallTreeManager].
@@ -44,6 +45,13 @@ object InstrumentationController {
 
     init {
         Trampoline.methodListener = MyMethodListener()
+
+        // Trigger classloading for CallTreeManager now so that it doesn't happen during tracing. This reduces
+        // the chance of accidentally instrumenting a callee of CallTreeManager (causing infinite recursion).
+        CallTreeManager.enter(Tracepoint.ROOT)
+        CallTreeManager.leave(Tracepoint.ROOT)
+        CallTreeManager.collectAndReset()
+
         if (instrumentation.isRetransformClassesSupported) {
             instrumentation.addTransformer(MethodTracingTransformer(MyMethodFilter()), true)
         } else {
