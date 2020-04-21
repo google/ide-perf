@@ -1,24 +1,25 @@
 package com.android.tools.idea.diagnostics
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attachChild
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.concurrency.AppExecutorUtil
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import kotlin.reflect.jvm.javaMethod
 
 // Things to improve:
 // - Audit overall overhead and memory usage.
 // - Make sure CPU overhead is minimal when the diagnostics window is not showing.
-// - Make sure UI updates finish before scheduling new ones.
 // - Add some logging.
 // - Detect repeated instrumentation requests with the same spec.
 // - Add visual indicator for the 'paused' state.
 // - More principled command parsing.
 // - Add a proper progress indicator (subclass of ProgressIndicator) which displays text status.
+// - Consider moving callTree to CallTreeManager so that it persists after the Tracer window closes.
 
 class TracerController(
     private val view: TracerView, // Access from EDT only.
@@ -32,13 +33,14 @@ class TracerController(
     private var tasksInProgress = 0
 
     companion object {
-        private const val SAMPLING_PERIOD_MS: Long = 30
         private val LOG = Logger.getInstance(TracerController::class.java)
+        private const val REFRESH_DELAY_MS: Long = 30
     }
 
     init {
         CallTreeManager.collectAndReset() // Clear any call trees that have accumulated while the tracer was closed.
-        executor.scheduleWithFixedDelay(this::dataRefreshLoop, 0, SAMPLING_PERIOD_MS, TimeUnit.MILLISECONDS)
+        // TODO: Do not schedule anything until this object (and the TracerView) is fully constructed.
+        executor.scheduleWithFixedDelay(this::dataRefreshLoop, 0, REFRESH_DELAY_MS, MILLISECONDS)
         parentDisposable.attachChild(this)
     }
 
@@ -58,7 +60,8 @@ class TracerController(
     private fun updateUi() {
         val allStats = TreeAlgorithms.computeFlatTracepointStats(callTree)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
-        invokeLater {
+        // We use invokeAndWait to ensure proper backpressure for the data refresh loop.
+        getApplication().invokeAndWait {
             view.listView.setTracepointStats(visibleStats)
         }
     }
