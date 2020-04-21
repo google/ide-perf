@@ -9,6 +9,7 @@ import com.intellij.openapi.rd.attachChild
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.concurrency.AppExecutorUtil
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.reflect.jvm.javaMethod
 
 // Things to improve:
@@ -26,11 +27,12 @@ class TracerController(
     parentDisposable: Disposable
 ): Disposable {
     // For simplicity we run all tasks on a single-thread executor.
-    // The data structures below are assumed to be accessed only from this executor.
+    // Most data structures below are assumed to be accessed only from this executor.
     private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("Tracer", 1)
     private var callTree = MutableCallTree(Tracepoint.ROOT)
     private var paused = false
     private var tasksInProgress = 0
+    private val dataRefreshLoopStarted = AtomicBoolean()
 
     companion object {
         private val LOG = Logger.getInstance(TracerController::class.java)
@@ -39,13 +41,16 @@ class TracerController(
 
     init {
         CallTreeManager.collectAndReset() // Clear any call trees that have accumulated while the tracer was closed.
-        // TODO: Do not schedule anything until this object (and the TracerView) is fully constructed.
-        executor.scheduleWithFixedDelay(this::dataRefreshLoop, 0, REFRESH_DELAY_MS, MILLISECONDS)
         parentDisposable.attachChild(this)
     }
 
     override fun dispose() {
         executor.shutdownNow()
+    }
+
+    fun startDataRefreshLoop() {
+        check(dataRefreshLoopStarted.compareAndSet(false, true))
+        executor.scheduleWithFixedDelay(this::dataRefreshLoop, 0, REFRESH_DELAY_MS, MILLISECONDS)
     }
 
     private fun dataRefreshLoop() {

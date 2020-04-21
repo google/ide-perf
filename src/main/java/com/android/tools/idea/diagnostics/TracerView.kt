@@ -74,5 +74,8 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
 
         // Call list.
         add(JBScrollPane(listView))
+
+        // Start trace data collection.
+        controller.startDataRefreshLoop()
     }
 }
