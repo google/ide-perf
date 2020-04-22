@@ -97,8 +97,6 @@ object InstrumentationController {
 
     // This method can throw a variety of exceptions.
     private fun tryLoadAgentAfterStartup() {
-        // TODO: Try to silence the ServiceConfigurationErrors printed to stderr from
-        //  AttachProvider.providers(). Maybe we need to run this code from a different class loader?
         val pluginId = PluginManager.getPluginByClassName(InstrumentationController::class.java.name)!!
         val plugin = PluginManagerCore.getPlugin(pluginId)!!
         val agentJar = File(plugin.path!!, "agent.jar")
