@@ -2,6 +2,7 @@ package com.android.tools.idea.diagnostics.agent;
 
 import java.lang.instrument.Instrumentation;
 
+// Note: this class is accessed reflectively by InstrumentationController.
 public class AgentMain {
     public static Instrumentation savedInstrumentationInstance;
 

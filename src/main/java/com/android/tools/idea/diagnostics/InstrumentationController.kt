@@ -3,15 +3,21 @@ package com.android.tools.idea.diagnostics
 import com.android.tools.idea.diagnostics.agent.AgentMain
 import com.android.tools.idea.diagnostics.agent.MethodListener
 import com.android.tools.idea.diagnostics.agent.Trampoline
+import com.intellij.execution.process.OSProcessUtil
+import com.intellij.ide.plugins.PluginManager
+import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.diagnostic.Logger
+import com.sun.tools.attach.VirtualMachine
 import org.objectweb.asm.Type
+import java.io.File
+import java.lang.instrument.Instrumentation
 import java.lang.instrument.UnmodifiableClassException
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
 // Things to improve:
-// - Fail gracefully if agent not available.
+// - Add visual indicator in UI if agent is not available.
 // - Allow removing instrumentation from a given method.
 // - Make sure we're handling inner classes correctly (and lambdas, etc.)
 // - Try to avoid querying 'instrumentation.allLoadedClasses' for every call to instrumentMethod().
@@ -20,6 +26,7 @@ import java.util.concurrent.ConcurrentMap
 // - What happens if a class is being loaded *during* the call to instrumentMethod()?
 // - Pretty-print method descriptors for better UX.
 // - Fail gracefully upon StackOverflowError caused by instrumenting code used by MyMethodListener.
+// - Consider extracting the agent loading code into another class.
 
 /**
  * Instruments Java methods with tracing hooks and delegates tracing events to [CallTreeManager].
@@ -27,35 +34,79 @@ import java.util.concurrent.ConcurrentMap
  */
 object InstrumentationController {
     private val LOG = Logger.getInstance(InstrumentationController::class.java)
-    private val instrumentation = AgentMain.savedInstrumentationInstance
+    private val instrumentation: Instrumentation?
 
     // Used by instrumented bytecode as a map from method id to the corresponding Tracepoint instance.
     private val tracepoints = ConcurrentAppendOnlyList<Tracepoint>()
-
-    /** Specifies which methods to instrument for a specific class. */
-    private class ClassInfo {
-        // The set of simple method names to instrument.
-        val methodNames: MutableSet<String> = ConcurrentHashMap<String, Unit>().keySet(Unit)
-        // A map from method signature to method id, for methods which should be instrumented.
-        val methodIds: ConcurrentMap<String, Int> = ConcurrentHashMap()
-    }
 
     // A map from JVM class names to the instrumentation settings for that class.
     private val classInfoMap = ConcurrentHashMap<String, ClassInfo>()
 
     init {
-        Trampoline.methodListener = MyMethodListener()
-
         // Trigger classloading for CallTreeManager now so that it doesn't happen during tracing. This reduces
         // the chance of accidentally instrumenting a callee of CallTreeManager (causing infinite recursion).
         CallTreeManager.enter(Tracepoint.ROOT)
         CallTreeManager.leave(Tracepoint.ROOT)
         CallTreeManager.collectAndReset()
 
-        if (instrumentation.isRetransformClassesSupported) {
-            instrumentation.addTransformer(MethodTracingTransformer(MyMethodFilter()), true)
+        val agentLoadedAtStartup = try {
+            // Note: until the agent is loaded, we have to be careful not to trigger symbol resolution
+            // for its classes; otherwise NoClassDefFoundError is imminent. So we use reflection.
+            Class.forName("com.android.tools.idea.diagnostics.agent.AgentMain", false, null)
+            true
+        } catch (e: ClassNotFoundException) {
+            false
+        }
+
+        var instrumentation: Instrumentation?
+        if (agentLoadedAtStartup) {
+            instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
+            LOG.info("Agent was loaded at startup")
         } else {
+            try {
+                tryLoadAgentAfterStartup()
+                instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
+                LOG.info("Agent was loaded on demand")
+            } catch (e: Throwable) {
+                LOG.error(
+                    """
+                    Failed to attach the agent after startup.
+                    On JDK 9+, make sure jdk.attach.allowAttachSelf is set to true.
+                    Alternatively, you can attach the agent at startup via the -javaagent flag.
+                    """.trimIndent(), e
+                )
+                instrumentation = null
+            }
+        }
+
+        // Disable tracing entirely if class retransformation is not supported.
+        if (instrumentation != null && !instrumentation.isRetransformClassesSupported) {
             LOG.error("The current JVM configuration does not support class retransformation")
+            instrumentation = null
+        }
+
+        // Install our tracing hooks and transformers.
+        if (instrumentation != null) {
+            Trampoline.methodListener = MyMethodListener()
+            val transformer = MethodTracingTransformer(MyMethodFilter())
+            instrumentation.addTransformer(transformer, true)
+        }
+
+        this.instrumentation = instrumentation
+    }
+
+    // This method can throw a variety of exceptions.
+    private fun tryLoadAgentAfterStartup() {
+        // TODO: Try to silence the ServiceConfigurationErrors printed to stderr from
+        //  AttachProvider.providers(). Maybe we need to run this code from a different class loader?
+        val pluginId = PluginManager.getPluginByClassName(InstrumentationController::class.java.name)!!
+        val plugin = PluginManagerCore.getPlugin(pluginId)!!
+        val agentJar = File(plugin.path!!, "agent.jar")
+        val vm = VirtualMachine.attach(OSProcessUtil.getApplicationPid())
+        try {
+            vm.loadAgent(agentJar.absolutePath)
+        } finally {
+            vm.detach()
         }
     }
 
@@ -92,8 +143,18 @@ object InstrumentationController {
         }
     }
 
+    /** Specifies which methods to instrument for a specific class. */
+    private class ClassInfo {
+        // The set of simple method names to instrument.
+        val methodNames: MutableSet<String> = ConcurrentHashMap<String, Unit>().keySet(Unit)
+        // A map from method signature to method id, for methods which should be instrumented.
+        val methodIds: ConcurrentMap<String, Int> = ConcurrentHashMap()
+    }
+
     // This method can be slow! Call it in a background thread with a progress indicator.
     fun instrumentMethod(className: String, methodName: String, methodDesc: String? = null) {
+        if (instrumentation == null) return
+
         val classJvmName = className.replace('.', '/')
         val classInfo = classInfoMap.getOrPut(classJvmName) { ClassInfo() }
 
