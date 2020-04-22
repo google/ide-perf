@@ -2,13 +2,13 @@ package com.android.tools.idea.diagnostics
 
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
-import sun.swing.table.DefaultTableCellHeaderRenderer
 import java.awt.Font
 import javax.swing.ListSelectionModel
 import javax.swing.SortOrder
 import javax.swing.SwingConstants
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
+import javax.swing.table.JTableHeader
 import javax.swing.table.TableRowSorter
 
 // Things to improve:
@@ -80,11 +80,6 @@ class CallTableView(private val model: CallTableModel) : JBTable(model) {
                 else -> tableColumn.preferredWidth
             }
 
-            // Column headers.
-            tableColumn.headerRenderer = DefaultTableCellHeaderRenderer().apply {
-                horizontalAlignment = SwingConstants.CENTER
-            }
-
             // Locale-aware and unit-aware rendering for numbers.
             when (col) {
                 CALLS, WALL_TIME -> {
@@ -121,6 +116,16 @@ class CallTableView(private val model: CallTableModel) : JBTable(model) {
             }
         }
         rowSorter.toggleSortOrder(WALL_TIME)
+    }
+
+    override fun createDefaultTableHeader(): JTableHeader {
+        return object : JBTableHeader() {
+            init {
+                // Override the renderer that JBTableHeader sets.
+                // The default, center-aligned renderer looks better.
+                defaultRenderer = createDefaultRenderer()
+            }
+        }
     }
 
     fun setTracepointStats(newStats: List<TracepointStats>?) {
