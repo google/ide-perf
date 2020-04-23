@@ -8,8 +8,13 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attachChild
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.concurrency.AppExecutorUtil
+import com.intellij.util.ui.UIUtil
+import java.awt.image.BufferedImage
+import java.io.File
+import java.io.IOException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.imageio.ImageIO
 import kotlin.reflect.jvm.javaMethod
 
 // Things to improve:
@@ -72,7 +77,13 @@ class TracerController(
     fun handleRawCommandFromEdt(rawCmd: String) {
         if (rawCmd.isBlank()) return
         val cmd = rawCmd.trim()
-        executor.execute { handleCommand(cmd) }
+        if (cmd.startsWith("save")) {
+            // Special case: handle this command while we're still on the EDT.
+            val path = cmd.substringAfter("save").trim()
+            savePngFromEdt(path)
+        } else {
+            executor.execute { handleCommand(cmd) }
+        }
     }
 
     private fun handleCommand(cmd: String) {
@@ -112,6 +123,30 @@ class TracerController(
         }
         else {
             LOG.warn("Unknown command: $cmd")
+        }
+    }
+
+    /** Saves a png of the current view. */
+    private fun savePngFromEdt(path: String) {
+        if (!path.endsWith(".png")) {
+            LOG.warn("Destination file must be a .png file; instead got $path")
+            return
+        }
+        val file = File(path)
+        if (!file.isAbsolute) {
+            LOG.warn("Destination file must be specified with an absolute path; instead got $path")
+            return
+        }
+        val img = UIUtil.createImage(view, view.width, view.height, BufferedImage.TYPE_INT_RGB)
+        view.paintAll(img.createGraphics())
+        executor.execute {
+            runWithProgressBar {
+                try {
+                    ImageIO.write(img, "png", file)
+                } catch (e: IOException) {
+                    LOG.warn("Failed to write png to $path", e)
+                }
+            }
         }
     }
 
