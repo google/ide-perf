@@ -70,6 +70,7 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
     val listView = CallTableView(CallTableModel())
 
     init {
+        preferredSize = Dimension(500, 500) // Only applies to first open.
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
