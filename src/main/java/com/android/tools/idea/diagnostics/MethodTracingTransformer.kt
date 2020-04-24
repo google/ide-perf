@@ -18,11 +18,15 @@ package com.android.tools.idea.diagnostics
 
 import com.android.tools.idea.diagnostics.agent.Trampoline
 import com.intellij.openapi.diagnostic.Logger
-import org.objectweb.asm.*
+import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassReader.SKIP_FRAMES
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
-import org.objectweb.asm.Opcodes.ASM5
+import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes.ASM8
+import org.objectweb.asm.Type
 import org.objectweb.asm.commons.AdviceAdapter
 import org.objectweb.asm.commons.Method
 import java.lang.instrument.ClassFileTransformer
@@ -40,9 +44,9 @@ class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFi
         private val LOG = Logger.getInstance(MethodTracingTransformer::class.java)
         private const val ASM_API = ASM8
 
-        private val TRAMPOLINE_CLASS_NAME: String = Type.getType(Trampoline::class.java).internalName
-        private val TRAMPOLINE_ENTER_METHOD: Method = Method.getMethod(Trampoline::enter.javaMethod)
-        private val TRAMPOLINE_LEAVE_METHOD: Method = Method.getMethod(Trampoline::leave.javaMethod)
+        private val TRAMPOLINE_CLASS_NAME = Type.getType(Trampoline::class.java).internalName
+        private val TRAMPOLINE_ENTER_METHOD = Method.getMethod(Trampoline::enter.javaMethod)
+        private val TRAMPOLINE_LEAVE_METHOD = Method.getMethod(Trampoline::leave.javaMethod)
     }
 
     override fun transform(

@@ -52,22 +52,23 @@ object InstrumentationController {
     private val LOG = Logger.getInstance(InstrumentationController::class.java)
     private val instrumentation: Instrumentation?
 
-    // Used by instrumented bytecode as a map from method id to the corresponding Tracepoint instance.
+    // Used by the tracing hooks to retrieve the appropriate Tracepoint instance.
     private val tracepoints = ConcurrentAppendOnlyList<Tracepoint>()
 
     // A map from JVM class names to the instrumentation settings for that class.
     private val classInfoMap = ConcurrentHashMap<String, ClassInfo>()
 
     init {
-        // Trigger classloading for CallTreeManager now so that it doesn't happen during tracing. This reduces
-        // the chance of accidentally instrumenting a callee of CallTreeManager (causing infinite recursion).
+        // Trigger classloading for CallTreeManager now so that it doesn't happen during
+        // tracing. This reduces the chance of accidentally instrumenting a callee of
+        // CallTreeManager (causing infinite recursion).
         CallTreeManager.enter(Tracepoint.ROOT)
         CallTreeManager.leave(Tracepoint.ROOT)
         CallTreeManager.collectAndReset()
 
         val agentLoadedAtStartup = try {
-            // Note: until the agent is loaded, we have to be careful not to trigger symbol resolution
-            // for its classes; otherwise NoClassDefFoundError is imminent. So we use reflection.
+            // Note: until the agent is loaded, we cannot trigger symbol resolution for its
+            // classes---otherwise NoClassDefFoundError is imminent. So we use reflection.
             Class.forName("com.android.tools.idea.diagnostics.agent.AgentMain", false, null)
             true
         } catch (e: ClassNotFoundException) {
@@ -113,7 +114,8 @@ object InstrumentationController {
 
     // This method can throw a variety of exceptions.
     private fun tryLoadAgentAfterStartup() {
-        val pluginId = PluginManager.getPluginByClassName(InstrumentationController::class.java.name)!!
+        val pluginId =
+            PluginManager.getPluginByClassName(InstrumentationController::class.java.name)!!
         val plugin = PluginManagerCore.getPlugin(pluginId)!!
         val agentJar = File(plugin.path!!, "agent.jar")
         val vm = VirtualMachine.attach(OSProcessUtil.getApplicationPid())
@@ -137,12 +139,16 @@ object InstrumentationController {
             return classInfoMap.containsKey(classJvmName)
         }
 
-        override fun getMethodId(classJvmName: String, methodName: String, methodDesc: String): Int? {
+        override fun getMethodId(
+            classJvmName: String,
+            methodName: String,
+            methodDesc: String
+        ): Int? {
             val classInfo = classInfoMap[classJvmName] ?: return null
-            val methodSignature = "$methodName$methodDesc"
+            val sig = "$methodName$methodDesc"
 
             // Check for an existing method id.
-            val methodId = classInfo.methodIds[methodSignature]
+            val methodId = classInfo.methodIds[sig]
             if (methodId != null) {
                 return methodId
             }
@@ -150,7 +156,7 @@ object InstrumentationController {
             // Otherwise, create a new method id.
             if (classInfo.methodNames.contains(methodName)) {
                 val tracepoint = createTracepoint(classJvmName, methodName, methodDesc)
-                return classInfo.methodIds.computeIfAbsent(methodSignature) { tracepoints.append(tracepoint) }
+                return classInfo.methodIds.computeIfAbsent(sig) { tracepoints.append(tracepoint) }
             }
 
             return null
@@ -198,7 +204,11 @@ object InstrumentationController {
         instrumentMethod(method.declaringClass.name, method.name, Type.getMethodDescriptor(method))
     }
 
-    private fun createTracepoint(classJvmName: String, methodName: String, methodDesc: String): Tracepoint {
+    private fun createTracepoint(
+        classJvmName: String,
+        methodName: String,
+        methodDesc: String
+    ): Tracepoint {
         val classShortName = classJvmName.substringAfterLast('/')
         val className = classJvmName.replace('/', '.')
         return Tracepoint(

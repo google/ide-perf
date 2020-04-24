@@ -24,7 +24,7 @@ package com.android.tools.idea.diagnostics.agent;
  * So, we install a layer of indirection between these two worlds.
  */
 public class Trampoline {
-    public static MethodListener methodListener; // Set by the tracer before any methods are instrumented.
+    public static MethodListener methodListener; // Set by the tracer.
 
     // These methods are called from instrumented bytecode.
     public static void enter(int methodId) { methodListener.enter(methodId); }

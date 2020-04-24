@@ -58,8 +58,8 @@ object CallTreeManager {
     }
 
     /**
-     * Runs [action] unless doing so would cause infinite recursion. This helps prevent a StackOverflowError
-     * in the case where the user has instrumented a callee of [enter] or [leave].
+     * Runs [action] unless doing so would cause infinite recursion. This helps prevent a
+     * StackOverflowError when the user has instrumented a callee of [enter] or [leave].
      */
     private inline fun doPreventingRecursion(state: ThreadState, action: () -> Unit) {
         if (!state.busy) {

@@ -59,7 +59,7 @@ class TracerController(
     }
 
     init {
-        CallTreeManager.collectAndReset() // Clear any call trees that have accumulated while the tracer was closed.
+        CallTreeManager.collectAndReset() // Clear trees accumulated while the tracer was closed.
         parentDisposable.attachChild(this)
     }
 
@@ -113,10 +113,11 @@ class TracerController(
         }
         else if (cmd == "trace psi finders" || cmd == "psi finders") {
             runWithProgressBar {
-                val psiFinders = PsiElementFinder.EP.getExtensions(ProjectManager.getInstance().defaultProject)
-                val baseMethod = PsiElementFinder::findClass.javaMethod!!
+                val defaultProject = ProjectManager.getInstance().defaultProject
+                val psiFinders = PsiElementFinder.EP.getExtensions(defaultProject)
+                val base = PsiElementFinder::findClass.javaMethod!!
                 for (psiFinder in psiFinders) {
-                    val method = psiFinder.javaClass.getMethod(baseMethod.name, *baseMethod.parameterTypes)
+                    val method = psiFinder.javaClass.getMethod(base.name, *base.parameterTypes)
                     InstrumentationController.instrumentMethod(method)
                 }
             }

@@ -24,7 +24,7 @@ package com.android.tools.idea.diagnostics
 // - Return an object from push() so that we can have better assertions in pop().
 // - Consider logging errors instead of throwing exceptions.
 // - Consider subtracting buildAndReset() overhead from time measurements.
-// - Reduce allocations by keeping old tree nodes around after buildAndReset() and using a 'dirty' flag.
+// - Reduce allocations by keeping old tree nodes around and using a 'dirty' flag.
 
 /** Builds a call tree for a single thread from a sequence of push() and pop() calls. */
 class CallTreeBuilder(

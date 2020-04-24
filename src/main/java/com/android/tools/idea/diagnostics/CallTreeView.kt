@@ -122,7 +122,9 @@ class CallTableView(private val model: CallTableModel) : JBTable(model) {
         // Limit sorting directions.
         rowSorter = object : TableRowSorter<CallTableModel>(model) {
             override fun toggleSortOrder(col: Int) {
-                val alreadySorted = sortKeys.any { it.column == col && it.sortOrder != SortOrder.UNSORTED }
+                val alreadySorted = sortKeys.any {
+                    it.column == col && it.sortOrder != SortOrder.UNSORTED
+                }
                 if (alreadySorted) return
                 val order = when (col) {
                     TRACEPOINT -> SortOrder.ASCENDING
