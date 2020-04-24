@@ -1,4 +1,13 @@
 /.gradle/
-/.idea/
 /sandbox/
 build/
+
+# IntelliJ
+/.idea/.name
+/.idea/workspace.xml
+/.idea/dictionaries
+/.idea/gradle.xml
+/.idea/compiler.xml
+/.idea/jarRepositories.xml
+/.idea/uiDesigner.xml
+/.idea/*.iml
