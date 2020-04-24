@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="copyright-applicable" pattern="file:*/&amp;&amp;!file:gradlew&amp;&amp;!file:gradlew.bat&amp;&amp;!file:gradle//*" />
+</component>
