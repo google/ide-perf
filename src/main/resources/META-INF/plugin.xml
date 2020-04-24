@@ -16,7 +16,7 @@
 
 <idea-plugin>
     <id>com.android.tools.idea.diagnostic-plugin</id>
-    <name>IDEA diagnostics</name>
+    <name>IntelliJ diagnostics</name>
     <vendor>Google</vendor>
     <description>
         This is meant for developers working on the IDE itself to get

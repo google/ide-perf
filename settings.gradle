@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 
-rootProject.name = 'idea-diagnostic-plugin'
+rootProject.name = 'intellij-performance-diagnostics'
 include 'agent'

@@ -35,7 +35,7 @@ jar {
             "Premain-Class": "com.android.tools.idea.diagnostics.agent.AgentMain",
             "Agent-Class": "com.android.tools.idea.diagnostics.agent.AgentMain",
             "Can-Retransform-Classes": "true",
-            "Implementation-Title": "IDEA diagnostics agent",
+            "Implementation-Title": "Diagnostic agent for IntelliJ",
             "Boot-Class-Path": archiveFileName,
     )
 }
