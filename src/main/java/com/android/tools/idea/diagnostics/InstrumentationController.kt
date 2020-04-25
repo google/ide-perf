@@ -59,9 +59,9 @@ object InstrumentationController {
     private val classInfoMap = ConcurrentHashMap<String, ClassInfo>()
 
     init {
-        // Trigger classloading for CallTreeManager now so that it doesn't happen during
-        // tracing. This reduces the chance of accidentally instrumenting a callee of
-        // CallTreeManager (causing infinite recursion).
+        // Trigger class loading for CallTreeManager now so that it doesn't happen during
+        // tracing. This reduces the chance of invoking an instrumented method
+        // from a tracing hook (causing infinite recursion).
         CallTreeManager.enter(Tracepoint.ROOT)
         CallTreeManager.leave(Tracepoint.ROOT)
         CallTreeManager.collectAndReset()
