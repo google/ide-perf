@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap
 // - Add visual indicator in UI if agent is not available.
 // - Allow removing instrumentation from a given method.
 // - Make sure we're handling inner classes correctly (and lambdas, etc.)
-// - Try to avoid querying 'instrumentation.allLoadedClasses' for every call to instrumentMethod().
+// - Try to reduce the overhead of tracing methods by batching or parallelizing.
 // - Add some logging.
 // - Support line-number-based tracepoints.
 // - Corner case: classes may being loaded *during* instrumentMethod() / removeAllInstrumentation().
