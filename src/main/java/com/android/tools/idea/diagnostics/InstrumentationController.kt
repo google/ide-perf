@@ -22,6 +22,8 @@ import com.android.tools.idea.diagnostics.agent.Trampoline
 import com.intellij.execution.process.OSProcessUtil
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.ide.plugins.PluginManagerCore
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.diagnostic.Logger
 import com.sun.tools.attach.VirtualMachine
 import org.objectweb.asm.Type
@@ -86,20 +88,22 @@ object InstrumentationController {
                 instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
                 LOG.info("Agent was loaded on demand")
             } catch (e: Throwable) {
-                LOG.error(
-                    """
-                    Failed to attach the agent after startup.
+                val msg = """
+                    [Tracer] Failed to attach the instrumentation agent after startup.
                     On JDK 9+, make sure jdk.attach.allowAttachSelf is set to true.
                     Alternatively, you can attach the agent at startup via the -javaagent flag.
-                    """.trimIndent(), e
-                )
+                    """.trimIndent()
+                Notification("Tracer", "", msg, NotificationType.ERROR).notify(null)
+                LOG.warn(e)
                 instrumentation = null
             }
         }
 
         // Disable tracing entirely if class retransformation is not supported.
         if (instrumentation != null && !instrumentation.isRetransformClassesSupported) {
-            LOG.error("The current JVM configuration does not support class retransformation")
+            val msg = "[Tracer] The current JVM configuration does not allow class retransformation"
+            Notification("Tracer", "", msg, NotificationType.ERROR).notify(null)
+            LOG.warn(msg)
             instrumentation = null
         }
 
