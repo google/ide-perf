@@ -111,6 +111,13 @@ class TracerController(
             callTree = MutableCallTree(Tracepoint.ROOT)
             updateUi()
         }
+        else if (cmd == "remove all") {
+            runWithProgressBar {
+                InstrumentationController.removeAllInstrumentation()
+            }
+            callTree = MutableCallTree(Tracepoint.ROOT)
+            updateUi()
+        }
         else if (cmd == "trace psi finders" || cmd == "psi finders") {
             runWithProgressBar {
                 val defaultProject = ProjectManager.getInstance().defaultProject

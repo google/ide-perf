@@ -39,7 +39,8 @@ import java.util.concurrent.ConcurrentMap
 // - Try to avoid querying 'instrumentation.allLoadedClasses' for every call to instrumentMethod().
 // - Add some logging.
 // - Support line-number-based tracepoints.
-// - What happens if a class is being loaded *during* the call to instrumentMethod()?
+// - Corner case: classes may being loaded *during* instrumentMethod() / removeAllInstrumentation().
+// - Somehow gc or recycle Tracepoints that are no longer used.
 // - Pretty-print method descriptors for better UX.
 // - Fail gracefully upon StackOverflowError caused by instrumenting code used by MyMethodListener.
 // - Consider extracting the agent loading code into another class.
@@ -171,7 +172,7 @@ object InstrumentationController {
         val methodIds: ConcurrentMap<String, Int> = ConcurrentHashMap()
     }
 
-    // This method can be slow! Call it in a background thread with a progress indicator.
+    // This method can be slow.
     fun instrumentMethod(className: String, methodName: String, methodDesc: String? = null) {
         if (instrumentation == null) return
 
@@ -186,8 +187,28 @@ object InstrumentationController {
             classInfo.methodNames.add(methodName)
         }
 
-        // Retransform loaded classes.
-        val classes = instrumentation.allLoadedClasses.asSequence().filter { it.name == className }
+        val classes = instrumentation.allLoadedClasses.filter { it.name == className }
+        retransformClasses(classes)
+    }
+
+    // This method can be slow.
+    fun instrumentMethod(method: Method) {
+        instrumentMethod(method.declaringClass.name, method.name, Type.getMethodDescriptor(method))
+    }
+
+    // This method can be slow.
+    fun removeAllInstrumentation() {
+        if (instrumentation == null) return
+        val classNames = classInfoMap.keys.asSequence()
+            .map { classJvmName -> classJvmName.replace('/', '.') }
+            .toSet()
+        classInfoMap.clear()
+        val classes = instrumentation.allLoadedClasses.filter { it.name in classNames }
+        retransformClasses(classes)
+    }
+
+    private fun retransformClasses(classes: Iterable<Class<*>>) {
+        if (instrumentation == null) return
         for (clazz in classes) {
             try {
                 instrumentation.retransformClasses(clazz)
@@ -197,11 +218,6 @@ object InstrumentationController {
                 LOG.error("Failed to retransform class: ${clazz.name}", e)
             }
         }
-    }
-
-    // This method can be slow! Call it in a background thread with a progress indicator.
-    fun instrumentMethod(method: Method) {
-        instrumentMethod(method.declaringClass.name, method.name, Type.getMethodDescriptor(method))
     }
 
     private fun createTracepoint(
