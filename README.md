@@ -1,7 +1,7 @@
 Performance diagnostics for [IntelliJ Platform](https://www.jetbrains.com/opensource/idea/)
 ===
 This is a plugin for IntelliJ-based IDEs that gives real-time insight into the performance
-of the IDE itself. It is currently maintained by the Android Studio team at Google.
+of the IDE itself. It was created by the Android Studio team at Google.
 
 This project is under active development and should be considered experimental. This is not an
 officially supported Google product.
