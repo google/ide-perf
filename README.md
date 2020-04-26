@@ -1,10 +1,8 @@
 Performance diagnostics for [IntelliJ Platform](https://www.jetbrains.com/opensource/idea/)
 ===
 This is a plugin for IntelliJ-based IDEs that gives real-time insight into the performance
-of the IDE itself. It was created by the Android Studio team at Google.
-
-This project is under active development and should be considered experimental. This is not an
-officially supported Google product.
+of the IDE itself. The plugin is under active development and should be considered experimental.
+This is not an officially supported Google product.
 
 So far the plugin has the ability to trace methods on demand and get call counts and timing
 measurements in real time as the IDE is being used. Since the tracer is tightly integrated with
@@ -47,4 +45,4 @@ to load correctly, you will need to do at least **one** of the following:
 Contributing
 ---
 To make changes, open this project in IntelliJ and import it as a Gradle project. Please
-see [CONTRIBUTING.md](CONTRIBUTING.md) before uploading a pull request.
+see [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request.
