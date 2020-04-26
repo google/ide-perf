@@ -1,9 +1,10 @@
-A performance diagnostic plugin for the [IntelliJ Platform](https://www.jetbrains.com/opensource/idea/)
+Performance diagnostics for [IntelliJ Platform](https://www.jetbrains.com/opensource/idea/)
 ===
-This is a plugin for developers working on the IDE itself to get real-time insight into
-the performance of their code. It is developed by the Android Studio team at Google.
+This is a plugin for IntelliJ-based IDEs that gives real-time insight into the performance
+of the IDE itself. It is currently maintained by the Android Studio team at Google.
 
-This project is under active development and should be considered experimental.
+This project is under active development and should be considered experimental. This is not an
+officially supported Google product.
 
 So far the plugin has the ability to trace methods on demand and get call counts and timing
 measurements in real time as the IDE is being used. Since the tracer is tightly integrated with
@@ -28,7 +29,7 @@ trace psi finders
 ```
 The tracer view should show call counts and overhead measurements in real time as you use the IDE.
 
-Using in production
+Installing
 ---
 To use the plugin in a production IDE, run `./gradlew assemble` and look for a zip file
 in the `build/distributions` directory. You can install the plugin from that zip file via
