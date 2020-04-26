@@ -9,8 +9,9 @@ officially supported Google product.
 So far the plugin has the ability to trace methods on demand and get call counts and timing
 measurements in real time as the IDE is being used. Since the tracer is tightly integrated with
 IntelliJ, it can easily do things like "trace all extensions that implement the PsiElementFinder
-extension point." The overhead of the tracer is low, so high-traffic methods like `HashMap.get()`
-and `ProgressManager.checkCanceled()` can be traced without issue.
+extension point". Click [here](http://services.google.com/fh/files/misc/trace-psi-finders.png)
+to see what that looks like. The overhead of the tracer is low, so high-traffic methods like
+`HashMap.get()` and `ProgressManager.checkCanceled()` can be traced without issue.
 
 Getting started
 ---
