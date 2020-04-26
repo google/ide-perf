@@ -25,9 +25,11 @@ import com.intellij.openapi.rd.attachChild
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.ui.UIUtil
+import org.objectweb.asm.Type
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.IOException
+import java.lang.instrument.UnmodifiableClassException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.imageio.ImageIO
@@ -41,6 +43,12 @@ import kotlin.reflect.jvm.javaMethod
 // - More principled command parsing.
 // - Add a proper progress indicator (subclass of ProgressIndicator) which displays text status.
 // - Consider moving callTree to CallTreeManager so that it persists after the Tracer window closes.
+// - Add visual indicator in UI if agent is not available.
+// - Make sure we're handling inner classes correctly (and lambdas, etc.)
+// - Try to reduce the overhead of transforming classes by batching or parallelizing.
+// - Support line-number-based tracepoints.
+// - Corner case: classes may being loaded *during* a request to instrument a method.
+// - Show all instrumented methods in the method list view, even if there are no calls yet(?)
 
 class TracerController(
     private val view: TracerView, // Access from EDT only.
@@ -111,12 +119,13 @@ class TracerController(
             callTree = MutableCallTree(Tracepoint.ROOT)
             updateUi()
         }
-        else if (cmd == "remove all") {
+        else if (cmd == "remove tracing") {
             runWithProgressBar {
-                InstrumentationController.removeAllInstrumentation()
+                val classNames = TracerConfig.removeAllTracing()
+                retransformClasses(classNames.toSet())
+                callTree = MutableCallTree(Tracepoint.ROOT)
+                updateUi()
             }
-            callTree = MutableCallTree(Tracepoint.ROOT)
-            updateUi()
         }
         else if (cmd == "trace psi finders" || cmd == "psi finders") {
             runWithProgressBar {
@@ -125,8 +134,12 @@ class TracerController(
                 val base = PsiElementFinder::findClass.javaMethod!!
                 for (psiFinder in psiFinders) {
                     val method = psiFinder.javaClass.getMethod(base.name, *base.parameterTypes)
-                    InstrumentationController.instrumentMethod(method)
+                    val classJvmName = method.declaringClass.name.replace('.', '/')
+                    val methodDesc = Type.getMethodDescriptor(method)
+                    TracerConfig.traceMethod(classJvmName, method.name, methodDesc)
                 }
+                val classes = psiFinders.map { it.javaClass }
+                retransformClasses(classes)
             }
         }
         else if (cmd.startsWith("trace")) {
@@ -136,9 +149,11 @@ class TracerController(
                 LOG.warn("Invalid trace request format; expected com.example.Class#method")
                 return
             }
-            val (className, methodName) = split
             runWithProgressBar {
-                InstrumentationController.instrumentMethod(className, methodName)
+                val (className, methodName) = split
+                val classJvmName = className.replace('.', '/')
+                TracerConfig.traceMethods(classJvmName, methodName)
+                retransformClasses(setOf(className))
             }
         }
         else if (cmd.contains('#')) {
@@ -147,6 +162,28 @@ class TracerController(
         }
         else {
             LOG.warn("Unknown command: $cmd")
+        }
+    }
+
+    // This method can be slow.
+    private fun retransformClasses(classNames: Set<String>) {
+        val instrumentation = AgentLoader.instrumentation ?: return
+        val classes = instrumentation.allLoadedClasses.filter { classNames.contains(it.name) }
+        retransformClasses(classes)
+    }
+
+    // This method can be slow.
+    private fun retransformClasses(classes: Iterable<Class<*>>) {
+        val instrumentation = AgentLoader.instrumentation ?: return
+        // For now we retransform classes one by one, otherwise there is a long UI freeze.
+        for (clazz in classes) {
+            try {
+                instrumentation.retransformClasses(clazz)
+            } catch (e: UnmodifiableClassException) {
+                LOG.warn("Cannot instrument non-modifiable class: ${clazz.name}")
+            } catch (e: Throwable) {
+                LOG.error("Failed to retransform class: ${clazz.name}", e)
+            }
         }
     }
 

@@ -38,10 +38,10 @@ import kotlin.reflect.jvm.javaMethod
 // - Stress-test this transformer by running it on a lot of classes.
 
 /** Inserts calls (within JVM byte code) to the trampoline. */
-class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFileTransformer {
+class TracerMethodTransformer : ClassFileTransformer {
 
     companion object {
-        private val LOG = Logger.getInstance(MethodTracingTransformer::class.java)
+        private val LOG = Logger.getInstance(TracerMethodTransformer::class.java)
         private const val ASM_API = ASM8
 
         private val TRAMPOLINE_CLASS_NAME = Type.getType(Trampoline::class.java).internalName
@@ -57,7 +57,7 @@ class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFi
         classfileBuffer: ByteArray
     ): ByteArray? {
         return try {
-            if (!methodFilter.shouldInstrumentClass(className)) return null
+            if (!TracerConfig.shouldInstrumentClass(className)) return null
             tryTransform(className, classfileBuffer)
         } catch (e: Throwable) {
             LOG.error("Failed to instrument class $className", e)
@@ -82,7 +82,7 @@ class MethodTracingTransformer(private val methodFilter: MethodFilter) : ClassFi
                 exceptions: Array<out String>?
             ): MethodVisitor? {
                 val methodWriter = cv.visitMethod(access, method, desc, signature, exceptions)
-                val id = methodFilter.getMethodId(className, method, desc) ?: return methodWriter
+                val id = TracerConfig.getMethodId(className, method, desc) ?: return methodWriter
 
                 return object : AdviceAdapter(ASM_API, methodWriter, access, method, desc) {
                     val methodStart = Label()
