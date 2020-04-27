@@ -25,11 +25,11 @@ import com.intellij.openapi.rd.attachChild
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.ui.UIUtil
-import org.objectweb.asm.Type
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.IOException
 import java.lang.instrument.UnmodifiableClassException
+import java.lang.reflect.Method
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.imageio.ImageIO
@@ -131,15 +131,11 @@ class TracerController(
             runWithProgressBar {
                 val defaultProject = ProjectManager.getInstance().defaultProject
                 val psiFinders = PsiElementFinder.EP.getExtensions(defaultProject)
-                val base = PsiElementFinder::findClass.javaMethod!!
-                for (psiFinder in psiFinders) {
-                    val method = psiFinder.javaClass.getMethod(base.name, *base.parameterTypes)
-                    val classJvmName = method.declaringClass.name.replace('.', '/')
-                    val methodDesc = Type.getMethodDescriptor(method)
-                    TracerConfig.traceMethod(classJvmName, method.name, methodDesc)
+                val baseMethod = PsiElementFinder::findClass.javaMethod!!
+                val methods = psiFinders.map {
+                    it.javaClass.getMethod(baseMethod.name, *baseMethod.parameterTypes)
                 }
-                val classes = psiFinders.map { it.javaClass }
-                retransformClasses(classes)
+                traceAndRetransform(*methods.toTypedArray())
             }
         }
         else if (cmd.startsWith("trace")) {
@@ -163,6 +159,13 @@ class TracerController(
         else {
             LOG.warn("Unknown command: $cmd")
         }
+    }
+
+    // This method can be slow.
+    private fun traceAndRetransform(vararg methods: Method) {
+        methods.forEach(TracerConfig::traceMethod)
+        val classes = methods.map { it.declaringClass }
+        retransformClasses(classes)
     }
 
     // This method can be slow.

@@ -17,6 +17,8 @@
 package com.android.tools.idea.diagnostics
 
 import com.android.tools.idea.diagnostics.agent.MethodListener
+import org.objectweb.asm.Type
+import java.lang.reflect.Method
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -36,7 +38,6 @@ object TracerConfig {
         val methodIds = mutableMapOf<String, Int>() // Map from method signature to method id.
     }
 
-    /** Trace methods with the given name. */
     fun traceMethods(classJvmName: String, methodName: String) {
         lock.withLock {
             val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
@@ -44,8 +45,15 @@ object TracerConfig {
         }
     }
 
-    /** Trace a method by its full signature. */
-    fun traceMethod(classJvmName: String, methodName: String, methodDesc: String) {
+    fun traceMethod(method: Method) {
+        lock.withLock {
+            val classJvmName = method.declaringClass.name.replace('.', '/')
+            val methodDesc = Type.getMethodDescriptor(method)
+            traceMethod(classJvmName, method.name, methodDesc)
+        }
+    }
+
+    private fun traceMethod(classJvmName: String, methodName: String, methodDesc: String) {
         lock.withLock {
             val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
             val methodSignature = "$methodName$methodDesc"
