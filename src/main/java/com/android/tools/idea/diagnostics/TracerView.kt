@@ -31,6 +31,10 @@ import javax.swing.JComponent
 import javax.swing.JProgressBar
 import javax.swing.border.Border
 
+// Things to improve:
+// - Add UI indicator for fps or something similar.
+// - DialogWrapper wrapper is still tied to a specific project window.
+
 /** Invoked by the user via the "Trace" action. */
 class TracerAction : DumbAwareAction() {
     private var currentTracer: TracerDialog? = null
