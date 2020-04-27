@@ -127,6 +127,15 @@ class TracerController(
                 updateUi()
             }
         }
+        else if (cmd == "trace tracer") {
+            runWithProgressBar {
+                traceAndRetransform(
+                    TracerController::dataRefreshLoop.javaMethod!!,
+                    TracerController::updateUi.javaMethod!!,
+                    TracerController::handleCommand.javaMethod!!
+                )
+            }
+        }
         else if (cmd == "trace psi finders" || cmd == "psi finders") {
             runWithProgressBar {
                 val defaultProject = ProjectManager.getInstance().defaultProject
@@ -164,7 +173,7 @@ class TracerController(
     // This method can be slow.
     private fun traceAndRetransform(vararg methods: Method) {
         methods.forEach(TracerConfig::traceMethod)
-        val classes = methods.map { it.declaringClass }
+        val classes = methods.map { it.declaringClass }.toSet()
         retransformClasses(classes)
     }
 
