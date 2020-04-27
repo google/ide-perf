@@ -18,6 +18,7 @@ package com.android.tools.idea.diagnostics
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
+import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.ProjectManager
@@ -185,9 +186,9 @@ class TracerController(
     }
 
     // This method can be slow.
-    private fun retransformClasses(classes: Iterable<Class<*>>) {
+    private fun retransformClasses(classes: Collection<Class<*>>) {
         val instrumentation = AgentLoader.instrumentation ?: return
-        // For now we retransform classes one by one, otherwise there is a long UI freeze.
+        LOG.info("Retransforming ${classes.size} classes")
         for (clazz in classes) {
             try {
                 instrumentation.retransformClasses(clazz)
@@ -196,6 +197,9 @@ class TracerController(
             } catch (e: Throwable) {
                 LOG.error("Failed to retransform class: ${clazz.name}", e)
             }
+            // Retransforming classes tends to lock up all threads, so to keep
+            // the UI responsive it helps to flush the EDT queue in between.
+            invokeAndWaitIfNeeded {}
         }
     }
 
