@@ -89,7 +89,6 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
 
         // Progress bar.
         progressBar = JProgressBar().apply {
-            isIndeterminate = true
             isVisible = false
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
         }
