@@ -1,4 +1,4 @@
-![build status](https://github.com/google/ide-perf/workflows/build/badge.svg)
+[![build status](https://github.com/google/ide-perf/workflows/build/badge.svg)](https://github.com/google/ide-perf/actions?query=branch%3Amaster)
 
 Performance diagnostics for [IntelliJ Platform](https://www.jetbrains.com/opensource/idea/)
 ===
