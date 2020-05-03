@@ -37,8 +37,8 @@ private const val CALLS = 1
 private const val WALL_TIME = 2
 private const val COL_COUNT = 3
 
-/** Table model for a flat list of methods. */
-class CallTableModel : AbstractTableModel() {
+/** The table model for [TracepointTable]. */
+class TracepointTableModel : AbstractTableModel() {
     private var data: List<TracepointStats>? = null
 
     fun setTracepointStats(newStats: List<TracepointStats>?) {
@@ -76,7 +76,8 @@ class CallTableModel : AbstractTableModel() {
     override fun isCellEditable(row: Int, column: Int): Boolean = false
 }
 
-class CallTableView(private val model: CallTableModel) : JBTable(model) {
+/** Displays a list of tracepoints alongside their call counts and timing measurements. */
+class TracepointTable(private val model: TracepointTableModel) : JBTable(model) {
 
     init {
         font = JBUI.Fonts.create(Font.MONOSPACED, font.size)
@@ -120,7 +121,7 @@ class CallTableView(private val model: CallTableModel) : JBTable(model) {
         }
 
         // Limit sorting directions.
-        rowSorter = object : TableRowSorter<CallTableModel>(model) {
+        rowSorter = object : TableRowSorter<TracepointTableModel>(model) {
             override fun toggleSortOrder(col: Int) {
                 val alreadySorted = sortKeys.any {
                     it.column == col && it.sortOrder != SortOrder.UNSORTED

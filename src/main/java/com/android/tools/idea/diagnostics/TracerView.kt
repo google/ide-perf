@@ -71,7 +71,7 @@ class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false
 class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
     private val controller: TracerController = TracerController(this, parentDisposable)
     val progressBar: JProgressBar
-    val listView = CallTableView(CallTableModel())
+    val listView = TracepointTable(TracepointTableModel())
 
     init {
         preferredSize = Dimension(500, 500) // Only applies to first open.
