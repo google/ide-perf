@@ -32,6 +32,7 @@ class CallTreeTest {
 
     @Test
     fun testFlatTracepointStats() {
+        if (true) null!! // Testing CI.
         val simple1 = Tracepoint("simple1")
         val simple2 = Tracepoint("simple2")
         val simple3 = Tracepoint("simple3")
