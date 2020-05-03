@@ -18,7 +18,7 @@ plugins {
     id 'java'
 }
 
-group 'com.android.tools.studio'
+group 'com.google.idea.perf'
 version '1.0-SNAPSHOT'
 
 repositories {
@@ -32,10 +32,10 @@ jar {
     archiveFileName.set("agent.jar")
     manifest.attributes(
             "Manifest-Version": "1.0",
-            "Premain-Class": "com.android.tools.idea.diagnostics.agent.AgentMain",
-            "Agent-Class": "com.android.tools.idea.diagnostics.agent.AgentMain",
+            "Premain-Class": "com.google.idea.perf.agent.AgentMain",
+            "Agent-Class": "com.google.idea.perf.agent.AgentMain",
             "Can-Retransform-Classes": "true",
-            "Implementation-Title": "Diagnostic agent for IntelliJ",
+            "Implementation-Title": "com.google.idea.perf.agent",
             "Boot-Class-Path": archiveFileName,
     )
 }

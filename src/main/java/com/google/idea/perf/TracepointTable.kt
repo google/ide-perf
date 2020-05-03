@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.tools.idea.diagnostics
+package com.google.idea.perf
 
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI

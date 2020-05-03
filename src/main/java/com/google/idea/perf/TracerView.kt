@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.tools.idea.diagnostics
+package com.google.idea.perf
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -63,7 +63,7 @@ class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false
 
     override fun createCenterPanel(): JComponent = TracerView(disposable)
     override fun createContentPaneBorder(): Border? = null // No border.
-    override fun getDimensionServiceKey(): String = "com.android.tools.idea.diagnostics.Tracer"
+    override fun getDimensionServiceKey(): String = "com.google.idea.perf.Tracer"
     override fun createActions(): Array<Action> = emptyArray()
 }
 

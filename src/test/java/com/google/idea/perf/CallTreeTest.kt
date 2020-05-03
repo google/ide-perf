@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.tools.idea.diagnostics
+package com.google.idea.perf
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

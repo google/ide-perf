@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-package com.android.tools.idea.diagnostics
+package com.google.idea.perf
 
-/** Represents a method (usually) for which we are gathering call counts and timing information. */
-class Tracepoint(val displayName: String, val description: String? = null) {
+import java.text.NumberFormat
 
-    override fun toString(): String = displayName
-
-    companion object {
-        /** A special tracepoint representing the root of a call tree. */
-        val ROOT = Tracepoint("[root]")
+// A peculiar omission from the Kotlin standard library.
+inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
+    var sum = 0L
+    for (element in this) {
+        sum += selector(element)
     }
+    return sum
 }
+
+// Helper methods for locale-aware number rendering.
+private val formatter = NumberFormat.getInstance()
+fun formatNum(num: Long): String = formatter.format(num)
+fun formatNum(num: Long, unit: String): String = "${formatNum(num)} $unit"
+fun formatNsInMs(ns: Long): String = formatNum(ns / 1_000_000, "ms")

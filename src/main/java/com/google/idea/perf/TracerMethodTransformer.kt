@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.tools.idea.diagnostics
+package com.google.idea.perf
 
-import com.android.tools.idea.diagnostics.agent.Trampoline
+import com.google.idea.perf.agent.Trampoline
 import com.intellij.openapi.diagnostic.Logger
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassReader.SKIP_FRAMES

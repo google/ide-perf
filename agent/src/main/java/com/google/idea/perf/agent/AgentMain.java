@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.tools.idea.diagnostics.agent;
+package com.google.idea.perf.agent;
 
 import java.lang.instrument.Instrumentation;
 

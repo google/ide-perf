@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.tools.idea.diagnostics
+package com.google.idea.perf
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
@@ -42,7 +42,7 @@ import kotlin.reflect.jvm.javaMethod
 
 // Things to improve:
 // - Audit overall overhead and memory usage.
-// - Make sure CPU overhead is minimal when the diagnostics window is not showing.
+// - Make sure CPU overhead is minimal when the tracer window is not showing.
 // - Add some logging.
 // - Detect repeated instrumentation requests with the same spec.
 // - More principled command parsing.

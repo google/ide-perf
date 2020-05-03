@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.tools.idea.diagnostics
+package com.google.idea.perf
 
-import com.android.tools.idea.diagnostics.agent.AgentMain
-import com.android.tools.idea.diagnostics.agent.MethodListener
-import com.android.tools.idea.diagnostics.agent.Trampoline
+import com.google.idea.perf.agent.AgentMain
+import com.google.idea.perf.agent.MethodListener
+import com.google.idea.perf.agent.Trampoline
 import com.intellij.execution.process.OSProcessUtil
 import com.intellij.ide.plugins.PluginManager
 import com.intellij.ide.plugins.PluginManagerCore
@@ -42,7 +42,7 @@ object AgentLoader {
         val agentLoadedAtStartup = try {
             // Until the agent is loaded, we cannot trigger symbol resolution for its
             // classes---otherwise NoClassDefFoundError is imminent. So we use reflection.
-            Class.forName("com.android.tools.idea.diagnostics.agent.AgentMain", false, null)
+            Class.forName("com.google.idea.perf.agent.AgentMain", false, null)
             true
         } catch (e: ClassNotFoundException) {
             false

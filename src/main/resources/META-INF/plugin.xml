@@ -15,8 +15,8 @@
   -->
 
 <idea-plugin>
-    <id>com.android.tools.idea.diagnostic-plugin</id>
-    <name>IntelliJ diagnostics</name>
+    <id>com.google.ide-perf</id>
+    <name>IDE Perf</name>
     <vendor>Google</vendor>
     <description>
         This is meant for developers working on the IDE itself to get
@@ -30,8 +30,8 @@
 
     <actions>
         <action text="Tracer..."
-                id="com.android.tools.idea.diagnostics.Tracer"
-                class="com.android.tools.idea.diagnostics.TracerAction"
+                id="com.google.idea.perf.Tracer"
+                class="com.google.idea.perf.TracerAction"
                 description="Trace IDE code to get overhead measurements and call counts in real time">
             <add-to-group group-id="HelpDiagnosticTools" anchor="after"
                           relative-to-action="Performance.ActivityMonitor"/>
@@ -40,7 +40,7 @@
 
     <application-components>
         <component>
-            <implementation-class>com.android.tools.idea.diagnostics.HackForDisablingPluginUnloading</implementation-class>
+            <implementation-class>com.google.idea.perf.HackForDisablingPluginUnloading</implementation-class>
         </component>
     </application-components>
 </idea-plugin>

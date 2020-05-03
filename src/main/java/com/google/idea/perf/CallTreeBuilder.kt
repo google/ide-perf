@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.tools.idea.diagnostics
+package com.google.idea.perf
 
 // Things to improve:
 // - Think about the behavior we want for recursive calls.

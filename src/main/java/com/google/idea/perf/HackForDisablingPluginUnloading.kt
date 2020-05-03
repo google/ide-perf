@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.tools.idea.diagnostics
+package com.google.idea.perf
 
 /**
  * This plugin does not yet support dynamic unloading, mainly because it uses
