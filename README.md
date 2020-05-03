@@ -1,3 +1,5 @@
+![build status](https://github.com/google/ide-perf/workflows/build/badge.svg)
+
 Performance diagnostics for [IntelliJ Platform](https://www.jetbrains.com/opensource/idea/)
 ===
 This is a plugin for IntelliJ-based IDEs that gives real-time insight into the performance
