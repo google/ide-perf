@@ -1,0 +1,26 @@
+name: continuous-integration
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Git checkout
+      uses: actions/checkout@01aeccc # v2.1.0
+    - name: JDK setup
+      uses: actions/setup-java@b74d5a6 # v1.3.0
+      with:
+        java-version: 11.0.7
+    - name: Preload Gradle cache
+      uses: actions/cache@70655ec # v1.1.2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+        restore-keys: ${{ runner.os }}-gradle
+    - name: Build and test
+      run: ./gradlew build
