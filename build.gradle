@@ -51,9 +51,9 @@ patchPluginXml {
     sinceBuild = '19.3' // TODO: Test on earlier versions.
 }
 
-prepareSandbox {
+for (sandbox in [prepareSandbox, prepareTestingSandbox]) {
     // Copy the agent jar into our plugin home directory.
-    from(tasks.getByPath(':agent:jar')) {
+    sandbox.from(tasks.getByPath(':agent:jar')) {
         into "${intellij.pluginName}"
     }
 }
@@ -87,6 +87,11 @@ runIde {
         // Let the agent load itself later.
         systemProperty('jdk.attach.allowAttachSelf', true)
     }
+}
+
+test {
+    testLogging.exceptionFormat = 'full'
+    systemProperty('jdk.attach.allowAttachSelf', true)
 }
 
 dependencies {

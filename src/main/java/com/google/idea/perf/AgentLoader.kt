@@ -20,11 +20,11 @@ import com.google.idea.perf.agent.AgentMain
 import com.google.idea.perf.agent.MethodListener
 import com.google.idea.perf.agent.Trampoline
 import com.intellij.execution.process.OSProcessUtil
-import com.intellij.ide.plugins.PluginManager
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.extensions.PluginId
 import com.sun.tools.attach.VirtualMachine
 import java.io.File
 import java.lang.instrument.Instrumentation
@@ -86,9 +86,12 @@ object AgentLoader {
 
     // This method can throw a variety of exceptions.
     private fun tryLoadAgentAfterStartup() {
-        val pluginId = PluginManager.getPluginByClassName(AgentLoader::class.java.name)!!
-        val plugin = PluginManagerCore.getPlugin(pluginId)!!
-        val agentJar = File(plugin.path!!, "agent.jar")
+        val plugin = PluginManagerCore.getPlugin(PluginId.getId("com.google.ide-perf"))
+            ?: error("Failed to find our own plugin")
+
+        val agentJar = File(plugin.path, "agent.jar")
+        check(agentJar.isFile) { "Could not find agent.jar at ${agentJar.path}" }
+
         val vm = VirtualMachine.attach(OSProcessUtil.getApplicationPid())
         try {
             vm.loadAgent(agentJar.absolutePath)
