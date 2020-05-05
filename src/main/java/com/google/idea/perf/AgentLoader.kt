@@ -48,7 +48,7 @@ object AgentLoader {
             false
         }
 
-        var instrumentation: Instrumentation?
+        val instrumentation: Instrumentation
         if (agentLoadedAtStartup) {
             instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
             LOG.info("Agent was loaded at startup")
@@ -65,23 +65,21 @@ object AgentLoader {
                     """.trimIndent()
                 Notification("Tracer", "", msg, NotificationType.ERROR).notify(null)
                 LOG.warn(e)
-                instrumentation = null
+                return null
             }
         }
 
         // Disable tracing entirely if class retransformation is not supported.
-        if (instrumentation != null && !instrumentation.isRetransformClassesSupported) {
+        if (!instrumentation.isRetransformClassesSupported) {
             val msg = "[Tracer] The current JVM configuration does not allow class retransformation"
             Notification("Tracer", "", msg, NotificationType.ERROR).notify(null)
             LOG.warn(msg)
-            instrumentation = null
+            return null
         }
 
         // Install our tracing hooks and transformers.
-        if (instrumentation != null) {
-            Trampoline.methodListener = TracerMethodListener()
-            instrumentation.addTransformer(TracerMethodTransformer(), true)
-        }
+        Trampoline.methodListener = TracerMethodListener()
+        instrumentation.addTransformer(TracerMethodTransformer(), true)
 
         return instrumentation
     }
