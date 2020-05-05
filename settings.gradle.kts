@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 
-rootProject.name = 'ide-perf'
-include 'agent'
+rootProject.name = "ide-perf"
+include("agent")

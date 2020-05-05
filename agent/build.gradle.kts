@@ -15,27 +15,29 @@
  */
 
 plugins {
-    id 'java'
+    id("java")
 }
 
-group 'com.google.idea.perf'
-version '1.0-SNAPSHOT'
+group = "com.google.idea.perf"
+version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
-jar {
+tasks.jar {
     archiveFileName.set("agent.jar")
     manifest.attributes(
-            "Manifest-Version": "1.0",
-            "Premain-Class": "com.google.idea.perf.agent.AgentMain",
-            "Agent-Class": "com.google.idea.perf.agent.AgentMain",
-            "Can-Retransform-Classes": "true",
-            "Implementation-Title": "com.google.idea.perf.agent",
-            "Boot-Class-Path": archiveFileName,
+        "Manifest-Version" to "1.0",
+        "Premain-Class" to "com.google.idea.perf.agent.AgentMain",
+        "Agent-Class" to "com.google.idea.perf.agent.AgentMain",
+        "Can-Retransform-Classes" to "true",
+        "Implementation-Title" to "com.google.idea.perf.agent",
+        "Boot-Class-Path" to archiveFileName
     )
 }
