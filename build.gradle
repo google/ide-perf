@@ -73,12 +73,7 @@ runIde {
     jvmArgs "-Djdk.module.illegalAccess.silent=true"
     jvmArgs "-XX:+UseCompressedOops"
 
-    // We load the agent at startup by default.
-    // Loading the agent after startup does work, but there are annoying ServiceConfigurationErrors
-    // logged to stderr coming from VirtualMachine.attach()---apparently related to the fact that
-    // we're building with JDK 8 but running on JRE 11.
-    def loadAgentAtStartup = findProperty('loadAgentAtStartup') ?: "true"
-    if (loadAgentAtStartup == "true") {
+    if (findProperty('loadAgentAtStartup') == "true") {
         // Add the -javaagent startup flag.
         def agentJarName = tasks.getByPath(':agent:jar').outputs.files.singleFile.name
         def agentJarPath = "${intellij.sandboxDirectory}/plugins/${intellij.pluginName}/$agentJarName"
