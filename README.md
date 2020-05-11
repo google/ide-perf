@@ -30,6 +30,17 @@ trace psi finders
 ```
 The tracer view should show call counts and overhead measurements in real time as you use the IDE.
 
+Commands list
+---
+
+- **trace fully.qualified.ClassName#method** or **fully.qualified.ClassName#method** - to add tracer for `fully.qualified.ClassName#method`
+- build-in tracers:
+    - `trace psi finders` or `psi finders`
+    - `trace tracer` 
+- **c** or **clear** - to clear tracers statistics
+- **reset** - to reset (remove all) tracers
+- **remove tracing**
+
 Installing
 ---
 To use the plugin in a production IDE, run `./gradlew assemble` and look for a zip file
