@@ -116,7 +116,7 @@ class TracerController(
     }
 
     private fun handleCommand(cmd: String) {
-        if (cmd == "c" || cmd == "clear") {
+        if (cmd == "clear") {
             callTree.clear()
             updateUi()
         }
@@ -124,7 +124,7 @@ class TracerController(
             callTree = MutableCallTree(Tracepoint.ROOT)
             updateUi()
         }
-        else if (cmd == "remove tracing") {
+        else if (cmd == "untrace all") {
             val classNames = TracerConfig.removeAllTracing()
             retransformClasses(classNames.toSet())
             callTree = MutableCallTree(Tracepoint.ROOT)
@@ -137,7 +137,7 @@ class TracerController(
                 TracerController::handleCommand.javaMethod!!
             )
         }
-        else if (cmd == "trace psi finders" || cmd == "psi finders") {
+        else if (cmd == "trace psi finders") {
             val defaultProject = ProjectManager.getInstance().defaultProject
             val psiFinders = PsiElementFinder.EP.getExtensions(defaultProject)
             val baseMethod = PsiElementFinder::findClass.javaMethod!!

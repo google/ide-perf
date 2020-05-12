@@ -33,13 +33,14 @@ The tracer view should show call counts and overhead measurements in real time a
 Commands list
 ---
 
-- **trace fully.qualified.ClassName#method** or **fully.qualified.ClassName#method** - to add tracer for `fully.qualified.ClassName#method`
-- build-in tracers:
-    - `trace psi finders` or `psi finders`
-    - `trace tracer` 
-- **c** or **clear** - to clear tracers statistics
-- **reset** - to reset (remove all) tracers
-- **remove tracing**
+- `trace com.package.Class#method` - Trace the specified method.
+  - Tip: you can leave out the `trace` prefix, making it easy to directly copy and paste
+    tracing commands via the `Copy Reference` action in IntelliJ.
+- `trace psi finders` - Trace all overrides of `PsiElementFinder.findClass()`.
+- `trace tracer` - Trace important methods in the tracer itself.
+- `clear` - Zero out current statistics.
+- `reset` - Remove current statistics.
+- `untrace all` - Remove tracing from all methods.
 
 Installing
 ---
