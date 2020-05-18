@@ -21,6 +21,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
@@ -28,6 +29,7 @@ import java.awt.Dimension
 import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
+import javax.swing.JPanel
 import javax.swing.JProgressBar
 import javax.swing.border.Border
 
@@ -72,14 +74,17 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
     private val controller: TracerController = TracerController(this, parentDisposable)
     val progressBar: JProgressBar
     val listView = TracepointTable(TracepointTableModel())
+    val refreshTimeLabel: JBLabel
 
     init {
         preferredSize = Dimension(500, 500) // Only applies to first open.
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
+        val maximumChildSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+
         // Command line.
         val commandLine = JBTextField().apply {
-            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+            maximumSize = maximumChildSize
             addActionListener { e ->
                 text = ""
                 controller.handleRawCommandFromEdt(e.actionCommand)
@@ -90,12 +95,19 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
         // Progress bar.
         progressBar = JProgressBar().apply {
             isVisible = false
-            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+            maximumSize = maximumChildSize
         }
         add(progressBar)
 
         // Call list.
         add(JBScrollPane(listView))
+
+        // Render time label.
+        refreshTimeLabel = JBLabel()
+        add(JPanel().apply {
+            maximumSize = maximumChildSize
+            add(refreshTimeLabel)
+        })
 
         // Start trace data collection.
         controller.startDataRefreshLoop()

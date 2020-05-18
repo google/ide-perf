@@ -86,20 +86,35 @@ class TracerController(
     }
 
     private fun dataRefreshLoop() {
+        val startTime = System.nanoTime()
+        var shouldUpdateTreeUi = false
+
         val treeDeltas = CallTreeManager.collectAndReset()
         if (treeDeltas.isNotEmpty()) {
             treeDeltas.forEach(callTree::accumulate)
-            updateUi()
+            shouldUpdateTreeUi = true
         }
+
+        val endTime = System.nanoTime()
+        val elapsedNanos = endTime - startTime
+        updateUi(shouldUpdateTreeUi, elapsedNanos)
     }
 
     /** Refreshes the UI with the current state of [callTree]. */
-    private fun updateUi() {
+    private fun updateUi(shouldUpdateCallTree: Boolean = true, elapsedTime: Long? = null) {
         val allStats = TreeAlgorithms.computeFlatTracepointStats(callTree)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
+
         // We use invokeAndWait to ensure proper backpressure for the data refresh loop.
         getApplication().invokeAndWait {
-            view.listView.setTracepointStats(visibleStats)
+            if (shouldUpdateCallTree) {
+                view.listView.setTracepointStats(visibleStats)
+            }
+
+            if (elapsedTime != null) {
+                val timeText = formatNsInMsWithDecimal(elapsedTime)
+                view.refreshTimeLabel.text = "Refresh time: $timeText"
+            }
         }
     }
 
