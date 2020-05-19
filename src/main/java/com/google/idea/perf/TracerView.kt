@@ -25,7 +25,10 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
+import com.intellij.util.ui.JBFont
+import com.intellij.util.ui.UIUtil
 import java.awt.Dimension
+import java.awt.Font
 import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
@@ -80,11 +83,9 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
         preferredSize = Dimension(500, 500) // Only applies to first open.
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
-        val maximumChildSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-
         // Command line.
         val commandLine = JBTextField().apply {
-            maximumSize = maximumChildSize
+            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
             addActionListener { e ->
                 text = ""
                 controller.handleRawCommandFromEdt(e.actionCommand)
@@ -95,7 +96,7 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
         // Progress bar.
         progressBar = JProgressBar().apply {
             isVisible = false
-            maximumSize = maximumChildSize
+            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
         }
         add(progressBar)
 
@@ -103,9 +104,11 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
         add(JBScrollPane(listView))
 
         // Render time label.
-        refreshTimeLabel = JBLabel()
+        refreshTimeLabel = JBLabel().apply {
+            font = Font(Font.MONOSPACED, font.style, font.size)
+        }
         add(JPanel().apply {
-            maximumSize = maximumChildSize
+            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
             add(refreshTimeLabel)
         })
 

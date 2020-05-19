@@ -35,4 +35,4 @@ fun formatNum(num: Double): String = formatter.format(num)
 fun formatNum(num: Double, unit: String): String = "${formatNum(num)} $unit"
 
 fun formatNsInMs(ns: Long): String = formatNum(ns / 1_000_000, "ms")
-fun formatNsInMsWithDecimal(ns: Long): String = formatNum(ns / 1_000_000.0, "ms")
+fun formatNsInUs(ns: Long): String = formatNum(ns / 1_000, "μs")
