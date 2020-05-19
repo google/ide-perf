@@ -21,13 +21,17 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
+import com.intellij.util.ui.JBFont
+import com.intellij.util.ui.JBUI
 import java.awt.Dimension
 import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
+import javax.swing.JPanel
 import javax.swing.JProgressBar
 import javax.swing.border.Border
 
@@ -72,6 +76,7 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
     private val controller: TracerController = TracerController(this, parentDisposable)
     val progressBar: JProgressBar
     val listView = TracepointTable(TracepointTableModel())
+    val refreshTimeLabel: JBLabel
 
     init {
         preferredSize = Dimension(500, 500) // Only applies to first open.
@@ -96,6 +101,15 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
 
         // Call list.
         add(JBScrollPane(listView))
+
+        // Render time label.
+        refreshTimeLabel = JBLabel().apply {
+            font = JBUI.Fonts.create(JBFont.MONOSPACED, font.size)
+        }
+        add(JPanel().apply {
+            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+            add(refreshTimeLabel)
+        })
 
         // Start trace data collection.
         controller.startDataRefreshLoop()

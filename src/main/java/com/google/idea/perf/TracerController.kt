@@ -86,20 +86,35 @@ class TracerController(
     }
 
     private fun dataRefreshLoop() {
+        val startTime = System.nanoTime()
+
         val treeDeltas = CallTreeManager.collectAndReset()
         if (treeDeltas.isNotEmpty()) {
             treeDeltas.forEach(callTree::accumulate)
-            updateUi()
+            updateTracepointUi()
         }
+
+        val endTime = System.nanoTime()
+        val elapsedNanos = endTime - startTime
+        updateRefreshTimeUi(elapsedNanos)
     }
 
     /** Refreshes the UI with the current state of [callTree]. */
-    private fun updateUi() {
+    private fun updateTracepointUi() {
         val allStats = TreeAlgorithms.computeFlatTracepointStats(callTree)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
+
         // We use invokeAndWait to ensure proper backpressure for the data refresh loop.
         getApplication().invokeAndWait {
             view.listView.setTracepointStats(visibleStats)
+        }
+    }
+
+    /** Updates the refresh time label  a new value of [refreshTime]. */
+    private fun updateRefreshTimeUi(refreshTime: Long) {
+        getApplication().invokeAndWait {
+            val timeText = formatNsInUs(refreshTime)
+            view.refreshTimeLabel.text = "Refresh time: %9s".format(timeText)
         }
     }
 
@@ -118,22 +133,22 @@ class TracerController(
     private fun handleCommand(cmd: String) {
         if (cmd == "clear") {
             callTree.clear()
-            updateUi()
+            updateTracepointUi()
         }
         else if (cmd == "reset") {
             callTree = MutableCallTree(Tracepoint.ROOT)
-            updateUi()
+            updateTracepointUi()
         }
         else if (cmd == "untrace all") {
             val classNames = TracerConfig.removeAllTracing()
             retransformClasses(classNames.toSet())
             callTree = MutableCallTree(Tracepoint.ROOT)
-            updateUi()
+            updateTracepointUi()
         }
         else if (cmd == "trace tracer") {
             traceAndRetransform(
                 TracerController::dataRefreshLoop.javaMethod!!,
-                TracerController::updateUi.javaMethod!!,
+                TracerController::updateTracepointUi.javaMethod!!,
                 TracerController::handleCommand.javaMethod!!
             )
         }
