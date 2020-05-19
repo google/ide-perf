@@ -26,9 +26,8 @@ import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.JBFont
-import com.intellij.util.ui.UIUtil
+import com.intellij.util.ui.JBUI
 import java.awt.Dimension
-import java.awt.Font
 import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
@@ -105,7 +104,7 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
 
         // Render time label.
         refreshTimeLabel = JBLabel().apply {
-            font = Font(Font.MONOSPACED, font.style, font.size)
+            font = JBUI.Fonts.create(JBFont.MONOSPACED, font.size)
         }
         add(JPanel().apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
