@@ -34,7 +34,7 @@ class CallTreeBuilder(
     private var currentNode = root
 
     init {
-        root.startWallTime = clock.sample()
+        root.continuedWallTime = clock.sample()
     }
 
     interface Clock {
@@ -55,6 +55,7 @@ class CallTreeBuilder(
         override val children: MutableMap<Tracepoint, Tree> = LinkedHashMap()
 
         var startWallTime: Long = 0
+        var continuedWallTime: Long = 0
 
         init {
             require(parent != null || tracepoint == Tracepoint.ROOT) {
@@ -66,9 +67,11 @@ class CallTreeBuilder(
     fun push(tracepoint: Tracepoint) {
         val parent = currentNode
         val child = parent.children.getOrPut(tracepoint) { Tree(tracepoint, parent) }
+        val now = clock.sample()
 
         child.callCount++
-        child.startWallTime = clock.sample()
+        child.startWallTime = now
+        child.continuedWallTime = now
         currentNode = child
     }
 
@@ -89,9 +92,9 @@ class CallTreeBuilder(
             """.trimIndent()
         }
 
-        val elapsedTime = clock.sample() - child.startWallTime
-        child.wallTime += elapsedTime
-        child.maxCallTime = child.maxCallTime.coerceAtLeast(elapsedTime)
+        val now = clock.sample()
+        child.wallTime += now - child.continuedWallTime
+        child.maxCallTime = child.maxCallTime.coerceAtLeast(now - child.startWallTime)
 
         currentNode = parent
     }
@@ -101,20 +104,22 @@ class CallTreeBuilder(
         val now = clock.sample()
         val stack = generateSequence(currentNode, Tree::parent).toList().asReversed()
         for (node in stack) {
-            val elapsedTime = now - node.startWallTime
+            val elapsedTime = now - node.continuedWallTime
             node.wallTime += elapsedTime
-            node.maxCallTime = node.maxCallTime.coerceAtLeast(elapsedTime)
-            node.startWallTime = now
+            node.continuedWallTime = now
+            node.maxCallTime = node.maxCallTime.coerceAtLeast(now - node.startWallTime)
         }
 
         // Reset to a new tree and copy over the current stack.
         val oldRoot = root
         root = Tree(Tracepoint.ROOT, parent = null)
         root.startWallTime = oldRoot.startWallTime
+        root.continuedWallTime = oldRoot.continuedWallTime
         currentNode = root
         for (node in stack.subList(1, stack.size)) {
             val copy = Tree(node.tracepoint, parent = currentNode)
             copy.startWallTime = node.startWallTime
+            copy.continuedWallTime = node.continuedWallTime
             currentNode.children[node.tracepoint] = copy
             currentNode = copy
         }

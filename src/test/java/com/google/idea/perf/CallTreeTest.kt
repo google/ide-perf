@@ -187,7 +187,7 @@ class CallTreeTest {
         builder.push(simple3); clock.time++
         buildAndCheckTree(
             """
-            [root]: 0 calls, 3 ns, 3 ns
+            [root]: 0 calls, 3 ns, 18 ns
               simple1: 1 calls, 3 ns, 3 ns
                 simple2: 1 calls, 2 ns, 2 ns
                   simple3: 1 calls, 1 ns, 1 ns
@@ -197,10 +197,22 @@ class CallTreeTest {
         clock.time += 10
         buildAndCheckTree(
             """
-            [root]: 0 calls, 10 ns, 10 ns
-              simple1: 0 calls, 10 ns, 10 ns
-                simple2: 0 calls, 10 ns, 10 ns
-                  simple3: 0 calls, 10 ns, 10 ns
+            [root]: 0 calls, 10 ns, 28 ns
+              simple1: 0 calls, 10 ns, 13 ns
+                simple2: 0 calls, 10 ns, 12 ns
+                  simple3: 0 calls, 10 ns, 11 ns
+            """.trimIndent()
+        )
+
+        builder.pop(simple3); clock.time++
+        builder.pop(simple2); clock.time++
+        builder.pop(simple1)
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 2 ns, 30 ns
+              simple1: 0 calls, 2 ns, 15 ns
+                simple2: 0 calls, 1 ns, 13 ns
+                  simple3: 0 calls, 0 ns, 11 ns
             """.trimIndent()
         )
     }
