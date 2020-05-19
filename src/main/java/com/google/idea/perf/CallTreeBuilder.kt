@@ -53,7 +53,7 @@ class CallTreeBuilder(
     ) : CallTree {
         override var callCount: Long = 0
         override var wallTime: Long = 0
-        override var maxCallTime: Long = 0
+        override var maxWallTime: Long = 0
         override val children: MutableMap<Tracepoint, Tree> = LinkedHashMap()
 
         var startWallTime: Long = 0
@@ -96,7 +96,7 @@ class CallTreeBuilder(
 
         val now = clock.sample()
         child.wallTime += now - child.continuedWallTime
-        child.maxCallTime = child.maxCallTime.coerceAtLeast(now - child.startWallTime)
+        child.maxWallTime = child.maxWallTime.coerceAtLeast(now - child.startWallTime)
 
         currentNode = parent
     }
@@ -109,7 +109,7 @@ class CallTreeBuilder(
             val elapsedTime = now - node.continuedWallTime
             node.wallTime += elapsedTime
             node.continuedWallTime = now
-            node.maxCallTime = node.maxCallTime.coerceAtLeast(now - node.startWallTime)
+            node.maxWallTime = node.maxWallTime.coerceAtLeast(now - node.startWallTime)
         }
 
         // Reset to a new tree and copy over the current stack.

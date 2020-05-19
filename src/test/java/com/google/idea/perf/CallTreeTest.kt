@@ -25,7 +25,7 @@ class CallTreeTest {
         override val tracepoint: Tracepoint,
         override val callCount: Long,
         override val wallTime: Long,
-        override val maxCallTime: Long,
+        override val maxWallTime: Long,
         childrenList: List<Tree> = emptyList()
     ) : CallTree {
         override val children = childrenList.associateBy { it.tracepoint }
@@ -79,7 +79,7 @@ class CallTreeTest {
             .sortedBy { it.tracepoint.displayName }
             .joinToString(separator = "\n") { stats ->
                 with(stats) {
-                    "$tracepoint: $callCount calls, $wallTime ns, $maxCallTime ns"
+                    "$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns"
                 }
             }
 
@@ -153,7 +153,7 @@ class CallTreeTest {
 
         fun StringBuilder.printTree(node: CallTree, indent: String) {
             with(node) {
-                appendln("$indent$tracepoint: $callCount calls, $wallTime ns, $maxCallTime ns")
+                appendln("$indent$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns")
             }
             for (child in node.children.values) {
                 printTree(child, "$indent  ")
