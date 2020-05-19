@@ -34,7 +34,9 @@ class CallTreeBuilder(
     private var currentNode = root
 
     init {
-        root.continuedWallTime = clock.sample()
+        val now = clock.sample()
+        root.startWallTime = now
+        root.continuedWallTime = now
     }
 
     interface Clock {
