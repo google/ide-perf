@@ -41,11 +41,14 @@ configureEach(tasks.compileKotlin, tasks.compileTestKotlin) {
     }
 }
 
+val isCI = System.getenv("CI") != null
+
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     pluginName = "ide-perf"
     version = "2020.1"
     setPlugins("java") // Used for the PsiElementFinder demo.
+    downloadSources = !isCI
 }
 
 tasks.buildSearchableOptions {

@@ -32,4 +32,4 @@ jobs:
         restore-keys: ${{ runner.os }}-gradle-caches
 
     - name: Build and test
-      run: ./gradlew build
+      run: CI=true ./gradlew build
