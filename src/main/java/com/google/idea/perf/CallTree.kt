@@ -21,6 +21,7 @@ interface CallTree {
     val tracepoint: Tracepoint
     val callCount: Long
     val wallTime: Long
+    val maxWallTime: Long
     val children: Map<Tracepoint, CallTree>
 }
 
@@ -30,6 +31,7 @@ class MutableCallTree(
 ) : CallTree {
     override var callCount: Long = 0
     override var wallTime: Long = 0
+    override var maxWallTime: Long = 0
     override val children: MutableMap<Tracepoint, MutableCallTree> = LinkedHashMap()
 
     /** Accumulates the data from another call tree into this one. */
@@ -40,6 +42,7 @@ class MutableCallTree(
 
         callCount += other.callCount
         wallTime += other.wallTime
+        maxWallTime = maxWallTime.coerceAtLeast(other.maxWallTime)
 
         for ((childTracepoint, otherChild) in other.children) {
             val child = children.getOrPut(childTracepoint) { MutableCallTree(childTracepoint) }
@@ -50,6 +53,7 @@ class MutableCallTree(
     fun clear() {
         callCount = 0
         wallTime = 0
+        maxWallTime = 0
         children.values.forEach(MutableCallTree::clear)
     }
 }
@@ -58,7 +62,8 @@ class MutableCallTree(
 class TracepointStats(
     val tracepoint: Tracepoint,
     var callCount: Long = 0,
-    var wallTime: Long = 0
+    var wallTime: Long = 0,
+    var maxWallTime: Long = 0
 )
 
 object TreeAlgorithms {
@@ -76,6 +81,7 @@ object TreeAlgorithms {
             stats.callCount += node.callCount
             if (nonRecursive) {
                 stats.wallTime += node.wallTime
+                stats.maxWallTime = stats.maxWallTime.coerceAtLeast(node.maxWallTime)
                 ancestors.add(node.tracepoint)
             }
             for (child in node.children.values) {

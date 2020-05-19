@@ -35,7 +35,8 @@ import javax.swing.table.TableRowSorter
 private const val TRACEPOINT = 0
 private const val CALLS = 1
 private const val WALL_TIME = 2
-private const val COL_COUNT = 3
+private const val MAX_WALL_TIME = 3
+private const val COL_COUNT = 4
 
 /** The table model for [TracepointTable]. */
 class TracepointTableModel : AbstractTableModel() {
@@ -52,12 +53,13 @@ class TracepointTableModel : AbstractTableModel() {
         TRACEPOINT -> "tracepoint"
         CALLS -> "calls"
         WALL_TIME -> "wall time"
+        MAX_WALL_TIME -> "max wall time"
         else -> error(col)
     }
 
     override fun getColumnClass(col: Int): Class<*> = when (col) {
         TRACEPOINT -> java.lang.String::class.java
-        CALLS, WALL_TIME -> java.lang.Long::class.java
+        CALLS, WALL_TIME, MAX_WALL_TIME -> java.lang.Long::class.java
         else -> error(col)
     }
 
@@ -69,6 +71,7 @@ class TracepointTableModel : AbstractTableModel() {
             TRACEPOINT -> stats.tracepoint.displayName
             CALLS -> stats.callCount
             WALL_TIME -> stats.wallTime
+            MAX_WALL_TIME -> stats.maxWallTime
             else -> error(col)
         }
     }
@@ -93,13 +96,13 @@ class TracepointTable(private val model: TracepointTableModel) : JBTable(model) 
             tableColumn.minWidth = 100
             tableColumn.preferredWidth = when (col) {
                 TRACEPOINT -> Integer.MAX_VALUE
-                CALLS, WALL_TIME -> 100
+                CALLS, WALL_TIME, MAX_WALL_TIME -> 100
                 else -> tableColumn.preferredWidth
             }
 
             // Locale-aware and unit-aware rendering for numbers.
             when (col) {
-                CALLS, WALL_TIME -> {
+                CALLS, WALL_TIME, MAX_WALL_TIME -> {
                     tableColumn.cellRenderer = object : DefaultTableCellRenderer() {
                         init {
                             horizontalAlignment = SwingConstants.RIGHT
@@ -111,6 +114,7 @@ class TracepointTable(private val model: TracepointTableModel) : JBTable(model) 
                             }
                             val formatted = when (col) {
                                 WALL_TIME -> formatNsInMs(value)
+                                MAX_WALL_TIME -> formatNsInMs(value)
                                 else -> formatNum(value)
                             }
                             super.setValue(formatted)
