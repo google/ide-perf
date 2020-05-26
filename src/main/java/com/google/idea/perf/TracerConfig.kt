@@ -43,6 +43,13 @@ object TracerConfig {
         lock.withLock {
             val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
             classConfig.methodNames.add(methodName)
+
+            for ((signature, methodId) in classConfig.methodIds) {
+                if (signature.startsWith(methodName)) {
+                    val tracepoint = getTracepoint(methodId)
+                    tracepoint.setFlags(TracepointFlags.TRACE_ALL)
+                }
+            }
         }
     }
 
@@ -60,6 +67,23 @@ object TracerConfig {
             val methodSignature = "$methodName$methodDesc"
             val tracepoint = createTracepoint(classJvmName, methodName, methodDesc)
             classConfig.methodIds.getOrPut(methodSignature) { tracepoints.append(tracepoint) }
+        }
+    }
+
+    fun untraceMethods(classJvmName: String, methodName: String) {
+        lock.withLock {
+            val classConfig = classConfigs[classJvmName] ?: return
+
+            for ((signature, _) in classConfig.methodIds) {
+                if (signature.startsWith(methodName)) {
+                    val methodDesc = signature.substring(methodName.length)
+                    val methodId = getMethodId(classJvmName, methodName, methodDesc)
+                    if (methodId != null) {
+                        val tracepoint = getTracepoint(methodId)
+                        tracepoint.unsetFlags(TracepointFlags.TRACE_ALL)
+                    }
+                }
+            }
         }
     }
 

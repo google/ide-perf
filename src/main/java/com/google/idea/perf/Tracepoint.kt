@@ -16,13 +16,44 @@
 
 package com.google.idea.perf
 
-/** Represents a method (usually) for which we are gathering call counts and timing information. */
-class Tracepoint(val displayName: String, val description: String? = null) {
+import java.util.concurrent.atomic.AtomicInteger
 
-    override fun toString(): String = displayName
+object TracepointFlags {
+    const val TRACE_CALL_COUNT = 0x1
+    const val TRACE_WALL_TIME = 0x2
+    const val TRACE_ALL = TRACE_CALL_COUNT or TRACE_WALL_TIME
+    const val MASK = TRACE_ALL
+}
+
+/** Represents a method (usually) for which we are gathering call counts and timing information. */
+class Tracepoint(
+    val displayName: String,
+    val description: String? = null,
+    var flags: AtomicInteger = AtomicInteger(TracepointFlags.TRACE_ALL)
+) {
 
     companion object {
         /** A special tracepoint representing the root of a call tree. */
         val ROOT = Tracepoint("[root]")
     }
+
+    init {
+        check((flags.get() and TracepointFlags.MASK.inv()) == 0) {
+            "Invalid tracepoint flags."
+        }
+    }
+
+    fun hasFlags(flags: Int): Boolean {
+        return (this.flags.get() and flags) != 0
+    }
+
+    fun setFlags(flags: Int) {
+        this.flags.updateAndGet { it or flags }
+    }
+
+    fun unsetFlags(flags: Int) {
+        this.flags.updateAndGet { it and flags.inv() }
+    }
+
+    override fun toString(): String = displayName
 }

@@ -58,6 +58,7 @@ class CallTreeBuilder(
 
         var startWallTime: Long = 0
         var continuedWallTime: Long = 0
+        var tracepointFlags: Int = 0
 
         init {
             require(parent != null || tracepoint == Tracepoint.ROOT) {
@@ -69,11 +70,20 @@ class CallTreeBuilder(
     fun push(tracepoint: Tracepoint) {
         val parent = currentNode
         val child = parent.children.getOrPut(tracepoint) { Tree(tracepoint, parent) }
-        val now = clock.sample()
+        val flags = tracepoint.flags.get()
 
-        child.callCount++
-        child.startWallTime = now
-        child.continuedWallTime = now
+        child.tracepointFlags = flags
+
+        if ((flags and TracepointFlags.TRACE_CALL_COUNT) != 0) {
+            child.callCount++
+        }
+
+        if ((flags and TracepointFlags.TRACE_WALL_TIME) != 0) {
+            val now = clock.sample()
+            child.startWallTime = now
+            child.continuedWallTime = now
+        }
+
         currentNode = child
     }
 
@@ -94,9 +104,11 @@ class CallTreeBuilder(
             """.trimIndent()
         }
 
-        val now = clock.sample()
-        child.wallTime += now - child.continuedWallTime
-        child.maxWallTime = child.maxWallTime.coerceAtLeast(now - child.startWallTime)
+        if ((child.tracepointFlags and TracepointFlags.TRACE_WALL_TIME) != 0) {
+            val now = clock.sample()
+            child.wallTime += now - child.continuedWallTime
+            child.maxWallTime = child.maxWallTime.coerceAtLeast(now - child.startWallTime)
+        }
 
         currentNode = parent
     }
