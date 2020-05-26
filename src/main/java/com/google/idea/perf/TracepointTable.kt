@@ -16,6 +16,8 @@
 
 package com.google.idea.perf
 
+import com.google.idea.perf.util.formatNsInMs
+import com.google.idea.perf.util.formatNum
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import java.awt.Font
