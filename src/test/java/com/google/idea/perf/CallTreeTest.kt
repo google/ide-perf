@@ -18,6 +18,7 @@ package com.google.idea.perf
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicInteger
 
 class CallTreeTest {
 
@@ -29,6 +30,11 @@ class CallTreeTest {
         childrenList: List<Tree> = emptyList()
     ) : CallTree {
         override val children = childrenList.associateBy { it.tracepoint }
+    }
+
+    class TestClock : CallTreeBuilder.Clock {
+        var time = 0L
+        override fun sample(): Long = time
     }
 
     init {
@@ -98,11 +104,6 @@ class CallTreeTest {
 
     @Test
     fun testCallTreeBuilder() {
-        class TestClock : CallTreeBuilder.Clock {
-            var time = 0L
-            override fun sample(): Long = time
-        }
-
         val clock = TestClock()
         val builder = CallTreeBuilder(clock)
 
@@ -213,6 +214,82 @@ class CallTreeTest {
               simple1: 0 calls, 2 ns, 15 ns
                 simple2: 0 calls, 1 ns, 13 ns
                   simple3: 0 calls, 0 ns, 11 ns
+            """.trimIndent()
+        )
+    }
+
+    @Test
+    fun testConcurrentTracepointModification() {
+        val clock = TestClock()
+        val builder = CallTreeBuilder(clock)
+        val simple = Tracepoint("simple1", null, AtomicInteger(TracepointFlags.TRACE_ALL))
+
+        fun StringBuilder.printTree(node: CallTree, indent: String) {
+            with(node) {
+                appendln("$indent$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns")
+            }
+            for (child in node.children.values) {
+                printTree(child, "$indent  ")
+            }
+        }
+
+        fun buildAndCheckTree(expected: String) {
+            val tree = builder.buildAndReset()
+            val treeStr = buildString { printTree(tree, "") }
+            assertEquals(expected, treeStr.trim())
+        }
+
+        // Given an enabled tracepoint, disable tracepoint midway.
+        builder.push(simple)
+        clock.time++
+        simple.unsetFlags(TracepointFlags.TRACE_ALL)
+        builder.pop(simple)
+
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 1 ns, 1 ns
+              simple1: 1 calls, 1 ns, 1 ns
+            """.trimIndent()
+        )
+
+        // Given a disabled tracepoint, enable tracepoint midway.
+        builder.push(simple)
+        clock.time++
+        simple.setFlags(TracepointFlags.TRACE_ALL)
+        builder.pop(simple)
+
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 1 ns, 2 ns
+              simple1: 0 calls, 0 ns, 0 ns
+            """.trimIndent()
+        )
+
+        // Given an enabled tracepoint, disable tracepoint and build tree midway.
+        builder.push(simple);
+        clock.time++
+        simple.unsetFlags(TracepointFlags.TRACE_ALL)
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 1 ns, 3 ns
+              simple1: 1 calls, 1 ns, 1 ns
+            """.trimIndent()
+        )
+
+        clock.time += 10
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 10 ns, 13 ns
+              simple1: 0 calls, 10 ns, 11 ns
+            """.trimIndent()
+        )
+
+        clock.time++
+        builder.pop(simple)
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 1 ns, 14 ns
+              simple1: 0 calls, 1 ns, 12 ns
             """.trimIndent()
         )
     }
