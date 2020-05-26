@@ -129,11 +129,13 @@ class CallTreeBuilder(
         root = Tree(Tracepoint.ROOT, parent = null)
         root.startWallTime = oldRoot.startWallTime
         root.continuedWallTime = oldRoot.continuedWallTime
+        root.tracepointFlags = oldRoot.tracepointFlags
         currentNode = root
         for (node in stack.subList(1, stack.size)) {
             val copy = Tree(node.tracepoint, parent = currentNode)
             copy.startWallTime = node.startWallTime
             copy.continuedWallTime = node.continuedWallTime
+            copy.tracepointFlags = node.tracepointFlags
             currentNode.children[node.tracepoint] = copy
             currentNode = copy
         }
