@@ -29,8 +29,9 @@ object TracepointFlags {
 class Tracepoint(
     val displayName: String,
     val description: String? = null,
-    var flags: AtomicInteger = AtomicInteger(TracepointFlags.TRACE_ALL)
+    flags: Int = TracepointFlags.TRACE_ALL
 ) {
+    var flags: AtomicInteger
 
     companion object {
         /** A special tracepoint representing the root of a call tree. */
@@ -38,9 +39,11 @@ class Tracepoint(
     }
 
     init {
-        check((flags.get() and TracepointFlags.MASK.inv()) == 0) {
+        check((flags and TracepointFlags.MASK.inv()) == 0) {
             "Invalid tracepoint flags."
         }
+
+        this.flags = AtomicInteger(flags)
     }
 
     fun hasFlags(flags: Int): Boolean {

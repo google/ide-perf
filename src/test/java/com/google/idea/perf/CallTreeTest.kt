@@ -18,7 +18,6 @@ package com.google.idea.perf
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.util.concurrent.atomic.AtomicInteger
 
 class CallTreeTest {
 
@@ -222,7 +221,7 @@ class CallTreeTest {
     fun testConcurrentTracepointModification() {
         val clock = TestClock()
         val builder = CallTreeBuilder(clock)
-        val simple = Tracepoint("simple1", null, AtomicInteger(TracepointFlags.TRACE_ALL))
+        val simple = Tracepoint("simple1", null, TracepointFlags.TRACE_ALL)
 
         fun StringBuilder.printTree(node: CallTree, indent: String) {
             with(node) {
