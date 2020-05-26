@@ -174,6 +174,17 @@ class TracerController(
             TracerConfig.traceMethods(classJvmName, methodName)
             retransformClasses(setOf(className))
         }
+        else if (cmd.startsWith("untrace")) {
+            val spec = cmd.substringAfter("untrace").trim()
+            val split = spec.split('#')
+            if (split.size != 2) {
+                LOG.warn("Invalid untrace format; expected com.example.Class#method")
+                return
+            }
+            val (className, methodName) = split
+            val classJvmName = className.replace('.', '/')
+            TracerConfig.untraceMethods(classJvmName, methodName)
+        }
         else if (cmd.contains('#')) {
             // Implicit trace command.
             handleCommand("trace $cmd")
