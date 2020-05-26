@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.util
 
 /**
  * A list supporting only two operations: [append] and [get].

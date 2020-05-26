@@ -16,6 +16,7 @@
 
 package com.google.idea.perf
 
+import com.google.idea.perf.util.formatNsInUs
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
