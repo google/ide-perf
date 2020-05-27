@@ -184,6 +184,7 @@ class TracerController(
             val (className, methodName) = split
             val classJvmName = className.replace('.', '/')
             TracerConfig.untraceMethods(classJvmName, methodName)
+            retransformClasses(setOf(className))
         }
         else if (cmd.contains('#')) {
             // Implicit trace command.

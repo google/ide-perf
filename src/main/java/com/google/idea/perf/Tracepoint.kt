@@ -31,7 +31,7 @@ class Tracepoint(
     val description: String? = null,
     flags: Int = TracepointFlags.TRACE_ALL
 ) {
-    var flags: AtomicInteger
+    val flags: AtomicInteger
 
     companion object {
         /** A special tracepoint representing the root of a call tree. */
@@ -57,6 +57,9 @@ class Tracepoint(
     fun unsetFlags(flags: Int) {
         this.flags.updateAndGet { it and flags.inv() }
     }
+
+    val isEnabled: Boolean
+        get() = (this.flags.get() and TracepointFlags.TRACE_ALL) != 0
 
     override fun toString(): String = displayName
 }
