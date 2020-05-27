@@ -46,7 +46,7 @@ object TracerConfig {
 
             // Re-enable tracepoints that were disabled via untrace.
             for ((signature, methodId) in classConfig.methodIds) {
-                if (signature.startsWith(methodName)) {
+                if (signature.substringBefore('(') == methodName) {
                     val tracepoint = getTracepoint(methodId)
                     tracepoint.setFlags(TracepointFlags.TRACE_ALL)
                 }
@@ -76,7 +76,7 @@ object TracerConfig {
             val classConfig = classConfigs[classJvmName] ?: return
 
             for ((signature, _) in classConfig.methodIds) {
-                if (signature.startsWith(methodName)) {
+                if (signature.substringBefore('(') == methodName) {
                     val methodDesc = signature.substring(methodName.length)
                     val methodId = getMethodId(classJvmName, methodName, methodDesc)
                     if (methodId != null) {
