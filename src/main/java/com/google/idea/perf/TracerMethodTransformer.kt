@@ -83,6 +83,11 @@ class TracerMethodTransformer : ClassFileTransformer {
             ): MethodVisitor? {
                 val methodWriter = cv.visitMethod(access, method, desc, signature, exceptions)
                 val id = TracerConfig.getMethodId(className, method, desc) ?: return methodWriter
+                val tracepoint = TracerConfig.getTracepoint(id)
+
+                if (!tracepoint.isEnabled) {
+                    return methodWriter
+                }
 
                 return object : AdviceAdapter(ASM_API, methodWriter, access, method, desc) {
                     val methodStart = Label()

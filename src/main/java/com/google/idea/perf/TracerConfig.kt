@@ -44,6 +44,7 @@ object TracerConfig {
             val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
             classConfig.methodNames.add(methodName)
 
+            // Re-enable tracepoints that were disabled via untrace.
             for ((signature, methodId) in classConfig.methodIds) {
                 if (signature.startsWith(methodName)) {
                     val tracepoint = getTracepoint(methodId)
