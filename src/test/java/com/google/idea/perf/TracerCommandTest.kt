@@ -29,16 +29,23 @@ class TracerCommandTest {
         assertCommand(TracerCommand.Clear, "clear")
         assertCommand(TracerCommand.Reset, "reset")
 
+        // Untrace commands.
         assertCommand(
             TracerCommand.Trace(false, TraceOption.All, TraceTarget.PsiFinders),
             "untrace psi-finders"
         )
-
+        assertCommand(
+            TracerCommand.Trace(false, TraceOption.All, TraceTarget.PsiFinders),
+            "untrace all psi-finders"
+        )
         assertCommand(
             TracerCommand.Trace(false, TraceOption.All, TraceTarget.Tracer),
             "untrace tracer"
         )
-
+        assertCommand(
+            TracerCommand.Trace(false, TraceOption.CallCount, TraceTarget.Tracer),
+            "untrace count tracer"
+        )
         assertCommand(
             TracerCommand.Trace(
                 false,
@@ -47,17 +54,32 @@ class TracerCommandTest {
             ),
             "untrace com.example.MyAction#actionPerformed"
         )
+        assertCommand(
+            TracerCommand.Trace(
+                false,
+                TraceOption.WallTime,
+                TraceTarget.Method("com.example.MyAction", "actionPerformed")
+            ),
+            "untrace wall-time com.example.MyAction#actionPerformed"
+        )
 
+        // Trace commands.
         assertCommand(
             TracerCommand.Trace(true, TraceOption.All, TraceTarget.PsiFinders),
             "trace psi-finders"
         )
-
+        assertCommand(
+            TracerCommand.Trace(true, TraceOption.WallTime, TraceTarget.PsiFinders),
+            "trace wall-time psi-finders"
+        )
         assertCommand(
             TracerCommand.Trace(true, TraceOption.All, TraceTarget.Tracer),
             "trace tracer"
         )
-
+        assertCommand(
+            TracerCommand.Trace(true, TraceOption.CallCount, TraceTarget.Tracer),
+            "trace count tracer"
+        )
         assertCommand(
             TracerCommand.Trace(
                 true,
@@ -65,6 +87,14 @@ class TracerCommandTest {
                 TraceTarget.Method("com.example.MyAction", "actionPerformed")
             ),
             "trace com.example.MyAction#actionPerformed"
+        )
+        assertCommand(
+            TracerCommand.Trace(
+                true,
+                TraceOption.All,
+                TraceTarget.Method("com.example.MyAction", "actionPerformed")
+            ),
+            "trace all com.example.MyAction#actionPerformed"
         )
     }
 }

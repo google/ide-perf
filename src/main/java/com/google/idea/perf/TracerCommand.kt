@@ -67,37 +67,54 @@ fun parseTracerCommand(text: String): TracerCommand? {
         return null
     }
 
-    return when (tokens[0]) {
+    return when (tokens.first()) {
         "clear" -> if (tokens.size <= 1) TracerCommand.Clear else null
         "reset" -> if (tokens.size <= 1) TracerCommand.Reset else null
-        "trace" -> parseTraceCommand(tokens, true)
-        "untrace" -> parseTraceCommand(tokens, false)
+        "trace" -> parseTraceCommand(tokens.advance(), true)
+        "untrace" -> parseTraceCommand(tokens.advance(), false)
         else -> null
     }
 }
 
 private fun parseTraceCommand(tokens: List<String>, enable: Boolean): TracerCommand? {
-    if (tokens.size != 2) {
-        return TracerCommand.Trace(enable, null, null)
-    }
-
-    return when (tokens[1]) {
-        "psi-finders" -> TracerCommand.Trace(enable, TraceOption.All, TraceTarget.PsiFinders)
-        "tracer" -> TracerCommand.Trace(enable, TraceOption.All, TraceTarget.Tracer)
+    return when (tokens.size) {
+        0 -> TracerCommand.Trace(enable, null, null)
+        1 -> TracerCommand.Trace(enable, TraceOption.All, parseTraceTarget(tokens))
         else -> {
-            val splitIndex = tokens[1].indexOf('#')
+            val option = parseTraceOption(tokens)
+            val target = parseTraceTarget(tokens.advance())
+            TracerCommand.Trace(enable, option, target)
+        }
+    }
+}
+
+private fun parseTraceOption(tokens: List<String>): TraceOption? {
+    return when (tokens.first()) {
+        "all" -> TraceOption.All
+        "count" -> TraceOption.CallCount
+        "wall-time" -> TraceOption.WallTime
+        else -> null
+    }
+}
+
+private fun parseTraceTarget(tokens: List<String>): TraceTarget? {
+    return when (val token = tokens.first()) {
+        "psi-finders" -> TraceTarget.PsiFinders
+        "tracer" -> TraceTarget.Tracer
+        else -> {
+            val splitIndex = token.indexOf('#')
             return if (splitIndex != -1) {
-                val className = tokens[1].substring(0, splitIndex)
-                val methodName = tokens[1].substring(splitIndex + 1)
-                TracerCommand.Trace(
-                    enable,
-                    TraceOption.All,
-                    TraceTarget.Method(className, methodName)
-                )
+                val className = token.substring(0, splitIndex)
+                val methodName = token.substring(splitIndex + 1)
+                TraceTarget.Method(className, methodName)
             }
             else {
-                TracerCommand.Trace(enable, TraceOption.All, null)
+                null
             }
         }
     }
+}
+
+private fun <E> List<E>.advance(): List<E> {
+    return this.subList(1, this.size)
 }
