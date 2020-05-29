@@ -88,6 +88,24 @@ object TracerConfig {
         }
     }
 
+    fun untraceMethod(method: Method) {
+        lock.withLock {
+            val classJvmName = method.declaringClass.name.replace('.', '/')
+            val methodDesc = Type.getMethodDescriptor(method)
+            untraceMethod(classJvmName, method.name, methodDesc)
+        }
+    }
+
+    private fun untraceMethod(classJvmName: String, methodName: String, methodDesc: String) {
+        lock.withLock {
+            val methodId = getMethodId(classJvmName, methodName, methodDesc)
+            if (methodId != null) {
+                val tracepoint = getTracepoint(methodId)
+                tracepoint.unsetFlags(TracepointFlags.TRACE_ALL)
+            }
+        }
+    }
+
     /** Remove all tracing and return the affected class names. */
     fun removeAllTracing(): List<String> {
         lock.withLock {

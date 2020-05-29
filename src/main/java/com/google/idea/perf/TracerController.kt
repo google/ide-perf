@@ -156,7 +156,7 @@ class TracerController(
                             traceAndRetransform(*methods.toTypedArray())
                         }
                         else {
-                            LOG.warn("Not implemented yet.")
+                            untraceAndRetransform(*methods.toTypedArray())
                         }
                     }
                     is TraceTarget.Tracer -> {
@@ -168,7 +168,11 @@ class TracerController(
                             )
                         }
                         else {
-                            LOG.warn("Not implemented yet.")
+                            untraceAndRetransform(
+                                TracerController::dataRefreshLoop.javaMethod!!,
+                                TracerController::updateTracepointUi.javaMethod!!,
+                                TracerController::handleCommand.javaMethod!!
+                            )
                         }
                     }
                     is TraceTarget.Method -> {
@@ -194,6 +198,13 @@ class TracerController(
     private fun traceAndRetransform(vararg methods: Method) {
         if (methods.isEmpty()) return
         methods.forEach(TracerConfig::traceMethod)
+        val classes = methods.map { it.declaringClass }.toSet()
+        retransformClasses(classes)
+    }
+
+    private fun untraceAndRetransform(vararg methods: Method) {
+        if (methods.isEmpty()) return
+        methods.forEach(TracerConfig::untraceMethod)
         val classes = methods.map { it.declaringClass }.toSet()
         retransformClasses(classes)
     }
