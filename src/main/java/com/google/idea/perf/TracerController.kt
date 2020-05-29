@@ -132,66 +132,62 @@ class TracerController(
     }
 
     private fun handleCommand(cmd: String) {
-        if (cmd == "clear") {
-            callTree.clear()
-            updateTracepointUi()
-        }
-        else if (cmd == "reset") {
-            callTree = MutableCallTree(Tracepoint.ROOT)
-            updateTracepointUi()
-        }
-        else if (cmd == "untrace all") {
-            val classNames = TracerConfig.removeAllTracing()
-            retransformClasses(classNames.toSet())
-            callTree = MutableCallTree(Tracepoint.ROOT)
-            updateTracepointUi()
-        }
-        else if (cmd == "trace tracer") {
-            traceAndRetransform(
-                TracerController::dataRefreshLoop.javaMethod!!,
-                TracerController::updateTracepointUi.javaMethod!!,
-                TracerController::handleCommand.javaMethod!!
-            )
-        }
-        else if (cmd == "trace psi finders") {
-            val defaultProject = ProjectManager.getInstance().defaultProject
-            val psiFinders = PsiElementFinder.EP.getExtensions(defaultProject)
-            val baseMethod = PsiElementFinder::findClass.javaMethod!!
-            val methods = psiFinders.map {
-                it.javaClass.getMethod(baseMethod.name, *baseMethod.parameterTypes)
+        val command = parseTracerCommand(cmd)
+
+        when (command) {
+            is TracerCommand.Clear -> {
+                callTree.clear()
+                updateTracepointUi()
             }
-            traceAndRetransform(*methods.toTypedArray())
-        }
-        else if (cmd.startsWith("trace")) {
-            val spec = cmd.substringAfter("trace").trim()
-            val split = spec.split('#')
-            if (split.size != 2) {
-                LOG.warn("Invalid trace request format; expected com.example.Class#method")
-                return
+            is TracerCommand.Reset -> {
+                callTree = MutableCallTree(Tracepoint.ROOT)
+                updateTracepointUi()
             }
-            val (className, methodName) = split
-            val classJvmName = className.replace('.', '/')
-            TracerConfig.traceMethods(classJvmName, methodName)
-            retransformClasses(setOf(className))
-        }
-        else if (cmd.startsWith("untrace")) {
-            val spec = cmd.substringAfter("untrace").trim()
-            val split = spec.split('#')
-            if (split.size != 2) {
-                LOG.warn("Invalid untrace format; expected com.example.Class#method")
-                return
+            is TracerCommand.Trace -> {
+                when (command.target) {
+                    is TraceTarget.PsiFinders -> {
+                        val defaultProject = ProjectManager.getInstance().defaultProject
+                        val psiFinders = PsiElementFinder.EP.getExtensions(defaultProject)
+                        val baseMethod = PsiElementFinder::findClass.javaMethod!!
+                        val methods = psiFinders.map {
+                            it.javaClass.getMethod(baseMethod.name, *baseMethod.parameterTypes)
+                        }
+                        if (command.enable) {
+                            traceAndRetransform(*methods.toTypedArray())
+                        }
+                        else {
+                            LOG.warn("Not implemented yet.")
+                        }
+                    }
+                    is TraceTarget.Tracer -> {
+                        if (command.enable) {
+                            traceAndRetransform(
+                                TracerController::dataRefreshLoop.javaMethod!!,
+                                TracerController::updateTracepointUi.javaMethod!!,
+                                TracerController::handleCommand.javaMethod!!
+                            )
+                        }
+                        else {
+                            LOG.warn("Not implemented yet.")
+                        }
+                    }
+                    is TraceTarget.Method -> {
+                        val className = command.target.className
+                        val methodName = command.target.methodName
+                        val classJvmName = className.replace('.', '/')
+                        if (command.enable) {
+                            TracerConfig.traceMethods(classJvmName, methodName)
+                        }
+                        else {
+                            TracerConfig.untraceMethods(classJvmName, methodName)
+                        }
+                        retransformClasses(setOf(className))
+                    }
+                }
             }
-            val (className, methodName) = split
-            val classJvmName = className.replace('.', '/')
-            TracerConfig.untraceMethods(classJvmName, methodName)
-            retransformClasses(setOf(className))
-        }
-        else if (cmd.contains('#')) {
-            // Implicit trace command.
-            handleCommand("trace $cmd")
-        }
-        else {
-            LOG.warn("Unknown command: $cmd")
+            else -> {
+                LOG.warn("Unknown command: $cmd")
+            }
         }
     }
 

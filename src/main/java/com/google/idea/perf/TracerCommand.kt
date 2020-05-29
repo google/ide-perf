@@ -24,11 +24,12 @@ sealed class TracerCommand {
     /** Zero out all tracepoint data and reset the call tree. */
     object Reset: TracerCommand()
 
-    /** Trace a set of methods. */
-    data class Trace(val traceOption: TraceOption?, val target: TraceTarget?): TracerCommand()
-
-    /** Untrace a set of methods. */
-    data class Untrace(val traceOption: TraceOption?, val target: TraceTarget?): TracerCommand()
+    /** Trace or untrace a set of methods. */
+    data class Trace(
+        val enable: Boolean,
+        val traceOption: TraceOption?,
+        val target: TraceTarget?
+    ): TracerCommand()
 }
 
 /** Represents what to trace */
@@ -57,4 +58,46 @@ sealed class TraceTarget {
      * @param methodName The method to trace
      */
     data class Method(val className: String, val methodName: String): TraceTarget()
+}
+
+fun parseTracerCommand(text: String): TracerCommand? {
+    // Grammar is simple enough for a basic split() parser.
+    val tokens = text.split(' ')
+    if (tokens.isEmpty()) {
+        return null
+    }
+
+    return when (tokens[0]) {
+        "clear" -> if (tokens.size <= 1) TracerCommand.Clear else null
+        "reset" -> if (tokens.size <= 1) TracerCommand.Reset else null
+        "trace" -> parseTraceCommand(tokens, true)
+        "untrace" -> parseTraceCommand(tokens, false)
+        else -> null
+    }
+}
+
+private fun parseTraceCommand(tokens: List<String>, enable: Boolean): TracerCommand? {
+    if (tokens.size != 2) {
+        return TracerCommand.Trace(enable, null, null)
+    }
+
+    return when (tokens[1]) {
+        "psi-finders" -> TracerCommand.Trace(enable, TraceOption.All, TraceTarget.PsiFinders)
+        "tracer" -> TracerCommand.Trace(enable, TraceOption.All, TraceTarget.Tracer)
+        else -> {
+            val splitIndex = tokens[1].indexOf('#')
+            return if (splitIndex != -1) {
+                val className = tokens[1].substring(0, splitIndex)
+                val methodName = tokens[1].substring(splitIndex + 1)
+                TracerCommand.Trace(
+                    enable,
+                    TraceOption.All,
+                    TraceTarget.Method(className, methodName)
+                )
+            }
+            else {
+                TracerCommand.Trace(enable, TraceOption.All, null)
+            }
+        }
+    }
 }
