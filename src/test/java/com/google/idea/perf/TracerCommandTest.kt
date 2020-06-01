@@ -31,25 +31,25 @@ class TracerCommandTest {
 
         // Untrace commands.
         assertCommand(
-            TracerCommand.Trace(false, TraceOption.All, TraceTarget.PsiFinders),
+            TracerCommand.Trace(false, TraceOption.ALL, TraceTarget.PsiFinders),
             "untrace psi-finders"
         )
         assertCommand(
-            TracerCommand.Trace(false, TraceOption.All, TraceTarget.PsiFinders),
+            TracerCommand.Trace(false, TraceOption.ALL, TraceTarget.PsiFinders),
             "untrace all psi-finders"
         )
         assertCommand(
-            TracerCommand.Trace(false, TraceOption.All, TraceTarget.Tracer),
+            TracerCommand.Trace(false, TraceOption.ALL, TraceTarget.Tracer),
             "untrace tracer"
         )
         assertCommand(
-            TracerCommand.Trace(false, TraceOption.CallCount, TraceTarget.Tracer),
+            TracerCommand.Trace(false, TraceOption.CALL_COUNT, TraceTarget.Tracer),
             "untrace count tracer"
         )
         assertCommand(
             TracerCommand.Trace(
                 false,
-                TraceOption.All,
+                TraceOption.ALL,
                 TraceTarget.Method("com.example.MyAction", "actionPerformed")
             ),
             "untrace com.example.MyAction#actionPerformed"
@@ -57,7 +57,7 @@ class TracerCommandTest {
         assertCommand(
             TracerCommand.Trace(
                 false,
-                TraceOption.WallTime,
+                TraceOption.WALL_TIME,
                 TraceTarget.Method("com.example.MyAction", "actionPerformed")
             ),
             "untrace wall-time com.example.MyAction#actionPerformed"
@@ -65,25 +65,25 @@ class TracerCommandTest {
 
         // Trace commands.
         assertCommand(
-            TracerCommand.Trace(true, TraceOption.All, TraceTarget.PsiFinders),
+            TracerCommand.Trace(true, TraceOption.ALL, TraceTarget.PsiFinders),
             "trace psi-finders"
         )
         assertCommand(
-            TracerCommand.Trace(true, TraceOption.WallTime, TraceTarget.PsiFinders),
+            TracerCommand.Trace(true, TraceOption.WALL_TIME, TraceTarget.PsiFinders),
             "trace wall-time psi-finders"
         )
         assertCommand(
-            TracerCommand.Trace(true, TraceOption.All, TraceTarget.Tracer),
+            TracerCommand.Trace(true, TraceOption.ALL, TraceTarget.Tracer),
             "trace tracer"
         )
         assertCommand(
-            TracerCommand.Trace(true, TraceOption.CallCount, TraceTarget.Tracer),
+            TracerCommand.Trace(true, TraceOption.CALL_COUNT, TraceTarget.Tracer),
             "trace count tracer"
         )
         assertCommand(
             TracerCommand.Trace(
                 true,
-                TraceOption.All,
+                TraceOption.ALL,
                 TraceTarget.Method("com.example.MyAction", "actionPerformed")
             ),
             "trace com.example.MyAction#actionPerformed"
@@ -91,7 +91,7 @@ class TracerCommandTest {
         assertCommand(
             TracerCommand.Trace(
                 true,
-                TraceOption.All,
+                TraceOption.ALL,
                 TraceTarget.Method("com.example.MyAction", "actionPerformed")
             ),
             "trace all com.example.MyAction#actionPerformed"

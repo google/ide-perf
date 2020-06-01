@@ -152,28 +152,16 @@ class TracerController(
                         val methods = psiFinders.map {
                             it.javaClass.getMethod(baseMethod.name, *baseMethod.parameterTypes)
                         }
-                        if (command.enable) {
-                            traceAndRetransform(*methods.toTypedArray())
-                        }
-                        else {
-                            untraceAndRetransform(*methods.toTypedArray())
-                        }
+
+                        traceAndRetransform(command.enable, *methods.toTypedArray())
                     }
                     is TraceTarget.Tracer -> {
-                        if (command.enable) {
-                            traceAndRetransform(
-                                TracerController::dataRefreshLoop.javaMethod!!,
-                                TracerController::updateTracepointUi.javaMethod!!,
-                                TracerController::handleCommand.javaMethod!!
-                            )
-                        }
-                        else {
-                            untraceAndRetransform(
-                                TracerController::dataRefreshLoop.javaMethod!!,
-                                TracerController::updateTracepointUi.javaMethod!!,
-                                TracerController::handleCommand.javaMethod!!
-                            )
-                        }
+                        traceAndRetransform(
+                            command.enable,
+                            TracerController::dataRefreshLoop.javaMethod!!,
+                            TracerController::updateTracepointUi.javaMethod!!,
+                            TracerController::handleCommand.javaMethod!!
+                        )
                     }
                     is TraceTarget.Method -> {
                         val className = command.target.className
@@ -195,16 +183,14 @@ class TracerController(
         }
     }
 
-    private fun traceAndRetransform(vararg methods: Method) {
+    private fun traceAndRetransform(enable: Boolean, vararg methods: Method) {
         if (methods.isEmpty()) return
-        methods.forEach(TracerConfig::traceMethod)
-        val classes = methods.map { it.declaringClass }.toSet()
-        retransformClasses(classes)
-    }
-
-    private fun untraceAndRetransform(vararg methods: Method) {
-        if (methods.isEmpty()) return
-        methods.forEach(TracerConfig::untraceMethod)
+        if (enable) {
+            methods.forEach(TracerConfig::traceMethod)
+        }
+        else {
+            methods.forEach(TracerConfig::untraceMethod)
+        }
         val classes = methods.map { it.declaringClass }.toSet()
         retransformClasses(classes)
     }

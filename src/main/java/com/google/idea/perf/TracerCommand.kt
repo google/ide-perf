@@ -33,15 +33,13 @@ sealed class TracerCommand {
 }
 
 /** Represents what to trace */
-sealed class TraceOption {
+enum class TraceOption {
     /** Option to trace all aspects of a method's execution. */
-    object All: TraceOption()
-
+    ALL,
     /** Option to trace the number of calls to a method. */
-    object CallCount: TraceOption()
-
+    CALL_COUNT,
     /** Option to trace the execution time of a method. */
-    object WallTime: TraceOption()
+    WALL_TIME
 }
 
 /** A set of methods that the tracer will trace. */
@@ -52,11 +50,7 @@ sealed class TraceTarget {
     /** Trace some important methods of the PSI. */
     object PsiFinders: TraceTarget()
 
-    /**
-     * Trace a specific method.
-     * @param className The Java class that contains the desired method
-     * @param methodName The method to trace
-     */
+    /** Trace a specific method. */
     data class Method(val className: String, val methodName: String): TraceTarget()
 }
 
@@ -79,7 +73,7 @@ fun parseTracerCommand(text: String): TracerCommand? {
 private fun parseTraceCommand(tokens: List<String>, enable: Boolean): TracerCommand? {
     return when (tokens.size) {
         0 -> TracerCommand.Trace(enable, null, null)
-        1 -> TracerCommand.Trace(enable, TraceOption.All, parseTraceTarget(tokens))
+        1 -> TracerCommand.Trace(enable, TraceOption.ALL, parseTraceTarget(tokens))
         else -> {
             val option = parseTraceOption(tokens)
             val target = parseTraceTarget(tokens.advance())
@@ -90,9 +84,9 @@ private fun parseTraceCommand(tokens: List<String>, enable: Boolean): TracerComm
 
 private fun parseTraceOption(tokens: List<String>): TraceOption? {
     return when (tokens.first()) {
-        "all" -> TraceOption.All
-        "count" -> TraceOption.CallCount
-        "wall-time" -> TraceOption.WallTime
+        "all" -> TraceOption.ALL
+        "count" -> TraceOption.CALL_COUNT
+        "wall-time" -> TraceOption.WALL_TIME
         else -> null
     }
 }
@@ -103,14 +97,13 @@ private fun parseTraceTarget(tokens: List<String>): TraceTarget? {
         "tracer" -> TraceTarget.Tracer
         else -> {
             val splitIndex = token.indexOf('#')
-            return if (splitIndex != -1) {
-                val className = token.substring(0, splitIndex)
-                val methodName = token.substring(splitIndex + 1)
-                TraceTarget.Method(className, methodName)
+            if (splitIndex == -1) {
+                return null
             }
-            else {
-                null
-            }
+
+            val className = token.substring(0, splitIndex)
+            val methodName = token.substring(splitIndex + 1)
+            TraceTarget.Method(className, methodName)
         }
     }
 }
