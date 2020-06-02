@@ -17,11 +17,27 @@
 package com.google.idea.perf
 
 class MatchResult(
-    val score: Int,
-    val matchedChars: List<Int>
+    val source: String,
+    val matchedChars: List<Int>,
+    val score: Int
 ) {
     val offset: Int
         get() = if (matchedChars.isNotEmpty()) matchedChars[0] else -1
+}
+
+fun fuzzyMatchMany(
+    sources: Collection<String>,
+    pattern: String,
+    maxResults: Int
+): List<MatchResult> {
+    val matches = ArrayList<MatchResult>(sources.size)
+
+    for (source in sources) {
+        matches.add(fuzzyMatch(source, pattern))
+    }
+
+    matches.sortByDescending { it.score }
+    return matches.take(maxResults)
 }
 
 const val ROOT: Byte = 0
@@ -100,5 +116,5 @@ fun fuzzyMatch(source: String, pattern: String): MatchResult {
 
     matchedChars.reverse()
 
-    return MatchResult(maxScore, matchedChars)
+    return MatchResult(source, matchedChars, maxScore)
 }
