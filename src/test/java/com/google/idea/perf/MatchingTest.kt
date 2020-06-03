@@ -17,34 +17,28 @@
 package com.google.idea.perf
 
 import org.junit.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-private fun assertMatch(matchedChars: List<Int>, source: String, pattern: String) {
+private fun assertMatch(expectMatch: Boolean, source: String, pattern: String) {
     val match = fuzzyMatch(source, pattern)
-    assertEquals(matchedChars, match.matchedChars)
+    if (expectMatch) {
+        assertTrue(match.score > 0)
+    }
+    else {
+        assertTrue(match.score <= 0)
+    }
 }
 
 class MatchingTest {
     @Suppress("SpellCheckingInspection")
     @Test
     fun testFuzzyMatcher() {
-        // DNA sequences
-        assertMatch(listOf(0, 2, 3), "gcatgcu", "gattaca")
-        assertMatch(listOf(3, 4, 5, 6), "accgtga", "gtgaata")
-        assertMatch(listOf(0), "agct", "a")
-        assertMatch(listOf(1), "agct", "gg")
-        assertMatch(listOf(2), "agct", "ccc")
-        assertMatch(listOf(3), "agct", "tttt")
-        assertMatch(listOf(), "aaaa", "tttt")
-
-        // Java classes
-        assertMatch(listOf(10, 11, 12, 13, 14, 15), "java.lang.String", "String")
-        assertMatch(listOf(10, 11, 12, 14, 15), "java.lang.String", "Strng")
-        assertMatch(listOf(10, 11, 12), "java.lang.String", "Str")
-
-        // Corner cases
-        assertMatch(listOf(), "", "")
-        assertMatch(listOf(), "a", "")
-        assertMatch(listOf(), "", "a")
+        assertMatch(true, "java.lang.String", "java.lang.String")
+        assertMatch(true, "java.lang.String", "javalangString")
+        assertMatch(true, "java.lang.String", "String")
+        assertMatch(true, "java.lang.String", "Strng")
+        assertMatch(true, "java.lang.String", "Str")
+        assertMatch(false, "java.lang.String", "$$$$$$$$$$")
+        assertMatch(false, "java.lang.String", "          ")
     }
 }

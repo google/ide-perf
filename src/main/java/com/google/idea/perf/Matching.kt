@@ -20,16 +20,9 @@ class MatchResult(
     val source: String,
     val matchedChars: List<Int>,
     val score: Int
-) {
-    val offset: Int
-        get() = if (matchedChars.isNotEmpty()) matchedChars[0] else -1
-}
+)
 
-fun fuzzyMatchMany(
-    sources: Collection<String>,
-    pattern: String,
-    maxResults: Int
-): List<MatchResult> {
+fun fuzzyMatchMany(sources: Collection<String>, pattern: String): List<MatchResult> {
     val matches = ArrayList<MatchResult>(sources.size)
 
     for (source in sources) {
@@ -37,7 +30,7 @@ fun fuzzyMatchMany(
     }
 
     matches.sortByDescending { it.score }
-    return matches.take(maxResults)
+    return matches
 }
 
 const val ROOT: Byte = 0
@@ -48,14 +41,6 @@ const val DIAGONAL: Byte = 3
 const val MATCH_SCORE = 1
 const val MISMATCH_SCORE = -1
 const val GAP_SCORE = -1
-
-fun fuzzyMatch(source: String, pattern: String, caseInsensitive: Boolean): MatchResult {
-    if (caseInsensitive) {
-        return fuzzyMatch(source.toLowerCase(), pattern.toLowerCase())
-    }
-
-    return fuzzyMatch(source, pattern)
-}
 
 fun fuzzyMatch(source: String, pattern: String): MatchResult {
     val scoreMatrix = Array(pattern.length + 1) { IntArray(source.length + 1) }
