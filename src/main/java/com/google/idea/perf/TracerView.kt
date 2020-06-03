@@ -34,6 +34,8 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JProgressBar
 import javax.swing.border.Border
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 
 // Things to improve:
 // - Add UI indicator for fps or something similar.
@@ -74,6 +76,7 @@ class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false
 /** The content filling the tracer dialog window. */
 class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
     private val controller: TracerController = TracerController(this, parentDisposable)
+    val commandLine: JBTextField
     val progressBar: JProgressBar
     val listView = TracepointTable(TracepointTableModel())
     val refreshTimeLabel: JBLabel
@@ -83,12 +86,25 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
-        val commandLine = JBTextField().apply {
+        commandLine = JBTextField().apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
             addActionListener { e ->
                 text = ""
                 controller.handleRawCommandFromEdt(e.actionCommand)
             }
+            document.addDocumentListener(object: DocumentListener {
+                override fun changedUpdate(e: DocumentEvent?) {
+                    controller.handleCommandChangeFromEdt(text, e?.offset ?: 0)
+                }
+
+                override fun insertUpdate(e: DocumentEvent?) {
+                    controller.handleCommandChangeFromEdt(text, e?.offset ?: 0)
+                }
+
+                override fun removeUpdate(e: DocumentEvent?) {
+                    controller.handleCommandChangeFromEdt(text, e?.offset ?: 0)
+                }
+            })
         }
         add(commandLine)
 

@@ -17,6 +17,8 @@
 package com.google.idea.perf
 
 import com.google.idea.perf.util.formatNsInUs
+import com.intellij.codeInsight.hint.HintManager
+import com.intellij.codeInsight.hint.HintUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
@@ -29,6 +31,7 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attachChild
 import com.intellij.openapi.util.Computable
 import com.intellij.psi.PsiElementFinder
+import com.intellij.ui.awt.RelativePoint
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.ui.UIUtil
 import java.awt.image.BufferedImage
@@ -36,6 +39,8 @@ import java.io.File
 import java.io.IOException
 import java.lang.instrument.UnmodifiableClassException
 import java.lang.reflect.Method
+import java.util.concurrent.Callable
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.imageio.ImageIO
@@ -66,6 +71,11 @@ class TracerController(
     private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("Tracer", 1)
     private var callTree = MutableCallTree(Tracepoint.ROOT)
     private val dataRefreshLoopStarted = AtomicBoolean()
+
+    private val autocomplete = Autocomplete(AgentLoader.instrumentation!!.allLoadedClasses.filter {
+        it.canonicalName != null && it.canonicalName.startsWith("com.google.idea.perf")
+    })
+    private var autocompleteFuture: Future<Unit>? = null
 
     companion object {
         private val LOG = Logger.getInstance(TracerController::class.java)
@@ -181,6 +191,31 @@ class TracerController(
                 LOG.warn("Unknown command: $cmd")
             }
         }
+    }
+
+    fun handleCommandChangeFromEdt(rawCmd: String, offset: Int) {
+        val executor = AppExecutorUtil.getAppExecutorService()
+
+        autocompleteFuture?.cancel(true)
+
+        autocompleteFuture = executor.submit(Callable {
+            val result = executor.submit(Callable {
+                autocomplete.predict(rawCmd, offset)
+            })
+
+            val suggestions = result.get(5000L, MILLISECONDS)
+
+            getApplication().invokeAndWait {
+                val text = suggestions.joinToString("\n") { it.name }
+                val hint = HintUtil.createInformationLabel(text)
+                HintManager.getInstance().showHint(
+                    hint,
+                    RelativePoint.getSouthWestOf(view.commandLine),
+                    HintManager.HIDE_BY_ANY_KEY or HintManager.HIDE_BY_OTHER_HINT,
+                    0
+                )
+            }
+        })
     }
 
     private fun traceAndRetransform(enable: Boolean, vararg methods: Method) {
