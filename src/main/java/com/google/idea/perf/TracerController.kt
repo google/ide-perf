@@ -18,7 +18,6 @@ package com.google.idea.perf
 
 import com.google.idea.perf.util.formatNsInUs
 import com.intellij.codeInsight.hint.HintManager
-import com.intellij.codeInsight.hint.HintUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
@@ -206,8 +205,7 @@ class TracerController(
             val suggestions = result.get(5000L, MILLISECONDS)
 
             getApplication().invokeAndWait {
-                val text = suggestions.joinToString("\n") { it.name }
-                val hint = HintUtil.createInformationLabel(text)
+                val hint = AutocompleteView(suggestions)
                 HintManager.getInstance().showHint(
                     hint,
                     RelativePoint.getSouthWestOf(view.commandLine),
