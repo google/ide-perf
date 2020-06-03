@@ -38,8 +38,8 @@ const val LEFT: Byte = 1
 const val UP: Byte = 2
 const val DIAGONAL: Byte = 3
 
-const val MATCH_SCORE = 1
-const val MISMATCH_SCORE = -1
+const val MATCH_SCORE = 4
+const val MISMATCH_SCORE = -4
 const val GAP_SCORE = -1
 
 fun fuzzyMatch(source: String, pattern: String): MatchResult {
