@@ -16,21 +16,21 @@
 
 package com.google.idea.perf
 
-class MatchResult(
-    val source: String,
-    val matchedChars: List<Int>,
-    val score: Int
-)
+class MatchResult(val source: String)
 
-fun fuzzyMatchMany(
+/** Searches on a list of strings based on an approximate pattern. */
+fun fuzzySearch(
     sources: Collection<String>,
     pattern: String,
     cancellationCheck: () -> Unit
 ): List<MatchResult> {
-    val results = ArrayList<MatchResult>()
+    val results = ArrayList<MatchDetails>()
 
     for ((index, source) in sources.withIndex()) {
-        results.add(fuzzyMatch(source, pattern))
+        val match = fuzzyMatchImpl(source, pattern)
+        if (match.matchedChars.size >= pattern.length) {
+            results.add(match)
+        }
 
         if (index % 256 == 0) {
             cancellationCheck()
@@ -38,13 +38,24 @@ fun fuzzyMatchMany(
     }
 
     results.sortByDescending { it.score }
-    return results
+    return results.map { MatchResult(it.source) }
 }
 
-private const val ROOT: Byte = 0
-private const val LEFT: Byte = 1
-private const val UP: Byte = 2
-private const val DIAGONAL: Byte = 3
+/**
+ * Checks if two strings approximately match with each other. This method is based off of the
+ * Smith-Waterman algorithm.
+ *
+ * @see <a href="https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm">Smith-Waterman algorithm</a>
+ */
+fun fuzzyMatch(source: String, pattern: String): Boolean {
+    return fuzzyMatchImpl(source, pattern).matchedChars.size >= pattern.length
+}
+
+/*
+ * Implementation details
+ *
+ * Assuming all strings are ASCII, case-insensitive matching should work fine.
+ */
 
 /* Base scores */
 private const val GAP_SCORE = -1
@@ -66,25 +77,18 @@ private const val DELIMITER_SCORE = MATCH_SCORE * 16
 private const val POST_DELIMITER_SCORE = MATCH_SCORE * 4
 private const val CAMEL_CASE_SCORE = GAP_RECOVERY_SCORE
 
-fun fuzzyMatchMany(sources: Collection<String>, pattern: String): List<MatchResult> {
-    return sources
-        .map { fuzzyMatch(it, pattern) }
-        .filter { it.matchedChars.size >= pattern.length }
-        .sortedByDescending { it.score }
-}
+private const val ROOT: Byte = 0
+private const val LEFT: Byte = 1
+private const val UP: Byte = 2
+private const val DIAGONAL: Byte = 3
 
 private fun isDelimiter(c: Char) = c == '.' || c == '$' || c == '/'
 
-// Assuming all strings are ASCII, case-insensitive matching should work fine.
 private fun charEquals(c1: Char, c2: Char) = c1.toLowerCase() == c2.toLowerCase()
 
-/**
- * Tries to approximate the best fit substring given a string pattern. This method is based off the
- * Smith-Waterman algorithm.
- *
- * @see <a href="https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm">Smith-Waterman algorithm</a>
- */
-fun fuzzyMatch(source: String, pattern: String): MatchResult {
+private class MatchDetails(val source: String, val matchedChars: List<Int>, val score: Int)
+
+private fun fuzzyMatchImpl(source: String, pattern: String): MatchDetails {
     val scoreMatrix = Array(pattern.length + 1) { IntArray(source.length + 1) }
     val parentMatrix = Array(pattern.length + 1) { ByteArray(source.length + 1) }
 
@@ -172,5 +176,5 @@ fun fuzzyMatch(source: String, pattern: String): MatchResult {
 
     matchedChars.reverse()
 
-    return MatchResult(source, matchedChars, maxScore)
+    return MatchDetails(source, matchedChars, maxScore)
 }

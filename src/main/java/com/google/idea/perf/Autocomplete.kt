@@ -59,8 +59,7 @@ class Autocomplete {
         token: String,
         cancellationCheck: () -> Unit
     ): List<Suggestion> {
-        return fuzzyMatchMany(choices, token) { cancellationCheck() }
-            .filter { it.score > 0 }
+        return fuzzySearch(choices, token) { cancellationCheck() }
             .map { Suggestion(it.source) }
     }
 
