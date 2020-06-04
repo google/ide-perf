@@ -69,6 +69,7 @@ private const val CAMEL_CASE_SCORE = GAP_RECOVERY_SCORE
 fun fuzzyMatchMany(sources: Collection<String>, pattern: String): List<MatchResult> {
     return sources
         .map { fuzzyMatch(it, pattern) }
+        .filter { it.matchedChars.size >= pattern.length }
         .sortedByDescending { it.score }
 }
 
