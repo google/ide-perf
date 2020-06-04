@@ -46,9 +46,31 @@ private const val LEFT: Byte = 1
 private const val UP: Byte = 2
 private const val DIAGONAL: Byte = 3
 
-private const val MATCH_SCORE = 4
-private const val MISMATCH_SCORE = -4
+/* Base scores */
 private const val GAP_SCORE = -1
+private const val MATCH_SCORE = -GAP_SCORE * 8
+private const val MISMATCH_SCORE = -MATCH_SCORE
+
+/* Constants for super scores */
+private const val GAP_RECOVERY_SCORE = MATCH_SCORE * 2
+
+/*
+ * Super scores
+ *
+ * These coefficients represent how many normal matches are required to surpass these super scores.
+ * If a super score is MATCH_SCORE*N, then N+1 normal-matched characters are required to surpass the
+ * super score.
+ */
+private const val FIRST_CHAR_SCORE = MATCH_SCORE * 16
+private const val DELIMITER_SCORE = MATCH_SCORE * 16
+private const val POST_DELIMITER_SCORE = MATCH_SCORE * 4
+private const val CAMEL_CASE_SCORE = GAP_RECOVERY_SCORE
+
+fun fuzzyMatchMany(sources: Collection<String>, pattern: String): List<MatchResult> {
+    return sources
+        .map { fuzzyMatch(it, pattern) }
+        .sortedByDescending { it.score }
+}
 
 /**
  * Tries to approximate the best fit substring given a string pattern. This method is based off the
@@ -61,12 +83,38 @@ fun fuzzyMatch(source: String, pattern: String): MatchResult {
     val parentMatrix = Array(pattern.length + 1) { ByteArray(source.length + 1) }
 
     // Construct score and parent matrix
+    fun isDelimiter(c: Char) = c == '.' || c == '$' || c == '/'
+
+    fun getMatchScore(row: Int, column: Int): Int {
+        val char = source[column - 1]
+        val prevChar = source.getOrElse(column - 2) { ' ' }
+
+        return if (row == 1 && column == 1) {
+            FIRST_CHAR_SCORE
+        }
+        else if (prevChar.isLowerCase() && char.isUpperCase()) {
+            CAMEL_CASE_SCORE
+        }
+        else if (isDelimiter(char)) {
+            DELIMITER_SCORE
+        }
+        else if (isDelimiter(prevChar)) {
+            POST_DELIMITER_SCORE
+        }
+        else {
+            MATCH_SCORE
+        }
+    }
+
     for (r in 1..pattern.length) {
         for (c in 1..source.length) {
+            val patternChar = pattern[r - 1]
+            val sourceChar = source[c - 1]
+
             val leftScore = scoreMatrix[r][c - 1] + GAP_SCORE
             val upScore = scoreMatrix[r - 1][c] + GAP_SCORE
             var diagonalScore = scoreMatrix[r - 1][c - 1]
-            diagonalScore += if (pattern[r - 1] == source[c - 1]) MATCH_SCORE else MISMATCH_SCORE
+            diagonalScore += if (patternChar == sourceChar) getMatchScore(r, c) else MISMATCH_SCORE
 
             val maxScore = maxOf(leftScore, upScore, diagonalScore)
             scoreMatrix[r][c] = maxScore
@@ -86,8 +134,8 @@ fun fuzzyMatch(source: String, pattern: String): MatchResult {
     var column = 0
     var maxScore = Int.MIN_VALUE
 
-    for (r in pattern.indices) {
-        for (c in source.indices) {
+    for (r in 0..pattern.length) {
+        for (c in 0..source.length) {
             if (scoreMatrix[r][c] > maxScore) {
                 maxScore = scoreMatrix[r][c]
                 row = r
