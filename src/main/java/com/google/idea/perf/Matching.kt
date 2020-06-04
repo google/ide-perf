@@ -73,6 +73,11 @@ fun fuzzyMatchMany(sources: Collection<String>, pattern: String): List<MatchResu
         .sortedByDescending { it.score }
 }
 
+private fun isDelimiter(c: Char) = c == '.' || c == '$' || c == '/'
+
+// Assuming all strings are ASCII, case-insensitive matching should work fine.
+private fun charEquals(c1: Char, c2: Char) = c1.toLowerCase() == c2.toLowerCase()
+
 /**
  * Tries to approximate the best fit substring given a string pattern. This method is based off the
  * Smith-Waterman algorithm.
@@ -84,8 +89,6 @@ fun fuzzyMatch(source: String, pattern: String): MatchResult {
     val parentMatrix = Array(pattern.length + 1) { ByteArray(source.length + 1) }
 
     // Construct score and parent matrix
-    fun isDelimiter(c: Char) = c == '.' || c == '$' || c == '/'
-
     fun getMatchScore(row: Int, column: Int): Int {
         val char = source[column - 1]
         val prevChar = source.getOrElse(column - 2) { ' ' }
@@ -115,7 +118,12 @@ fun fuzzyMatch(source: String, pattern: String): MatchResult {
             val leftScore = scoreMatrix[r][c - 1] + GAP_SCORE
             val upScore = scoreMatrix[r - 1][c] + GAP_SCORE
             var diagonalScore = scoreMatrix[r - 1][c - 1]
-            diagonalScore += if (patternChar == sourceChar) getMatchScore(r, c) else MISMATCH_SCORE
+
+            diagonalScore += if (charEquals(patternChar, sourceChar)) {
+                getMatchScore(r, c)
+            } else {
+                MISMATCH_SCORE
+            }
 
             val maxScore = maxOf(leftScore, upScore, diagonalScore)
             scoreMatrix[r][c] = maxScore
@@ -155,7 +163,7 @@ fun fuzzyMatch(source: String, pattern: String): MatchResult {
             DIAGONAL -> {
                 row--
                 column--
-                if (pattern[row] == source[column]) {
+                if (charEquals(pattern[row], source[column])) {
                     matchedChars.add(column)
                 }
             }
