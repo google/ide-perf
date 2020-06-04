@@ -41,6 +41,7 @@ import java.lang.reflect.Method
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.imageio.ImageIO
 import kotlin.reflect.jvm.javaMethod
@@ -78,7 +79,8 @@ class TracerController(
 
     companion object {
         private val LOG = Logger.getInstance(TracerController::class.java)
-        private const val REFRESH_DELAY_MS: Long = 30
+        private const val REFRESH_DELAY_MS: Long = 30L
+        private const val AUTOCOMPLETE_MAX_TIMEOUT_MS = 10000L
     }
 
     init {
@@ -202,16 +204,21 @@ class TracerController(
                 autocomplete.predict(rawCmd, offset)
             })
 
-            val suggestions = result.get(5000L, MILLISECONDS)
+            try {
+                val suggestions = result.get(AUTOCOMPLETE_MAX_TIMEOUT_MS, MILLISECONDS)
 
-            getApplication().invokeAndWait {
-                val hint = AutocompleteView(suggestions)
-                HintManager.getInstance().showHint(
-                    hint,
-                    RelativePoint.getSouthWestOf(view.commandLine),
-                    HintManager.HIDE_BY_ANY_KEY or HintManager.HIDE_BY_OTHER_HINT,
-                    0
-                )
+                getApplication().invokeAndWait {
+                    val hint = AutocompleteView(suggestions)
+                    HintManager.getInstance().showHint(
+                        hint,
+                        RelativePoint.getSouthWestOf(view.commandLine),
+                        HintManager.HIDE_BY_ANY_KEY or HintManager.HIDE_BY_OTHER_HINT,
+                        0
+                    )
+                }
+            }
+            catch (e: TimeoutException) {
+                LOG.warn("Autocomplete timed out.")
             }
         })
     }
