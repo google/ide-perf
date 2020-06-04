@@ -23,25 +23,26 @@ class MatchResult(
 )
 
 fun fuzzyMatchMany(sources: Collection<String>, pattern: String): List<MatchResult> {
-    val matches = ArrayList<MatchResult>(sources.size)
-
-    for (source in sources) {
-        matches.add(fuzzyMatch(source, pattern))
-    }
-
-    matches.sortByDescending { it.score }
-    return matches
+    return sources
+        .map { fuzzyMatch(it, pattern) }
+        .sortedByDescending { it.score }
 }
 
-const val ROOT: Byte = 0
-const val LEFT: Byte = 1
-const val UP: Byte = 2
-const val DIAGONAL: Byte = 3
+private const val ROOT: Byte = 0
+private const val LEFT: Byte = 1
+private const val UP: Byte = 2
+private const val DIAGONAL: Byte = 3
 
-const val MATCH_SCORE = 4
-const val MISMATCH_SCORE = -4
-const val GAP_SCORE = -1
+private const val MATCH_SCORE = 4
+private const val MISMATCH_SCORE = -4
+private const val GAP_SCORE = -1
 
+/**
+ * Tries to approximate the best fit substring given a string pattern. This method is based off the
+ * Smith-Waterman algorithm.
+ *
+ * @see <a href="https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm">Smith-Waterman algorithm</a>
+ */
 fun fuzzyMatch(source: String, pattern: String): MatchResult {
     val scoreMatrix = Array(pattern.length + 1) { IntArray(source.length + 1) }
     val parentMatrix = Array(pattern.length + 1) { ByteArray(source.length + 1) }
@@ -72,8 +73,8 @@ fun fuzzyMatch(source: String, pattern: String): MatchResult {
     var column = 0
     var maxScore = Int.MIN_VALUE
 
-    for (r in 0..pattern.length) {
-        for (c in 0..source.length) {
+    for (r in pattern.indices) {
+        for (c in source.indices) {
             if (scoreMatrix[r][c] > maxScore) {
                 maxScore = scoreMatrix[r][c]
                 row = r
