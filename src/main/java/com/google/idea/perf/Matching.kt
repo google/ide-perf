@@ -22,10 +22,23 @@ class MatchResult(
     val score: Int
 )
 
-fun fuzzyMatchMany(sources: Collection<String>, pattern: String): List<MatchResult> {
-    return sources
-        .map { fuzzyMatch(it, pattern) }
-        .sortedByDescending { it.score }
+fun fuzzyMatchMany(
+    sources: Collection<String>,
+    pattern: String,
+    cancellationCheck: () -> Unit
+): List<MatchResult> {
+    val results = ArrayList<MatchResult>()
+
+    for ((index, source) in sources.withIndex()) {
+        results.add(fuzzyMatch(source, pattern))
+
+        if (index % 256 == 0) {
+            cancellationCheck()
+        }
+    }
+
+    results.sortByDescending { it.score }
+    return results
 }
 
 private const val ROOT: Byte = 0

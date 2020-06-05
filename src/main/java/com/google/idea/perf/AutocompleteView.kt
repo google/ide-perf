@@ -17,22 +17,18 @@
 package com.google.idea.perf
 
 import com.intellij.ui.components.JBList
+import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import java.awt.BorderLayout
 import javax.swing.AbstractListModel
-import javax.swing.JPanel
 
 private class SuggestionListModel(val data: List<Suggestion>): AbstractListModel<String>() {
-    override fun getElementAt(index: Int): String {
-        return data[index].name
-    }
+    override fun getElementAt(index: Int): String = data[index].name
 
-    override fun getSize(): Int {
-        return data.size
-    }
+    override fun getSize(): Int = data.size
 }
 
-class AutocompleteView(suggestions: List<Suggestion>): JPanel(BorderLayout()) {
+class AutocompleteView(suggestions: List<Suggestion>): JBPanel<AutocompleteView>(BorderLayout()) {
     private val listModel = SuggestionListModel(suggestions)
     private val list = JBList(listModel)
     private val scrollPane = JBScrollPane(

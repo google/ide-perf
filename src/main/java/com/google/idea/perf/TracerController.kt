@@ -26,6 +26,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
+import com.intellij.openapi.progress.util.ProgressIndicatorUtils
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attachChild
 import com.intellij.openapi.util.Computable
@@ -41,7 +42,6 @@ import java.lang.reflect.Method
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.imageio.ImageIO
 import kotlin.reflect.jvm.javaMethod
@@ -72,19 +72,18 @@ class TracerController(
     private var callTree = MutableCallTree(Tracepoint.ROOT)
     private val dataRefreshLoopStarted = AtomicBoolean()
 
-    private val autocomplete = Autocomplete(AgentLoader.instrumentation!!.allLoadedClasses.filter {
-        it.canonicalName != null && it.canonicalName.startsWith("com.google.idea.perf")
-    })
+    private val autocomplete = Autocomplete()
     private var autocompleteFuture: Future<Unit>? = null
 
     companion object {
         private val LOG = Logger.getInstance(TracerController::class.java)
         private const val REFRESH_DELAY_MS: Long = 30L
-        private const val AUTOCOMPLETE_MAX_TIMEOUT_MS = 10000L
+        private const val AUTOCOMPLETE_MAX_TIMEOUT_MS = 2000L
     }
 
     init {
         CallTreeManager.collectAndReset() // Clear trees accumulated while the tracer was closed.
+        reloadAutocompleteClasses()
         parentDisposable.attachChild(this)
     }
 
@@ -200,13 +199,11 @@ class TracerController(
         autocompleteFuture?.cancel(true)
 
         autocompleteFuture = executor.submit(Callable {
-            val result = executor.submit(Callable {
-                autocomplete.predict(rawCmd, offset)
-            })
+            val suggestions = ProgressIndicatorUtils.withTimeout(AUTOCOMPLETE_MAX_TIMEOUT_MS) {
+                autocomplete.predict(rawCmd, offset) { ProgressManager.checkCanceled() }
+            }
 
-            try {
-                val suggestions = result.get(AUTOCOMPLETE_MAX_TIMEOUT_MS, MILLISECONDS)
-
+            if (suggestions != null) {
                 getApplication().invokeAndWait {
                     val hint = AutocompleteView(suggestions)
                     HintManager.getInstance().showHint(
@@ -217,7 +214,7 @@ class TracerController(
                     )
                 }
             }
-            catch (e: TimeoutException) {
+            else {
                 LOG.warn("Autocomplete timed out.")
             }
         })
@@ -295,6 +292,19 @@ class TracerController(
         val progress = MyProgressIndicator(view)
         val computable = Computable { action(progress) }
         return ProgressManager.getInstance().runProcess(computable, progress)
+    }
+
+    private fun reloadAutocompleteClasses() {
+        val instrumentation = AgentLoader.instrumentation
+
+        if (instrumentation != null) {
+            autocomplete.setClasses(instrumentation.allLoadedClasses.filter {
+                it.canonicalName != null
+            })
+        }
+        else {
+            LOG.warn("Cannot reload classes.")
+        }
     }
 
     private class MyProgressIndicator(private val view: TracerView) : ProgressIndicatorBase() {

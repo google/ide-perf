@@ -93,16 +93,16 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
                 controller.handleRawCommandFromEdt(e.actionCommand)
             }
             document.addDocumentListener(object: DocumentListener {
-                override fun changedUpdate(e: DocumentEvent?) {
-                    controller.handleCommandChangeFromEdt(text, e?.offset ?: 0)
+                override fun changedUpdate(e: DocumentEvent) {
+                    controller.handleCommandChangeFromEdt(text, e.offset)
                 }
 
-                override fun insertUpdate(e: DocumentEvent?) {
-                    controller.handleCommandChangeFromEdt(text, e?.offset ?: 0)
+                override fun insertUpdate(e: DocumentEvent) {
+                    controller.handleCommandChangeFromEdt(text, e.offset)
                 }
 
-                override fun removeUpdate(e: DocumentEvent?) {
-                    controller.handleCommandChangeFromEdt(text, e?.offset ?: 0)
+                override fun removeUpdate(e: DocumentEvent) {
+                    controller.handleCommandChangeFromEdt(text, e.offset)
                 }
             })
         }
