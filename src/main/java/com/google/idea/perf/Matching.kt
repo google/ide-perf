@@ -95,22 +95,17 @@ private fun fuzzyMatchImpl(source: String, pattern: String): MatchDetails {
     // Construct score and parent matrix
     fun getMatchScore(row: Int, column: Int): Int {
         val char = source[column - 1]
+        val patternChar = pattern[row - 1]
         val prevChar = source.getOrElse(column - 2) { ' ' }
+        val matchesCase = char == patternChar
 
-        return if (row == 1 && column == 1) {
-            FIRST_CHAR_SCORE
-        }
-        else if (prevChar.isLowerCase() && char.isUpperCase()) {
-            CAMEL_CASE_SCORE
-        }
-        else if (isDelimiter(char)) {
-            DELIMITER_SCORE
-        }
-        else if (isDelimiter(prevChar)) {
-            POST_DELIMITER_SCORE
-        }
-        else {
-            MATCH_SCORE
+        return when {
+            !charEquals(char, patternChar) -> MISMATCH_SCORE
+            matchesCase && row == 1 && column == 1 -> FIRST_CHAR_SCORE
+            prevChar.isLowerCase() && char.isUpperCase() -> CAMEL_CASE_SCORE
+            isDelimiter(char) -> DELIMITER_SCORE
+            matchesCase && isDelimiter(prevChar) -> POST_DELIMITER_SCORE
+            else -> MATCH_SCORE
         }
     }
 
@@ -121,13 +116,7 @@ private fun fuzzyMatchImpl(source: String, pattern: String): MatchDetails {
 
             val leftScore = scoreMatrix[r][c - 1] + GAP_SCORE
             val upScore = scoreMatrix[r - 1][c] + GAP_SCORE
-            var diagonalScore = scoreMatrix[r - 1][c - 1]
-
-            diagonalScore += if (charEquals(patternChar, sourceChar)) {
-                getMatchScore(r, c)
-            } else {
-                MISMATCH_SCORE
-            }
+            val diagonalScore = scoreMatrix[r - 1][c - 1] + getMatchScore(r, c)
 
             val maxScore = maxOf(leftScore, upScore, diagonalScore)
             scoreMatrix[r][c] = maxScore

@@ -300,7 +300,7 @@ class TracerController(
         if (instrumentation != null) {
             autocomplete.setClasses(instrumentation.allLoadedClasses.filter {
                 it.canonicalName != null
-            })
+            }.sortedBy { it.canonicalName })
         }
         else {
             LOG.warn("Cannot reload classes.")
