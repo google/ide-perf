@@ -16,7 +16,7 @@
 
 package com.google.idea.perf
 
-data class Suggestion(val name: String, val formattedName: String? = null)
+data class Suggestion(val name: String, val detail: String?)
 
 class Autocomplete {
     private var classNames: List<String> = emptyList()
@@ -33,34 +33,48 @@ class Autocomplete {
         val token = tokens.getOrElse(tokenIndex) { "" }
 
         return when (tokenIndex) {
-            0 -> predictToken(
-                listOf("clear", "reset", "trace", "untrace"),
-                token,
-                cancellationCheck
+            0 -> predictOptionToken(
+                listOf("clear", "reset", "trace", "untrace"), token, cancellationCheck
             )
             1 -> when (command) {
-                is TracerCommand.Trace -> predictToken(
-                    listOf("all", "count", "wall-time"),
-                    token,
-                    cancellationCheck
+                is TracerCommand.Trace -> predictOptionToken(
+                    listOf("all", "count", "wall-time"), token, cancellationCheck
                 )
                 else -> emptyList()
             }
             2 -> when (command) {
-                is TracerCommand.Trace -> predictToken(classNames, token, cancellationCheck)
+                is TracerCommand.Trace -> predictClassToken(classNames, token, cancellationCheck)
                 else -> emptyList()
             }
             else -> emptyList()
         }
     }
 
-    private fun predictToken(
+    private fun predictOptionToken(
         choices: Collection<String>,
         token: String,
         cancellationCheck: () -> Unit
     ): List<Suggestion> {
+        return predictToken(choices, token, { it.formattedSource }, { null }, cancellationCheck)
+    }
+
+    private fun predictClassToken(
+        choices: Collection<String>,
+        token: String,
+        cancellationCheck: () -> Unit
+    ): List<Suggestion> {
+        return predictToken(choices, token, { it.formattedSource }, { null }, cancellationCheck)
+    }
+
+    private fun predictToken(
+        choices: Collection<String>,
+        token: String,
+        nameFunc: (MatchResult) -> String,
+        detailFunc: (MatchResult) -> String?,
+        cancellationCheck: () -> Unit
+    ): List<Suggestion> {
         return fuzzySearch(choices, token) { cancellationCheck() }
-            .map { Suggestion(it.source) }
+            .map { Suggestion(nameFunc(it), detailFunc(it)) }
     }
 
     private fun getTokenIndex(input: String, index: Int): Int {

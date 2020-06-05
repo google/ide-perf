@@ -16,7 +16,12 @@
 
 package com.google.idea.perf
 
-class MatchResult(val source: String)
+class MatchResult(val source: String, val formattedSource: String) {
+    companion object {
+        const val MATCHED_RANGE_OPEN_TOKEN = "{"
+        const val MATCHED_RANGE_CLOSE_TOKEN = "}"
+    }
+}
 
 /** Searches on a list of strings based on an approximate pattern. */
 fun fuzzySearch(
@@ -38,7 +43,30 @@ fun fuzzySearch(
     }
 
     results.sortByDescending { it.score }
-    return results.map { MatchResult(it.source) }
+    return results.map {
+        val builder = StringBuilder(it.source.length * 2)
+        var isMatched = false
+        var isPrevMatched = isMatched
+
+        for ((index, char) in it.source.withIndex()) {
+            isMatched = it.matchedChars.contains(index)
+            if (!isPrevMatched && isMatched) {
+                builder.append(MatchResult.MATCHED_RANGE_OPEN_TOKEN)
+            }
+            else if (isPrevMatched && !isMatched) {
+                builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
+            }
+
+            builder.append(char)
+            isPrevMatched = isMatched
+        }
+
+        if (isPrevMatched) {
+            builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
+        }
+
+        MatchResult(it.source, builder.toString())
+    }
 }
 
 /**
@@ -111,9 +139,6 @@ private fun fuzzyMatchImpl(source: String, pattern: String): MatchDetails {
 
     for (r in 1..pattern.length) {
         for (c in 1..source.length) {
-            val patternChar = pattern[r - 1]
-            val sourceChar = source[c - 1]
-
             val leftScore = scoreMatrix[r][c - 1] + GAP_SCORE
             val upScore = scoreMatrix[r - 1][c] + GAP_SCORE
             val diagonalScore = scoreMatrix[r - 1][c - 1] + getMatchScore(r, c)
