@@ -19,7 +19,8 @@ package com.google.idea.perf
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.EditorColorsUtil
 import com.intellij.ui.JBColor
-import com.intellij.ui.components.JBLabel
+import com.intellij.ui.SimpleColoredComponent
+import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
@@ -35,10 +36,7 @@ private class SuggestionListModel(val data: List<Suggestion>): AbstractListModel
     override fun getSize(): Int = data.size
 }
 
-private class AutocompleteCellRenderer:
-    JBPanel<AutocompleteCellRenderer>(BorderLayout()),
-    ListCellRenderer<Suggestion>
-{
+private class AutocompleteCellRenderer: ListCellRenderer<Suggestion> {
     companion object {
         val BACKGROUND_COLOR = JBColor {
             EditorColorsUtil.getGlobalOrDefaultColor(EditorColors.DOCUMENTATION_COLOR)
@@ -46,13 +44,13 @@ private class AutocompleteCellRenderer:
         }
 
         val SELECTED_BACKGROUND_COLOR = JBColor(0xC5DFFC, 0x113A5C)
+
+        val REGULAR_TEXT: SimpleTextAttributes = SimpleTextAttributes.REGULAR_ATTRIBUTES
+        val BOLD_TEXT: SimpleTextAttributes = SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES
     }
 
-    private val label = JBLabel()
-
-    init {
-        add(label, BorderLayout.WEST)
-    }
+    private val nameLabel = SimpleColoredComponent()
+    private val stringBuilder = StringBuilder(128)
 
     override fun getListCellRendererComponent(
         list: JList<out Suggestion>?,
@@ -61,11 +59,34 @@ private class AutocompleteCellRenderer:
         isSelected: Boolean,
         cellHasFocus: Boolean
     ): Component {
-        background = if (isSelected) SELECTED_BACKGROUND_COLOR else BACKGROUND_COLOR
-        label.text = "<HTML>" + value?.name
-            ?.replace(MatchResult.MATCHED_RANGE_OPEN_TOKEN, "<B>")
-            ?.replace(MatchResult.MATCHED_RANGE_CLOSE_TOKEN, "</B>") + "</HTML>"
-        return this
+        nameLabel.background = if (isSelected) SELECTED_BACKGROUND_COLOR else BACKGROUND_COLOR
+        nameLabel.clear()
+
+        if (value?.name != null) {
+            stringBuilder.clear()
+
+            for (char in value.name) {
+                when (char) {
+                    MatchResult.MATCHED_RANGE_OPEN_TOKEN -> {
+                        nameLabel.append(stringBuilder.toString(), REGULAR_TEXT)
+                        stringBuilder.clear()
+                    }
+                    MatchResult.MATCHED_RANGE_CLOSE_TOKEN -> {
+                        nameLabel.append(stringBuilder.toString(), BOLD_TEXT)
+                        stringBuilder.clear()
+                    }
+                    else -> {
+                        stringBuilder.append(char)
+                    }
+                }
+            }
+
+            if (stringBuilder.isNotEmpty()) {
+                nameLabel.append(stringBuilder.toString(), REGULAR_TEXT)
+            }
+        }
+
+        return nameLabel
     }
 }
 

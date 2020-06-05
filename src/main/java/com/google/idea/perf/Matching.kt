@@ -18,8 +18,8 @@ package com.google.idea.perf
 
 class MatchResult(val source: String, val formattedSource: String) {
     companion object {
-        const val MATCHED_RANGE_OPEN_TOKEN = "{"
-        const val MATCHED_RANGE_CLOSE_TOKEN = "}"
+        const val MATCHED_RANGE_OPEN_TOKEN = '{'
+        const val MATCHED_RANGE_CLOSE_TOKEN = '}'
     }
 }
 
