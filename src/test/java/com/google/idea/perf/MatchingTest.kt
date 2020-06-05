@@ -17,16 +17,10 @@
 package com.google.idea.perf
 
 import org.junit.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 private fun assertMatch(expectMatch: Boolean, source: String, pattern: String) {
-    val match = fuzzyMatch(source, pattern)
-    if (expectMatch) {
-        assertTrue(match.score > 0)
-    }
-    else {
-        assertTrue(match.score <= 0)
-    }
+    assertEquals(expectMatch, fuzzyMatch(source, pattern))
 }
 
 class MatchingTest {
