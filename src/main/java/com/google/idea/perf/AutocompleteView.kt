@@ -16,16 +16,57 @@
 
 package com.google.idea.perf
 
+import com.intellij.openapi.editor.colors.EditorColors
+import com.intellij.openapi.editor.colors.EditorColorsUtil
+import com.intellij.ui.JBColor
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import java.awt.BorderLayout
+import java.awt.Component
 import javax.swing.AbstractListModel
+import javax.swing.JList
+import javax.swing.ListCellRenderer
 
-private class SuggestionListModel(val data: List<Suggestion>): AbstractListModel<String>() {
-    override fun getElementAt(index: Int): String = data[index].name
+private class SuggestionListModel(val data: List<Suggestion>): AbstractListModel<Suggestion>() {
+    override fun getElementAt(index: Int): Suggestion = data[index]
 
     override fun getSize(): Int = data.size
+}
+
+private class AutocompleteCellRenderer:
+    JBPanel<AutocompleteCellRenderer>(BorderLayout()),
+    ListCellRenderer<Suggestion>
+{
+    companion object {
+        val BACKGROUND_COLOR = JBColor {
+            EditorColorsUtil.getGlobalOrDefaultColor(EditorColors.DOCUMENTATION_COLOR)
+                ?: JBColor.PanelBackground
+        }
+
+        val SELECTED_BACKGROUND_COLOR = JBColor(0xC5DFFC, 0x113A5C)
+    }
+
+    private val label = JBLabel()
+
+    init {
+        add(label, BorderLayout.WEST)
+    }
+
+    override fun getListCellRendererComponent(
+        list: JList<out Suggestion>?,
+        value: Suggestion?,
+        index: Int,
+        isSelected: Boolean,
+        cellHasFocus: Boolean
+    ): Component {
+        background = if (isSelected) SELECTED_BACKGROUND_COLOR else BACKGROUND_COLOR
+        label.text = "<HTML>" + value?.name
+            ?.replace(MatchResult.MATCHED_RANGE_OPEN_TOKEN, "<B>")
+            ?.replace(MatchResult.MATCHED_RANGE_CLOSE_TOKEN, "</B>") + "</HTML>"
+        return this
+    }
 }
 
 class AutocompleteView(suggestions: List<Suggestion>): JBPanel<AutocompleteView>(BorderLayout()) {
@@ -38,6 +79,8 @@ class AutocompleteView(suggestions: List<Suggestion>): JBPanel<AutocompleteView>
     )
 
     init {
+        background = AutocompleteCellRenderer.BACKGROUND_COLOR
+        list.cellRenderer = AutocompleteCellRenderer()
         add(scrollPane, BorderLayout.CENTER)
     }
 }
