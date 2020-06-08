@@ -16,6 +16,8 @@
 
 package com.google.idea.perf
 
+import com.google.idea.perf.util.LruCache
+
 class MatchResult(val source: String, val formattedSource: String) {
     companion object {
         const val MATCHED_RANGE_OPEN_TOKEN = '{'
@@ -27,22 +29,15 @@ class MatchResult(val source: String, val formattedSource: String) {
 fun fuzzySearch(
     sources: Collection<String>,
     pattern: String,
+    maxResults: Int,
     cancellationCheck: () -> Unit
 ): List<MatchResult> {
-    val results = ArrayList<MatchDetails>()
+    var results = fuzzySearchCached(sources, pattern, cancellationCheck)
 
-    for ((index, source) in sources.withIndex()) {
-        val match = fuzzyMatchImpl(source, pattern)
-        if (match.matchedChars.size >= pattern.length) {
-            results.add(match)
-        }
-
-        if (index % 256 == 0) {
-            cancellationCheck()
-        }
+    if (maxResults >= 0) {
+        results = results.take(maxResults)
     }
 
-    results.sortByDescending { it.score }
     return results.map {
         val builder = StringBuilder(it.source.length * 2)
         var isMatched = false
@@ -117,25 +112,38 @@ private fun charEquals(c1: Char, c2: Char) = c1.toLowerCase() == c2.toLowerCase(
 private class MatchDetails(val source: String, val matchedChars: List<Int>, val score: Int)
 
 private fun fuzzyMatchImpl(source: String, pattern: String): MatchDetails {
+    if (pattern.isEmpty()) {
+        return MatchDetails(source, emptyList(), 0)
+    }
+
+    return smartMatch(source, pattern)
+}
+
+private fun getCharacterScore(
+    source: String, pattern: String, sourceIndex: Int, patternIndex: Int
+): Int {
+    val char = source[sourceIndex]
+    val patternChar = pattern[patternIndex]
+    val prevChar = source.getOrElse(sourceIndex - 1) { ' ' }
+    val matchesCase = char == patternChar
+
+    return when {
+        !charEquals(char, patternChar) -> MISMATCH_SCORE
+        matchesCase && patternIndex == 0 && sourceIndex == 0 -> FIRST_CHAR_SCORE
+        prevChar.isLowerCase() && char.isUpperCase() -> CAMEL_CASE_SCORE
+        isDelimiter(char) -> DELIMITER_SCORE
+        matchesCase && isDelimiter(prevChar) -> POST_DELIMITER_SCORE
+        else -> MATCH_SCORE
+    }
+}
+
+private fun smartMatch(source: String, pattern: String): MatchDetails {
     val scoreMatrix = Array(pattern.length + 1) { IntArray(source.length + 1) }
     val parentMatrix = Array(pattern.length + 1) { ByteArray(source.length + 1) }
 
     // Construct score and parent matrix
-    fun getMatchScore(row: Int, column: Int): Int {
-        val char = source[column - 1]
-        val patternChar = pattern[row - 1]
-        val prevChar = source.getOrElse(column - 2) { ' ' }
-        val matchesCase = char == patternChar
-
-        return when {
-            !charEquals(char, patternChar) -> MISMATCH_SCORE
-            matchesCase && row == 1 && column == 1 -> FIRST_CHAR_SCORE
-            prevChar.isLowerCase() && char.isUpperCase() -> CAMEL_CASE_SCORE
-            isDelimiter(char) -> DELIMITER_SCORE
-            matchesCase && isDelimiter(prevChar) -> POST_DELIMITER_SCORE
-            else -> MATCH_SCORE
-        }
-    }
+    fun getMatchScore(row: Int, column: Int): Int =
+        getCharacterScore(source, pattern, column - 1, row - 1)
 
     for (r in 1..pattern.length) {
         for (c in 1..source.length) {
@@ -191,4 +199,61 @@ private fun fuzzyMatchImpl(source: String, pattern: String): MatchDetails {
     matchedChars.reverse()
 
     return MatchDetails(source, matchedChars, maxScore)
+}
+
+private typealias ResultCache = LruCache<String, List<String>>
+
+private typealias SearchCache = LruCache<Collection<String>, ResultCache>
+
+private val searchCaches = ThreadLocal.withInitial { SearchCache(128) }
+
+private val searchCache: SearchCache
+    get() = searchCaches.get()
+
+private fun fuzzySearchCached(
+    sources: Collection<String>,
+    pattern: String,
+    cancellationCheck: () -> Unit
+): List<MatchDetails> {
+    val cachedPatterns = searchCache[sources]
+    var selectedSources = sources
+
+    if (cachedPatterns != null) {
+        for (i in pattern.lastIndex downTo 1) {
+            val patternPrefix = pattern.substring(0, i)
+            val cachedResults = cachedPatterns[patternPrefix]
+            if (cachedResults != null) {
+                selectedSources = cachedResults
+                break
+            }
+        }
+    }
+
+    val results = fuzzySearchUncached(selectedSources, pattern, cancellationCheck)
+    searchCache.computeIfAbsent(sources) { LruCache(128) }
+    searchCache[sources]!!.computeIfAbsent(pattern) { results.map { it.source } }
+
+    return results
+}
+
+private fun fuzzySearchUncached(
+    sources: Collection<String>,
+    pattern: String,
+    cancellationCheck: () -> Unit
+): List<MatchDetails> {
+    val results = ArrayList<MatchDetails>()
+
+    for ((index, source) in sources.withIndex()) {
+        val match = fuzzyMatchImpl(source, pattern)
+        if (match.matchedChars.size >= pattern.length) {
+            results.add(match)
+        }
+
+        if (index % 256 == 0) {
+            cancellationCheck()
+        }
+    }
+
+    results.sortByDescending { it.score }
+    return results
 }

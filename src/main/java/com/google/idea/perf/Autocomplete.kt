@@ -66,7 +66,7 @@ class Autocomplete {
         nameFunc: (MatchResult) -> String,
         detailFunc: (MatchResult) -> String?
     ): List<Suggestion> {
-        return fuzzySearch(choices, token) { ProgressManager.checkCanceled() }
+        return fuzzySearch(choices, token, 100) { ProgressManager.checkCanceled() }
             .map { Suggestion(nameFunc(it), detailFunc(it)) }
     }
 
