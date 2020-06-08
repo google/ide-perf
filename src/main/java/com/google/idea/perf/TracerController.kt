@@ -200,7 +200,7 @@ class TracerController(
 
         autocompleteFuture = executor.submit(Callable {
             val suggestions = ProgressIndicatorUtils.withTimeout(AUTOCOMPLETE_MAX_TIMEOUT_MS) {
-                autocomplete.predict(rawCmd, offset) { ProgressManager.checkCanceled() }
+                autocomplete.predict(rawCmd, offset)
             }
 
             if (suggestions != null) {
