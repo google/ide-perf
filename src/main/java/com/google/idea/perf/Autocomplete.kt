@@ -16,6 +16,8 @@
 
 package com.google.idea.perf
 
+import com.intellij.openapi.progress.ProgressManager
+
 data class Suggestion(val name: String, val detail: String?)
 
 class Autocomplete {
@@ -25,7 +27,7 @@ class Autocomplete {
         classNames = classes.mapNotNull { it.canonicalName }
     }
 
-    fun predict(input: String, index: Int, cancellationCheck: () -> Unit): List<Suggestion> {
+    fun predict(input: String, index: Int): List<Suggestion> {
         val tokens = input.trimStart().split(' ')
         val normalizedInput = tokens.joinToString(" ")
         val command = parseTracerCommand(normalizedInput)
@@ -34,46 +36,37 @@ class Autocomplete {
 
         return when (tokenIndex) {
             0 -> predictOptionToken(
-                listOf("clear", "reset", "trace", "untrace"), token, cancellationCheck
+                listOf("clear", "reset", "trace", "untrace"), token
             )
             1 -> when (command) {
                 is TracerCommand.Trace -> predictOptionToken(
-                    listOf("all", "count", "wall-time"), token, cancellationCheck
+                    listOf("all", "count", "wall-time"), token
                 )
                 else -> emptyList()
             }
             2 -> when (command) {
-                is TracerCommand.Trace -> predictClassToken(classNames, token, cancellationCheck)
+                is TracerCommand.Trace -> predictClassToken(classNames, token)
                 else -> emptyList()
             }
             else -> emptyList()
         }
     }
 
-    private fun predictOptionToken(
-        choices: Collection<String>,
-        token: String,
-        cancellationCheck: () -> Unit
-    ): List<Suggestion> {
-        return predictToken(choices, token, { it.formattedSource }, { null }, cancellationCheck)
+    private fun predictOptionToken(choices: Collection<String>, token: String): List<Suggestion> {
+        return predictToken(choices, token, { it.formattedSource }, { null })
     }
 
-    private fun predictClassToken(
-        choices: Collection<String>,
-        token: String,
-        cancellationCheck: () -> Unit
-    ): List<Suggestion> {
-        return predictToken(choices, token, { it.formattedSource }, { null }, cancellationCheck)
+    private fun predictClassToken(choices: Collection<String>, token: String): List<Suggestion> {
+        return predictToken(choices, token, { it.formattedSource }, { null })
     }
 
     private fun predictToken(
         choices: Collection<String>,
         token: String,
         nameFunc: (MatchResult) -> String,
-        detailFunc: (MatchResult) -> String?,
-        cancellationCheck: () -> Unit
+        detailFunc: (MatchResult) -> String?
     ): List<Suggestion> {
-        return fuzzySearch(choices, token) { cancellationCheck() }
+        return fuzzySearch(choices, token) { ProgressManager.checkCanceled() }
             .map { Suggestion(nameFunc(it), detailFunc(it)) }
     }
 
