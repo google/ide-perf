@@ -87,11 +87,11 @@ fun fuzzyMatch(source: String, pattern: String): Boolean {
 
 /* Base scores */
 private const val GAP_SCORE = -1
-private const val MATCH_SCORE = -GAP_SCORE * 8
+private const val MATCH_SCORE = -GAP_SCORE * 4
 private const val MISMATCH_SCORE = -MATCH_SCORE
 
 /* Constants for super scores */
-private const val GAP_RECOVERY_SCORE = MATCH_SCORE * 2
+private const val GAP_RECOVERY_SCORE = MATCH_SCORE
 
 /*
  * Super scores
