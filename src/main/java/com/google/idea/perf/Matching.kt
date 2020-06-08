@@ -25,6 +25,50 @@ class MatchResult(val source: String, val formattedSource: String) {
     }
 }
 
+class FuzzySearcher(patternCacheSize: Int, resultCacheSize: Int) {
+    private val impl = FuzzySearcherImpl(patternCacheSize, resultCacheSize)
+
+    fun search(
+        sources: Collection<String>,
+        pattern: String,
+        maxResults: Int,
+        cancellationCheck: () -> Unit
+    ): List<MatchResult> {
+        var results = impl.search(sources, pattern, cancellationCheck)
+
+        if (maxResults >= 0) {
+            results = results.take(maxResults)
+        }
+
+        return results.map {
+            val builder = StringBuilder(it.source.length * 2)
+            var isMatched = false
+            var isPrevMatched = isMatched
+
+            for ((index, char) in it.source.withIndex()) {
+                isMatched = it.matchedChars.contains(index)
+                if (!isPrevMatched && isMatched) {
+                    builder.append(MatchResult.MATCHED_RANGE_OPEN_TOKEN)
+                }
+                else if (isPrevMatched && !isMatched) {
+                    builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
+                }
+
+                builder.append(char)
+                isPrevMatched = isMatched
+            }
+
+            if (isPrevMatched) {
+                builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
+            }
+
+            MatchResult(it.source, builder.toString())
+        }
+    }
+}
+
+private val searchers = ThreadLocal.withInitial { FuzzySearcher(64, 1024) }
+
 /** Searches on a list of strings based on an approximate pattern. */
 fun fuzzySearch(
     sources: Collection<String>,
@@ -32,36 +76,7 @@ fun fuzzySearch(
     maxResults: Int,
     cancellationCheck: () -> Unit
 ): List<MatchResult> {
-    var results = fuzzySearchCached(sources, pattern, cancellationCheck)
-
-    if (maxResults >= 0) {
-        results = results.take(maxResults)
-    }
-
-    return results.map {
-        val builder = StringBuilder(it.source.length * 2)
-        var isMatched = false
-        var isPrevMatched = isMatched
-
-        for ((index, char) in it.source.withIndex()) {
-            isMatched = it.matchedChars.contains(index)
-            if (!isPrevMatched && isMatched) {
-                builder.append(MatchResult.MATCHED_RANGE_OPEN_TOKEN)
-            }
-            else if (isPrevMatched && !isMatched) {
-                builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
-            }
-
-            builder.append(char)
-            isPrevMatched = isMatched
-        }
-
-        if (isPrevMatched) {
-            builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
-        }
-
-        MatchResult(it.source, builder.toString())
-    }
+    return searchers.get().search(sources, pattern, maxResults, cancellationCheck)
 }
 
 /**
@@ -75,7 +90,7 @@ fun fuzzyMatch(source: String, pattern: String): Boolean {
 }
 
 /*
- * Implementation details
+ * Fuzzy matcher implementation
  *
  * Assuming all strings are ASCII, case-insensitive matching should work fine.
  */
@@ -201,40 +216,9 @@ private fun smartMatch(source: String, pattern: String): MatchDetails {
     return MatchDetails(source, matchedChars, maxScore)
 }
 
-private typealias ResultCache = LruCache<String, List<String>>
-
-private typealias SearchCache = LruCache<Collection<String>, ResultCache>
-
-private val searchCaches = ThreadLocal.withInitial { SearchCache(128) }
-
-private val searchCache: SearchCache
-    get() = searchCaches.get()
-
-private fun fuzzySearchCached(
-    sources: Collection<String>,
-    pattern: String,
-    cancellationCheck: () -> Unit
-): List<MatchDetails> {
-    val cachedPatterns = searchCache[sources]
-    var selectedSources = sources
-
-    if (cachedPatterns != null) {
-        for (i in pattern.lastIndex downTo 1) {
-            val patternPrefix = pattern.substring(0, i)
-            val cachedResults = cachedPatterns[patternPrefix]
-            if (cachedResults != null) {
-                selectedSources = cachedResults
-                break
-            }
-        }
-    }
-
-    val results = fuzzySearchUncached(selectedSources, pattern, cancellationCheck)
-    searchCache.computeIfAbsent(sources) { LruCache(128) }
-    searchCache[sources]!!.computeIfAbsent(pattern) { results.map { it.source } }
-
-    return results
-}
+/*
+ * Fuzzy searcher implementation.
+ */
 
 private fun fuzzySearchUncached(
     sources: Collection<String>,
@@ -256,4 +240,37 @@ private fun fuzzySearchUncached(
 
     results.sortByDescending { it.score }
     return results
+}
+
+private typealias ResultCache = LruCache<String, List<String>>
+private typealias PatternCache = LruCache<Collection<String>, ResultCache>
+
+private class FuzzySearcherImpl(patternCacheSize: Int, private val resultCacheSize: Int) {
+    private val patternCache = PatternCache(patternCacheSize)
+
+    fun search(
+        sources: Collection<String>,
+        pattern: String,
+        cancellationCheck: () -> Unit
+    ): List<MatchDetails> {
+        val cachedPatterns = patternCache[sources]
+        var selectedSources = sources
+
+        if (cachedPatterns != null) {
+            for (i in pattern.lastIndex downTo 1) {
+                val patternPrefix = pattern.substring(0, i)
+                val cachedResults = cachedPatterns[patternPrefix]
+                if (cachedResults != null) {
+                    selectedSources = cachedResults
+                    break
+                }
+            }
+        }
+
+        val results = fuzzySearchUncached(selectedSources, pattern, cancellationCheck)
+        patternCache.computeIfAbsent(sources) { LruCache(resultCacheSize) }
+        patternCache[sources]!!.computeIfAbsent(pattern) { results.map { it.source } }
+
+        return results
+    }
 }
