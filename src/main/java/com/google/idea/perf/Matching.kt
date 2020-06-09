@@ -26,7 +26,7 @@ class MatchResult(val source: String, val formattedSource: String) {
 }
 
 class FuzzySearcher(patternCacheSize: Int, resultCacheSize: Int) {
-    private val impl = FuzzySearcherImpl(patternCacheSize, resultCacheSize)
+    private val impl = FuzzySearcherImpl(patternCacheSize, resultCacheSize, 0.78)
 
     fun search(
         sources: Collection<String>,
@@ -245,7 +245,11 @@ private fun fuzzySearchUncached(
 private typealias ResultCache = LruCache<String, List<String>>
 private typealias PatternCache = LruCache<Collection<String>, ResultCache>
 
-private class FuzzySearcherImpl(patternCacheSize: Int, private val resultCacheSize: Int) {
+private class FuzzySearcherImpl(
+    patternCacheSize: Int,
+    private val resultCacheSize: Int,
+    private val pruneFactor: Double
+) {
     private val patternCache = PatternCache(patternCacheSize)
     private val patternCacheLock = Any()
 
@@ -275,7 +279,10 @@ private class FuzzySearcherImpl(patternCacheSize: Int, private val resultCacheSi
 
         synchronized(patternCacheLock) {
             patternCache.computeIfAbsent(sources) { LruCache(resultCacheSize) }
-            patternCache[sources]!!.computeIfAbsent(pattern) { results.map { it.source } }
+
+            if (results.size.toDouble() / selectedSources.size < pruneFactor) {
+                patternCache[sources]!!.computeIfAbsent(pattern) { results.map { it.source } }
+            }
         }
 
         return results
