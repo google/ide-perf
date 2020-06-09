@@ -67,7 +67,7 @@ class FuzzySearcher(patternCacheSize: Int, resultCacheSize: Int) {
     }
 }
 
-private val searchers = ThreadLocal.withInitial { FuzzySearcher(64, 1024) }
+private val globalSearcher = FuzzySearcher(16, 256)
 
 /** Searches on a list of strings based on an approximate pattern. */
 fun fuzzySearch(
@@ -76,7 +76,7 @@ fun fuzzySearch(
     maxResults: Int,
     cancellationCheck: () -> Unit
 ): List<MatchResult> {
-    return searchers.get().search(sources, pattern, maxResults, cancellationCheck)
+    return globalSearcher.search(sources, pattern, maxResults, cancellationCheck)
 }
 
 /**
@@ -247,29 +247,36 @@ private typealias PatternCache = LruCache<Collection<String>, ResultCache>
 
 private class FuzzySearcherImpl(patternCacheSize: Int, private val resultCacheSize: Int) {
     private val patternCache = PatternCache(patternCacheSize)
+    private val patternCacheLock = Any()
 
     fun search(
         sources: Collection<String>,
         pattern: String,
         cancellationCheck: () -> Unit
     ): List<MatchDetails> {
-        val cachedPatterns = patternCache[sources]
         var selectedSources = sources
 
-        if (cachedPatterns != null) {
-            for (i in pattern.lastIndex downTo 1) {
-                val patternPrefix = pattern.substring(0, i)
-                val cachedResults = cachedPatterns[patternPrefix]
-                if (cachedResults != null) {
-                    selectedSources = cachedResults
-                    break
+        synchronized(patternCacheLock) {
+            val cachedPatterns = patternCache[sources]
+
+            if (cachedPatterns != null) {
+                for (i in pattern.lastIndex downTo 1) {
+                    val patternPrefix = pattern.substring(0, i)
+                    val cachedResults = cachedPatterns[patternPrefix]
+                    if (cachedResults != null) {
+                        selectedSources = cachedResults
+                        break
+                    }
                 }
             }
         }
 
         val results = fuzzySearchUncached(selectedSources, pattern, cancellationCheck)
-        patternCache.computeIfAbsent(sources) { LruCache(resultCacheSize) }
-        patternCache[sources]!!.computeIfAbsent(pattern) { results.map { it.source } }
+
+        synchronized(patternCacheLock) {
+            patternCache.computeIfAbsent(sources) { LruCache(resultCacheSize) }
+            patternCache[sources]!!.computeIfAbsent(pattern) { results.map { it.source } }
+        }
 
         return results
     }
