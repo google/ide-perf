@@ -95,7 +95,7 @@ fun main() {
     println("0.0%")
 
     for ((index, pattern) in PATTERNS.withIndex()) {
-        val searcher = FuzzySearcher(1, 100)
+        val searcher = FuzzySearcher()
         results.add(searcher.benchmarkPattern(items, pattern))
 
         val progress = ((index + 1).toDouble() / PATTERNS.size) * 100.0

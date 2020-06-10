@@ -16,7 +16,7 @@
 
 package com.google.idea.perf
 
-import com.google.idea.perf.util.LruCache
+import com.intellij.util.containers.SLRUMap
 
 class MatchResult(val source: String, val formattedSource: String) {
     companion object {
@@ -25,8 +25,8 @@ class MatchResult(val source: String, val formattedSource: String) {
     }
 }
 
-class FuzzySearcher(patternCacheSize: Int, resultCacheSize: Int) {
-    private val impl = FuzzySearcherImpl(patternCacheSize, resultCacheSize, 0.78)
+class FuzzySearcher {
+    private val impl = FuzzySearcherImpl()
 
     fun search(
         sources: Collection<String>,
@@ -67,7 +67,7 @@ class FuzzySearcher(patternCacheSize: Int, resultCacheSize: Int) {
     }
 }
 
-private val globalSearcher = FuzzySearcher(16, 256)
+private val globalSearcher = FuzzySearcher()
 
 /** Searches on a list of strings based on an approximate pattern. */
 fun fuzzySearch(
@@ -220,6 +220,10 @@ private fun smartMatch(source: String, pattern: String): MatchDetails {
  * Fuzzy searcher implementation.
  */
 
+private const val PATTERN_CACHE_SIZE = 16
+private const val RESULT_CACHE_SIZE = 256
+private const val PRUNE_FACTOR = 0.78
+
 private fun fuzzySearchUncached(
     sources: Collection<String>,
     pattern: String,
@@ -242,15 +246,13 @@ private fun fuzzySearchUncached(
     return results
 }
 
-private typealias ResultCache = LruCache<String, List<String>>
-private typealias PatternCache = LruCache<Collection<String>, ResultCache>
+private typealias ResultCache = SLRUMap<String, List<String>>
+private typealias PatternCache = SLRUMap<Collection<String>, ResultCache>
 
-private class FuzzySearcherImpl(
-    patternCacheSize: Int,
-    private val resultCacheSize: Int,
-    private val pruneFactor: Double
-) {
-    private val patternCache = PatternCache(patternCacheSize)
+private class FuzzySearcherImpl {
+    private val patternCache = PatternCache(
+        PATTERN_CACHE_SIZE / 2, PATTERN_CACHE_SIZE - PATTERN_CACHE_SIZE / 2
+    )
     private val patternCacheLock = Any()
 
     fun search(
@@ -278,10 +280,19 @@ private class FuzzySearcherImpl(
         val results = fuzzySearchUncached(selectedSources, pattern, cancellationCheck)
 
         synchronized(patternCacheLock) {
-            patternCache.computeIfAbsent(sources) { LruCache(resultCacheSize) }
+            var cachedPatterns = patternCache[sources]
+            if (cachedPatterns == null) {
+                cachedPatterns = ResultCache(
+                    RESULT_CACHE_SIZE / 2, RESULT_CACHE_SIZE - RESULT_CACHE_SIZE / 2
+                )
+                patternCache.put(sources, cachedPatterns)
+            }
 
-            if (results.size.toDouble() / selectedSources.size < pruneFactor) {
-                patternCache[sources]!!.computeIfAbsent(pattern) { results.map { it.source } }
+            if (results.size.toDouble() / selectedSources.size < PRUNE_FACTOR) {
+                val cachedResults = cachedPatterns[pattern]
+                if (cachedResults == null) {
+                    cachedPatterns.put(pattern, results.map { it.source })
+                }
             }
         }
 
