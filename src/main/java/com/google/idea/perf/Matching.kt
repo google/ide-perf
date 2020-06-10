@@ -167,15 +167,8 @@ private fun fastMatch(source: String, pattern: String): MatchDetails {
         return MatchDetails(source, emptyList(), 0)
     }
 
-    var firstOffset = 0
-    while (firstOffset < source.length && !charEquals(source[firstOffset], pattern[0])) {
-        firstOffset++
-    }
-
-    var lastOffset = source.lastIndex
-    while (lastOffset >= 0 && !charEquals(source[lastOffset], pattern[0])) {
-        lastOffset--
-    }
+    val firstOffset = source.indexOfFirst { charEquals(it, pattern[0]) }
+    val lastOffset = source.indexOfLast { !charEquals(it, pattern[0]) }
 
     fun getMatch(offset: Int): Pair<Int, Int> {
         if (offset < 0) {

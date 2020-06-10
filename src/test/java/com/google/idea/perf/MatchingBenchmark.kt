@@ -89,7 +89,7 @@ private fun buildCsv(results: Benchmark): String? {
 }
 
 fun main() {
-    val items = Files.readAllLines(Paths.get("benchmarks", "sampleClasses.txt"))
+    val items = Files.readAllLines(Paths.get("testData", "sampleClasses.txt"))
     val results = Benchmark()
 
     println("0.0%")
