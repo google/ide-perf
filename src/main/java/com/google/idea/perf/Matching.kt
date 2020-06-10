@@ -115,6 +115,12 @@ private const val DELIMITER_SCORE = MATCH_SCORE * 16
 private const val POST_DELIMITER_SCORE = MATCH_SCORE * 4
 private const val CAMEL_CASE_SCORE = GAP_RECOVERY_SCORE
 
+/*
+ * Minimum number of characters required to use smart match.
+ * Usually, users start making typos no earlier than the third character.
+ */
+private const val SMART_MATCH_MIN_LENGTH = 3
+
 private const val ROOT: Byte = 0
 private const val LEFT: Byte = 1
 private const val UP: Byte = 2
@@ -129,6 +135,10 @@ private class MatchDetails(val source: String, val matchedChars: List<Int>, val 
 private fun fuzzyMatchImpl(source: String, pattern: String): MatchDetails {
     if (pattern.isEmpty()) {
         return MatchDetails(source, emptyList(), 0)
+    }
+
+    if (pattern.length < SMART_MATCH_MIN_LENGTH) {
+        return fastMatch(source, pattern)
     }
 
     return smartMatch(source, pattern)
@@ -150,6 +160,51 @@ private fun getCharacterScore(
         matchesCase && isDelimiter(prevChar) -> POST_DELIMITER_SCORE
         else -> MATCH_SCORE
     }
+}
+
+private fun fastMatch(source: String, pattern: String): MatchDetails {
+    if (pattern.length > source.length) {
+        return MatchDetails(source, emptyList(), 0)
+    }
+
+    var firstOffset = 0
+    while (firstOffset < source.length && !charEquals(source[firstOffset], pattern[0])) {
+        firstOffset++
+    }
+
+    var lastOffset = source.lastIndex
+    while (lastOffset >= 0 && !charEquals(source[lastOffset], pattern[0])) {
+        lastOffset--
+    }
+
+    fun getMatch(offset: Int): Pair<Int, Int> {
+        if (offset < 0) {
+            return Pair(0, 0)
+        }
+
+        var totalScore = 0
+        var numMatches = 0
+
+        while (numMatches < pattern.length && offset + numMatches < source.length) {
+            val score = getCharacterScore(source, pattern, offset + numMatches, numMatches)
+            if (score < 0) {
+                break
+            }
+            totalScore += score
+            numMatches++
+        }
+
+        return Pair(totalScore, numMatches)
+    }
+
+    val firstMatch = getMatch(firstOffset)
+    val lastMatch = getMatch(lastOffset)
+    val bestScore = maxOf(firstMatch.first, lastMatch.first)
+    val bestMatch = if (bestScore == firstMatch.first) firstMatch else lastMatch
+    val bestStart = if (bestScore == firstMatch.first) firstOffset else lastOffset
+    val matchedChars = (bestStart..(bestStart + bestMatch.second)).toList()
+
+    return MatchDetails(source, matchedChars, bestScore)
 }
 
 private fun smartMatch(source: String, pattern: String): MatchDetails {
