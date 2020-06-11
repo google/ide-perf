@@ -18,6 +18,9 @@ package com.google.idea.perf
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
@@ -29,8 +32,6 @@ import com.intellij.util.textCompletion.TextFieldWithCompletion
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import java.awt.Dimension
-import java.awt.event.KeyEvent
-import java.awt.event.KeyListener
 import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
@@ -91,22 +92,20 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
             ProjectManager.getInstance().defaultProject,
             controller.autocomplete,
             "",
-            true,
+            false,
             true,
             true
         ).apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-            addKeyListener(object: KeyListener {
-                override fun keyTyped(e: KeyEvent?) {}
-
-                override fun keyPressed(e: KeyEvent?) {
-                    if (e?.keyCode == KeyEvent.VK_ENTER) {
+            addDocumentListener(object: DocumentListener {
+                override fun beforeDocumentChange(event: DocumentEvent) {
+                    if (event.newFragment.contains('\n')) {
                         controller.handleRawCommandFromEdt(text)
-                        text = ""
+                        ApplicationManager.getApplication().invokeLater {
+                            this@apply.text = ""
+                        }
                     }
                 }
-
-                override fun keyReleased(e: KeyEvent?) {}
             })
         }
         add(commandLine)
