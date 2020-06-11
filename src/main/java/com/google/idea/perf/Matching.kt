@@ -40,30 +40,7 @@ class FuzzySearcher {
             results = results.take(maxResults)
         }
 
-        return results.map {
-            val builder = StringBuilder(it.source.length * 2)
-            var isMatched = false
-            var isPrevMatched = isMatched
-
-            for ((index, char) in it.source.withIndex()) {
-                isMatched = it.matchedChars.contains(index)
-                if (!isPrevMatched && isMatched) {
-                    builder.append(MatchResult.MATCHED_RANGE_OPEN_TOKEN)
-                }
-                else if (isPrevMatched && !isMatched) {
-                    builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
-                }
-
-                builder.append(char)
-                isPrevMatched = isMatched
-            }
-
-            if (isPrevMatched) {
-                builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
-            }
-
-            MatchResult(it.source, builder.toString())
-        }
+        return results.map { getMatchResult(it) }
     }
 }
 
@@ -85,8 +62,37 @@ fun fuzzySearch(
  *
  * @see <a href="https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm">Smith-Waterman algorithm</a>
  */
-fun fuzzyMatch(source: String, pattern: String): Boolean {
-    return fuzzyMatchImpl(source, pattern).matchedChars.size >= pattern.length
+fun fuzzyMatch(source: String, pattern: String): MatchResult? {
+    val details = fuzzyMatchImpl(source, pattern)
+    if (details.matchedChars.size < pattern.length) {
+        return null
+    }
+    return getMatchResult(details)
+}
+
+private fun getMatchResult(details: MatchDetails): MatchResult {
+    val builder = StringBuilder(details.source.length * 2)
+    var isMatched = false
+    var isPrevMatched = isMatched
+
+    for ((index, char) in details.source.withIndex()) {
+        isMatched = details.matchedChars.contains(index)
+        if (!isPrevMatched && isMatched) {
+            builder.append(MatchResult.MATCHED_RANGE_OPEN_TOKEN)
+        }
+        else if (isPrevMatched && !isMatched) {
+            builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
+        }
+
+        builder.append(char)
+        isPrevMatched = isMatched
+    }
+
+    if (isPrevMatched) {
+        builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
+    }
+
+    return MatchResult(details.source, builder.toString())
 }
 
 /*

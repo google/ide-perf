@@ -17,11 +17,18 @@
 package com.google.idea.perf
 
 import org.junit.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private fun assertMatch(expectMatch: Boolean, source: String, pattern: String) {
-    assertEquals(expectMatch, fuzzyMatch(source, pattern))
+    val result = fuzzyMatch(source, pattern)
+    if (expectMatch) {
+        assertNotNull(result)
+    }
+    else {
+        assertNull(result)
+    }
 }
 
 private fun assertSearch(
