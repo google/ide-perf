@@ -16,58 +16,101 @@
 
 package com.google.idea.perf
 
+import com.intellij.codeInsight.completion.CompletionParameters
+import com.intellij.codeInsight.completion.CompletionResultSet
+import com.intellij.codeInsight.completion.CompletionUtilCore
+import com.intellij.codeInsight.completion.PrefixMatcher
+import com.intellij.codeInsight.lookup.CharFilter
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.util.textCompletion.DefaultTextCompletionValueDescriptor
+import com.intellij.util.textCompletion.TextCompletionProvider
 
-data class Suggestion(val name: String, val detail: String?)
+private class AutocompleteMatcher(val pattern: String): PrefixMatcher(pattern) {
+    override fun prefixMatches(name: String): Boolean {
+        return fuzzyMatch(name, pattern) != null
+    }
 
-class Autocomplete {
-    private var classNames: List<String> = emptyList()
+    override fun cloneWithPrefix(prefix: String): PrefixMatcher {
+        return AutocompleteMatcher(pattern)
+    }
+}
 
+class AutocompleteCompletionProvider: TextCompletionProvider {
+    private var classNames = emptyList<String>()
+
+    @Synchronized
     fun setClasses(classes: Collection<Class<*>>) {
         classNames = classes.mapNotNull { it.canonicalName }
     }
 
-    fun predict(input: String, index: Int): List<Suggestion> {
-        val tokens = input.trimStart().split(' ')
+    override fun applyPrefixMatcher(
+        result: CompletionResultSet,
+        prefix: String
+    ): CompletionResultSet {
+        return result.withPrefixMatcher(AutocompleteMatcher(prefix)).caseInsensitive()
+    }
+
+    override fun getAdvertisement(): String? = ""
+
+    override fun getPrefix(text: String, offset: Int): String? {
+        val start = 1 + text.lastIndexOf(' ', offset - 1)
+        return text.substring(start, offset)
+    }
+
+    override fun fillCompletionVariants(
+        parameters: CompletionParameters,
+        prefix: String,
+        result: CompletionResultSet
+    ) {
+        val text = parameters.position.text.substringBeforeLast(CompletionUtilCore.DUMMY_IDENTIFIER)
+        val offset = parameters.offset
+        val suggestions = predict(text, offset)
+
+        val descriptor = DefaultTextCompletionValueDescriptor.StringValueDescriptor()
+
+        for (suggestion in suggestions) {
+            val builder = descriptor.createLookupBuilder(suggestion)
+            result.addElement(builder)
+        }
+
+        result.stopHere()
+    }
+
+    override fun acceptChar(c: Char): CharFilter.Result? {
+        if (c == ' ' || c == '\t') {
+            return CharFilter.Result.HIDE_LOOKUP
+        }
+        return CharFilter.Result.ADD_TO_PREFIX
+    }
+
+    private fun predict(text: String, offset: Int): List<String> {
+        val tokens = text.trimStart().split(' ')
         val normalizedInput = tokens.joinToString(" ")
         val command = parseTracerCommand(normalizedInput)
-        val tokenIndex = getTokenIndex(normalizedInput, index)
+        val tokenIndex = getTokenIndex(normalizedInput, offset)
         val token = tokens.getOrElse(tokenIndex) { "" }
 
         return when (tokenIndex) {
-            0 -> predictOptionToken(
+            0 -> predictToken(
                 listOf("clear", "reset", "trace", "untrace"), token
             )
             1 -> when (command) {
-                is TracerCommand.Trace -> predictOptionToken(
+                is TracerCommand.Trace -> predictToken(
                     listOf("all", "count", "wall-time"), token
                 )
                 else -> emptyList()
             }
             2 -> when (command) {
-                is TracerCommand.Trace -> predictClassToken(classNames, token)
+                is TracerCommand.Trace -> predictToken(classNames, token)
                 else -> emptyList()
             }
             else -> emptyList()
         }
     }
 
-    private fun predictOptionToken(choices: Collection<String>, token: String): List<Suggestion> {
-        return predictToken(choices, token, { it.formattedSource }, { null })
-    }
-
-    private fun predictClassToken(choices: Collection<String>, token: String): List<Suggestion> {
-        return predictToken(choices, token, { it.formattedSource }, { null })
-    }
-
-    private fun predictToken(
-        choices: Collection<String>,
-        token: String,
-        nameFunc: (MatchResult) -> String,
-        detailFunc: (MatchResult) -> String?
-    ): List<Suggestion> {
+    private fun predictToken(choices: Collection<String>, token: String): List<String> {
         return fuzzySearch(choices, token, 100) { ProgressManager.checkCanceled() }
-            .map { Suggestion(nameFunc(it), detailFunc(it)) }
+            .map { it.source }
     }
 
     private fun getTokenIndex(input: String, index: Int): Int {
