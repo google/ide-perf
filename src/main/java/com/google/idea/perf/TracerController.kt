@@ -169,13 +169,15 @@ class TracerController(
                         val className = command.target.className
                         val methodName = command.target.methodName
                         val classJvmName = className.replace('.', '/')
-                        if (command.enable) {
-                            TracerConfig.traceMethods(classJvmName, methodName)
+                        if (methodName != null) {
+                            if (command.enable) {
+                                TracerConfig.traceMethods(classJvmName, methodName)
+                            }
+                            else {
+                                TracerConfig.untraceMethods(classJvmName, methodName)
+                            }
+                            retransformClasses(setOf(className))
                         }
-                        else {
-                            TracerConfig.untraceMethods(classJvmName, methodName)
-                        }
-                        retransformClasses(setOf(className))
                     }
                 }
             }
