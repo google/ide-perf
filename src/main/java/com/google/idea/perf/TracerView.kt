@@ -18,13 +18,17 @@ package com.google.idea.perf
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.components.JBTextField
+import com.intellij.util.textCompletion.TextFieldWithCompletion
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import java.awt.Dimension
@@ -34,8 +38,6 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JProgressBar
 import javax.swing.border.Border
-import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
 
 // Things to improve:
 // - Add UI indicator for fps or something similar.
@@ -76,7 +78,7 @@ class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false
 /** The content filling the tracer dialog window. */
 class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
     private val controller: TracerController = TracerController(this, parentDisposable)
-    val commandLine: JBTextField
+    private val commandLine: TextFieldWithCompletion
     val progressBar: JProgressBar
     val listView = TracepointTable(TracepointTableModel())
     val refreshTimeLabel: JBLabel
@@ -86,23 +88,23 @@ class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
-        commandLine = JBTextField().apply {
+        commandLine = TextFieldWithCompletion(
+            ProjectManager.getInstance().defaultProject,
+            controller.autocomplete,
+            "",
+            false,
+            true,
+            true
+        ).apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-            addActionListener { e ->
-                text = ""
-                controller.handleRawCommandFromEdt(e.actionCommand)
-            }
-            document.addDocumentListener(object: DocumentListener {
-                override fun changedUpdate(e: DocumentEvent) {
-                    controller.handleCommandChangeFromEdt(text, e.offset)
-                }
-
-                override fun insertUpdate(e: DocumentEvent) {
-                    controller.handleCommandChangeFromEdt(text, e.offset)
-                }
-
-                override fun removeUpdate(e: DocumentEvent) {
-                    controller.handleCommandChangeFromEdt(text, e.offset)
+            addDocumentListener(object: DocumentListener {
+                override fun beforeDocumentChange(event: DocumentEvent) {
+                    if (event.newFragment.contains('\n')) {
+                        controller.handleRawCommandFromEdt(text)
+                        ApplicationManager.getApplication().invokeLater {
+                            this@apply.text = ""
+                        }
+                    }
                 }
             })
         }

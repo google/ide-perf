@@ -17,7 +17,6 @@
 package com.google.idea.perf
 
 import com.google.idea.perf.util.formatNsInUs
-import com.intellij.codeInsight.hint.HintManager
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
@@ -26,12 +25,10 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
-import com.intellij.openapi.progress.util.ProgressIndicatorUtils
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attachChild
 import com.intellij.openapi.util.Computable
 import com.intellij.psi.PsiElementFinder
-import com.intellij.ui.awt.RelativePoint
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.ui.UIUtil
 import java.awt.image.BufferedImage
@@ -39,8 +36,6 @@ import java.io.File
 import java.io.IOException
 import java.lang.instrument.UnmodifiableClassException
 import java.lang.reflect.Method
-import java.util.concurrent.Callable
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.imageio.ImageIO
@@ -51,7 +46,6 @@ import kotlin.reflect.jvm.javaMethod
 // - Make sure CPU overhead is minimal when the tracer window is not showing.
 // - Add some logging.
 // - Detect repeated instrumentation requests with the same spec.
-// - More principled command parsing.
 // - Add a proper progress indicator (subclass of ProgressIndicator) which displays text status.
 // - Consider moving callTree to CallTreeManager so that it persists after the Tracer window closes.
 // - Add visual indicator in UI if agent is not available.
@@ -72,13 +66,11 @@ class TracerController(
     private var callTree = MutableCallTree(Tracepoint.ROOT)
     private val dataRefreshLoopStarted = AtomicBoolean()
 
-    private val autocomplete = Autocomplete()
-    private var autocompleteFuture: Future<Unit>? = null
+    val autocomplete = AutocompleteCompletionProvider()
 
     companion object {
         private val LOG = Logger.getInstance(TracerController::class.java)
         private const val REFRESH_DELAY_MS: Long = 30L
-        private const val AUTOCOMPLETE_MAX_TIMEOUT_MS = 2000L
     }
 
     init {
@@ -191,33 +183,6 @@ class TracerController(
                 LOG.warn("Unknown command: $cmd")
             }
         }
-    }
-
-    fun handleCommandChangeFromEdt(rawCmd: String, offset: Int) {
-        val executor = AppExecutorUtil.getAppExecutorService()
-
-        autocompleteFuture?.cancel(true)
-
-        autocompleteFuture = executor.submit(Callable {
-            val suggestions = ProgressIndicatorUtils.withTimeout(AUTOCOMPLETE_MAX_TIMEOUT_MS) {
-                autocomplete.predict(rawCmd, offset)
-            }
-
-            if (suggestions != null) {
-                getApplication().invokeAndWait {
-                    val hint = AutocompleteView(suggestions)
-                    HintManager.getInstance().showHint(
-                        hint,
-                        RelativePoint.getSouthWestOf(view.commandLine),
-                        HintManager.HIDE_BY_ANY_KEY or HintManager.HIDE_BY_OTHER_HINT,
-                        0
-                    )
-                }
-            }
-            else {
-                LOG.warn("Autocomplete timed out.")
-            }
-        })
     }
 
     private fun traceAndRetransform(enable: Boolean, vararg methods: Method) {

@@ -40,30 +40,7 @@ class FuzzySearcher {
             results = results.take(maxResults)
         }
 
-        return results.map {
-            val builder = StringBuilder(it.source.length * 2)
-            var isMatched = false
-            var isPrevMatched = isMatched
-
-            for ((index, char) in it.source.withIndex()) {
-                isMatched = it.matchedChars.contains(index)
-                if (!isPrevMatched && isMatched) {
-                    builder.append(MatchResult.MATCHED_RANGE_OPEN_TOKEN)
-                }
-                else if (isPrevMatched && !isMatched) {
-                    builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
-                }
-
-                builder.append(char)
-                isPrevMatched = isMatched
-            }
-
-            if (isPrevMatched) {
-                builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
-            }
-
-            MatchResult(it.source, builder.toString())
-        }
+        return results.map { getMatchResult(it) }
     }
 }
 
@@ -85,8 +62,37 @@ fun fuzzySearch(
  *
  * @see <a href="https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm">Smith-Waterman algorithm</a>
  */
-fun fuzzyMatch(source: String, pattern: String): Boolean {
-    return fuzzyMatchImpl(source, pattern).matchedChars.size >= pattern.length
+fun fuzzyMatch(source: String, pattern: String): MatchResult? {
+    val details = fuzzyMatchImpl(source, pattern)
+    if (details.matchedChars.size < pattern.length) {
+        return null
+    }
+    return getMatchResult(details)
+}
+
+private fun getMatchResult(details: MatchDetails): MatchResult {
+    val builder = StringBuilder(details.source.length * 2)
+    var isMatched = false
+    var isPrevMatched = isMatched
+
+    for ((index, char) in details.source.withIndex()) {
+        isMatched = details.matchedChars.contains(index)
+        if (!isPrevMatched && isMatched) {
+            builder.append(MatchResult.MATCHED_RANGE_OPEN_TOKEN)
+        }
+        else if (isPrevMatched && !isMatched) {
+            builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
+        }
+
+        builder.append(char)
+        isPrevMatched = isMatched
+    }
+
+    if (isPrevMatched) {
+        builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
+    }
+
+    return MatchResult(details.source, builder.toString())
 }
 
 /*
@@ -110,9 +116,9 @@ private const val GAP_RECOVERY_SCORE = MATCH_SCORE
  * If a super score is MATCH_SCORE*N, then N+1 normal-matched characters are required to surpass the
  * super score.
  */
+private const val POST_DELIMITER_SCORE = MATCH_SCORE * 32
 private const val FIRST_CHAR_SCORE = MATCH_SCORE * 16
 private const val DELIMITER_SCORE = MATCH_SCORE * 16
-private const val POST_DELIMITER_SCORE = MATCH_SCORE * 4
 private const val CAMEL_CASE_SCORE = GAP_RECOVERY_SCORE
 
 /*
@@ -154,10 +160,10 @@ private fun getCharacterScore(
 
     return when {
         !charEquals(char, patternChar) -> MISMATCH_SCORE
+        matchesCase && patternIndex == 0 && isDelimiter(prevChar) -> POST_DELIMITER_SCORE
         matchesCase && patternIndex == 0 && sourceIndex == 0 -> FIRST_CHAR_SCORE
         prevChar.isLowerCase() && char.isUpperCase() -> CAMEL_CASE_SCORE
         isDelimiter(char) -> DELIMITER_SCORE
-        matchesCase && isDelimiter(prevChar) -> POST_DELIMITER_SCORE
         else -> MATCH_SCORE
     }
 }
