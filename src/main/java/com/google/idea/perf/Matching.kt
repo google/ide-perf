@@ -116,9 +116,9 @@ private const val GAP_RECOVERY_SCORE = MATCH_SCORE
  * If a super score is MATCH_SCORE*N, then N+1 normal-matched characters are required to surpass the
  * super score.
  */
+private const val POST_DELIMITER_SCORE = MATCH_SCORE * 32
 private const val FIRST_CHAR_SCORE = MATCH_SCORE * 16
 private const val DELIMITER_SCORE = MATCH_SCORE * 16
-private const val POST_DELIMITER_SCORE = MATCH_SCORE * 4
 private const val CAMEL_CASE_SCORE = GAP_RECOVERY_SCORE
 
 /*
@@ -160,10 +160,10 @@ private fun getCharacterScore(
 
     return when {
         !charEquals(char, patternChar) -> MISMATCH_SCORE
+        matchesCase && patternIndex == 0 && isDelimiter(prevChar) -> POST_DELIMITER_SCORE
         matchesCase && patternIndex == 0 && sourceIndex == 0 -> FIRST_CHAR_SCORE
         prevChar.isLowerCase() && char.isUpperCase() -> CAMEL_CASE_SCORE
         isDelimiter(char) -> DELIMITER_SCORE
-        matchesCase && isDelimiter(prevChar) -> POST_DELIMITER_SCORE
         else -> MATCH_SCORE
     }
 }

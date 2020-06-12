@@ -20,7 +20,9 @@ import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.CompletionUtilCore
 import com.intellij.codeInsight.completion.PrefixMatcher
+import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.CharFilter
+import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.util.textCompletion.DefaultTextCompletionValueDescriptor
 import com.intellij.util.textCompletion.TextCompletionProvider
@@ -36,9 +38,9 @@ private class AutocompleteMatcher(val pattern: String): PrefixMatcher(pattern) {
 }
 
 class AutocompleteCompletionProvider: TextCompletionProvider {
+    @Volatile
     private var classNames = emptyList<String>()
 
-    @Synchronized
     fun setClasses(classes: Collection<Class<*>>) {
         classNames = classes.mapNotNull { it.canonicalName }
     }
@@ -47,7 +49,7 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
         result: CompletionResultSet,
         prefix: String
     ): CompletionResultSet {
-        return result.withPrefixMatcher(AutocompleteMatcher(prefix)).caseInsensitive()
+        return result.withPrefixMatcher(AutocompleteMatcher(prefix))
     }
 
     override fun getAdvertisement(): String? = ""
@@ -67,13 +69,15 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
         val suggestions = predict(text, offset)
 
         val descriptor = DefaultTextCompletionValueDescriptor.StringValueDescriptor()
+        val elements = ArrayList<LookupElement>()
 
-        for (suggestion in suggestions) {
+        for ((index, suggestion) in suggestions.withIndex()) {
             val builder = descriptor.createLookupBuilder(suggestion)
-            result.addElement(builder)
+            val element = PrioritizedLookupElement.withPriority(builder, -index.toDouble())
+            elements.add(element)
         }
 
-        result.stopHere()
+        result.addAllElements(elements)
     }
 
     override fun acceptChar(c: Char): CharFilter.Result? {
@@ -109,7 +113,7 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
     }
 
     private fun predictToken(choices: Collection<String>, token: String): List<String> {
-        return fuzzySearch(choices, token, 100) { ProgressManager.checkCanceled() }
+        return fuzzySearch(choices, token, -1) { ProgressManager.checkCanceled() }
             .map { it.source }
     }
 
