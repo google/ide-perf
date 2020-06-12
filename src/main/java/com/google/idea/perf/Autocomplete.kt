@@ -55,8 +55,11 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
     override fun getAdvertisement(): String? = ""
 
     override fun getPrefix(text: String, offset: Int): String? {
-        val start = 1 + text.lastIndexOf(' ', offset - 1)
-        return text.substring(start, offset)
+        var start = Int.MIN_VALUE
+        for (char in listOf(' ', '\t', '#')) {
+            start = maxOf(start, text.lastIndexOf(char, offset - 1))
+        }
+        return text.substring(start + 1, offset)
     }
 
     override fun fillCompletionVariants(
@@ -81,17 +84,17 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
     }
 
     override fun acceptChar(c: Char): CharFilter.Result? {
-        if (c == ' ' || c == '\t') {
+        if (c == ' ' || c == '\t' || c == '#') {
             return CharFilter.Result.HIDE_LOOKUP
         }
         return CharFilter.Result.ADD_TO_PREFIX
     }
 
     private fun predict(text: String, offset: Int): List<String> {
-        val tokens = text.trimStart().split(' ')
-        val normalizedInput = tokens.joinToString(" ")
-        val command = parseTracerCommand(normalizedInput)
-        val tokenIndex = getTokenIndex(normalizedInput, offset)
+        val tokens = text.trimStart().split(' ', '\t')
+        val normalizedText = tokens.joinToString(" ")
+        val command = parseTracerCommand(normalizedText)
+        val tokenIndex = getTokenIndex(normalizedText, offset)
         val token = tokens.getOrElse(tokenIndex) { "" }
 
         return when (tokenIndex) {
@@ -108,6 +111,14 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
                 is TracerCommand.Trace -> predictToken(classNames, token)
                 else -> emptyList()
             }
+            3 -> when {
+                command is TracerCommand.Trace && command.target is TraceTarget.Method -> {
+                    val clazz = Class.forName(command.target.className)
+                    val methodNames = clazz.methods.map { it.name.substringAfter('$') }
+                    predictToken(methodNames, token)
+                }
+                else -> emptyList()
+            }
             else -> emptyList()
         }
     }
@@ -118,6 +129,6 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
     }
 
     private fun getTokenIndex(input: String, index: Int): Int {
-        return input.subSequence(0, index).count(Char::isWhitespace)
+        return input.subSequence(0, index).count { it.isWhitespace() || it == '#' }
     }
 }

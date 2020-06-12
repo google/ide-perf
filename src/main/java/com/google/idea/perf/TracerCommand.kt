@@ -51,7 +51,7 @@ sealed class TraceTarget {
     object PsiFinders: TraceTarget()
 
     /** Trace a specific method. */
-    data class Method(val className: String, val methodName: String): TraceTarget()
+    data class Method(val className: String, val methodName: String?): TraceTarget()
 }
 
 fun parseTracerCommand(text: String): TracerCommand? {
@@ -98,12 +98,13 @@ private fun parseTraceTarget(tokens: List<String>): TraceTarget? {
         else -> {
             val splitIndex = token.indexOf('#')
             if (splitIndex == -1) {
-                return null
+                TraceTarget.Method(token, null)
             }
-
-            val className = token.substring(0, splitIndex)
-            val methodName = token.substring(splitIndex + 1)
-            TraceTarget.Method(className, methodName)
+            else {
+                val className = token.substring(0, splitIndex)
+                val methodName = token.substring(splitIndex + 1)
+                TraceTarget.Method(className, methodName)
+            }
         }
     }
 }
