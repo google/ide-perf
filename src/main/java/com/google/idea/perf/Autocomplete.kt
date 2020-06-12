@@ -102,21 +102,22 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
                 listOf("clear", "reset", "trace", "untrace"), token
             )
             1 -> when (command) {
-                is TracerCommand.Trace -> predictToken(
-                    listOf("all", "count", "wall-time"), token
-                )
+                is TracerCommand.Trace -> {
+                    val options = predictToken(listOf("all", "count", "wall-time"), token)
+                    val classes = predictToken(classNames, token)
+                    return options + classes
+                }
                 else -> emptyList()
             }
-            2 -> when (command) {
-                is TracerCommand.Trace -> predictToken(classNames, token)
+            2 -> when {
+                command is TracerCommand.Trace && command.target is TraceTarget.Method ->
+                    predictMethodToken(command.target.className, token)
+                command is TracerCommand.Trace -> predictToken(classNames, token)
                 else -> emptyList()
             }
             3 -> when {
-                command is TracerCommand.Trace && command.target is TraceTarget.Method -> {
-                    val clazz = Class.forName(command.target.className)
-                    val methodNames = clazz.methods.map { it.name.substringAfter('$') }
-                    predictToken(methodNames, token)
-                }
+                command is TracerCommand.Trace && command.target is TraceTarget.Method ->
+                    predictMethodToken(command.target.className, token)
                 else -> emptyList()
             }
             else -> emptyList()
@@ -126,6 +127,12 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
     private fun predictToken(choices: Collection<String>, token: String): List<String> {
         return fuzzySearch(choices, token, -1) { ProgressManager.checkCanceled() }
             .map { it.source }
+    }
+
+    private fun predictMethodToken(className: String, token: String): List<String> {
+        val clazz = Class.forName(className)
+        val methodNames = clazz.methods.map { it.name.substringAfter('$') }
+        return predictToken(methodNames, token)
     }
 
     private fun getTokenIndex(input: String, index: Int): Int {
