@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.cachedvaluetracer
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -58,7 +58,8 @@ class CachedValueTracerDialog: DialogWrapper(null, null, false, IdeModalityType.
 
     override fun createCenterPanel(): JComponent? = CachedValueTracerView(disposable)
     override fun createContentPaneBorder(): Border? = null
-    override fun getDimensionServiceKey(): String? = "com.google.idea.perf"
+    override fun getDimensionServiceKey(): String? =
+        "com.google.idea.perf.cachedvaluetracer.CachedValueTracer"
     override fun createActions(): Array<Action> = emptyArray()
 }
 

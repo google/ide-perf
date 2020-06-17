@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.cachedvaluetracer
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.util.formatNsInMs
 import com.google.idea.perf.util.formatNum
