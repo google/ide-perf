@@ -24,7 +24,6 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
-import com.intellij.ui.table.JBTable
 import java.awt.Dimension
 import javax.swing.Action
 import javax.swing.BoxLayout
@@ -64,7 +63,9 @@ class CachedValueTracerDialog: DialogWrapper(null, null, false, IdeModalityType.
 }
 
 class CachedValueTracerView(parentDisposable: Disposable): JBPanel<CachedValueTracerView>() {
+    private val controller = CachedValueTracerController(this, parentDisposable)
     private val commandLine: JBTextField
+    val tableView = CachedValueTable(CachedValueTableModel())
 
     init {
         preferredSize = Dimension(500, 500)
@@ -77,6 +78,15 @@ class CachedValueTracerView(parentDisposable: Disposable): JBPanel<CachedValueTr
         add(commandLine)
 
         // List view.
-        add(JBScrollPane(JBTable()))
+        add(JBScrollPane(tableView))
+        tableView.setStats(listOf(
+            CachedValueStats("java.lang.String", 1000L, 100, 10),
+            CachedValueStats("java.lang.StringBuffer", 2000L, 200, 20),
+            CachedValueStats("java.lang.StringBuilder", 3000L, 300, 30),
+            CachedValueStats("java.lang.Void", 4000L, 400, 40),
+            CachedValueStats("java.lang.nio.ByteBuffer", 5000L, 500, 50)
+        ))
+
+        controller.startDataRefreshLoop()
     }
 }
