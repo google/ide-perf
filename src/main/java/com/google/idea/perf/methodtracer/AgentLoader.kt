@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.agent.AgentMain
 import com.google.idea.perf.agent.MethodListener

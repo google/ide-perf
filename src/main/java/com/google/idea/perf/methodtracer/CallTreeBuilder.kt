@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.methodtracer
 
 // Things to improve:
 // - Think about the behavior we want for recursive calls.

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.agent.MethodListener
 import com.google.idea.perf.util.ConcurrentAppendOnlyList

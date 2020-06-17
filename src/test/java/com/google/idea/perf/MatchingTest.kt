@@ -46,7 +46,7 @@ private val idePerfClasses = listOf(
     "com.google.idea.perf.AgentLoader",
     "com.google.idea.perf.CallTreeBuilder",
     "com.google.idea.perf.CallTreeManager",
-    "com.google.idea.perf.TracerConfig",
+    "com.google.idea.perf.methodtracer.TracerConfig",
     "com.google.idea.perf.TracerController",
     "com.google.idea.perf.TracerMethodTransformer"
 )
@@ -133,7 +133,7 @@ class MatchingTest {
         assertSearch(
             listOf("Tracer"),
             listOf(
-                "com.google.idea.perf.TracerConfig",
+                "com.google.idea.perf.methodtracer.TracerConfig",
                 "com.google.idea.perf.TracerController",
                 "com.google.idea.perf.TracerMethodTransformer"
             ),

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.methodtracer
 
 /** Encapsulates aggregate statistic for a single tracepoint. */
 class TracepointStats(

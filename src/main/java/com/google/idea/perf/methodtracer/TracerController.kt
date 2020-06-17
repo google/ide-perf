@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.util.formatNsInUs
 import com.intellij.openapi.Disposable
@@ -66,7 +66,8 @@ class TracerController(
     private var callTree = MutableCallTree(Tracepoint.ROOT)
     private val dataRefreshLoopStarted = AtomicBoolean()
 
-    val autocomplete = AutocompleteCompletionProvider()
+    val autocomplete =
+        AutocompleteCompletionProvider()
 
     companion object {
         private val LOG = Logger.getInstance(TracerController::class.java)
