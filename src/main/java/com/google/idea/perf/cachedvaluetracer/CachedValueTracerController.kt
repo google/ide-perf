@@ -18,16 +18,24 @@ package com.google.idea.perf.cachedvaluetracer
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.rd.attachChild
 import com.intellij.util.concurrency.AppExecutorUtil
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
-class CachedValueTracerController: Disposable {
+class CachedValueTracerController(
+    private val view: CachedValueTracerView,
+    parentDisposable: Disposable
+): Disposable {
     companion object {
         private val LOG = Logger.getInstance(CachedValueTracerController::class.java)
         private const val REFRESH_DELAY_MS = 30L
     }
 
     private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("CachedValue Tracer", 1)
+
+    init {
+        parentDisposable.attachChild(this)
+    }
 
     override fun dispose() {
         executor.shutdownNow()
