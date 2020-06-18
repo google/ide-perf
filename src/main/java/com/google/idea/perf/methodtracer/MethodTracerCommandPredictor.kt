@@ -31,7 +31,7 @@ class MethodTracerCommandPredictor: CommandPredictor {
     override fun predict(text: String, offset: Int): List<String> {
         val tokens = text.trimStart().split(' ', '\t')
         val normalizedText = tokens.joinToString(" ")
-        val command = parseTracerCommand(normalizedText)
+        val command = parseMethodTracerCommand(normalizedText)
         val tokenIndex = getTokenIndex(normalizedText, offset)
         val token = tokens.getOrElse(tokenIndex) { "" }
 
@@ -40,7 +40,7 @@ class MethodTracerCommandPredictor: CommandPredictor {
                 listOf("clear", "reset", "trace", "untrace"), token
             )
             1 -> when (command) {
-                is TracerCommand.Trace -> {
+                is MethodTracerCommand.Trace -> {
                     val options = predictToken(listOf("all", "count", "wall-time"), token)
                     val classes = predictToken(classNames, token)
                     return options + classes
@@ -48,13 +48,13 @@ class MethodTracerCommandPredictor: CommandPredictor {
                 else -> emptyList()
             }
             2 -> when {
-                command is TracerCommand.Trace && command.target is TraceTarget.Method ->
+                command is MethodTracerCommand.Trace && command.target is TraceTarget.Method ->
                     predictMethodToken(command.target.className, token)
-                command is TracerCommand.Trace -> predictToken(classNames, token)
+                command is MethodTracerCommand.Trace -> predictToken(classNames, token)
                 else -> emptyList()
             }
             3 -> when {
-                command is TracerCommand.Trace && command.target is TraceTarget.Method ->
+                command is MethodTracerCommand.Trace && command.target is TraceTarget.Method ->
                     predictMethodToken(command.target.className, token)
                 else -> emptyList()
             }

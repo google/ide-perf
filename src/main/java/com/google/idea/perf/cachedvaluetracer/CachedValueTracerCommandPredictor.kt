@@ -31,7 +31,7 @@ class CachedValueTracerCommandPredictor: CommandPredictor {
     override fun predict(text: String, offset: Int): List<String> {
         val tokens = text.trimStart().split(' ', '\t')
         val normalizedText = tokens.joinToString(" ")
-        val command = parseTracerCommand(normalizedText)
+        val command = parseCachedValueTracerCommand(normalizedText)
         val tokenIndex = getTokenIndex(normalizedText, offset)
         val token = tokens.getOrElse(tokenIndex) { "" }
 
@@ -40,8 +40,8 @@ class CachedValueTracerCommandPredictor: CommandPredictor {
                 listOf("clear", "reset", "filter", "group-by"), token
             )
             1 -> when (command) {
-                is TracerCommand.Filter -> predictToken(classNames, token)
-                is TracerCommand.GroupBy -> predictToken(
+                is CachedValueTracerCommand.Filter -> predictToken(classNames, token)
+                is CachedValueTracerCommand.GroupBy -> predictToken(
                     listOf("class", "stack-trace"), token
                 )
                 else -> emptyList()

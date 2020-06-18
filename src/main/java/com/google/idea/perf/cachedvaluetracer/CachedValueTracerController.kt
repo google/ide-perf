@@ -65,24 +65,24 @@ class CachedValueTracerController(
     }
 
     private fun handleCommand(text: String) {
-        when (val command = parseTracerCommand(text)) {
-            is TracerCommand.Clear -> {
+        when (val command = parseCachedValueTracerCommand(text)) {
+            is CachedValueTracerCommand.Clear -> {
                 filteredStats.clear()
                 updateUi()
             }
-            is TracerCommand.Reset -> {
+            is CachedValueTracerCommand.Reset -> {
                 CachedValueProfiler.getInstance().isEnabled = false
                 CachedValueProfiler.getInstance().isEnabled = true
                 filteredStats.clear()
                 updateUi()
             }
-            is TracerCommand.Filter -> {
+            is CachedValueTracerCommand.Filter -> {
                 if (command.pattern != null) {
                     filterStats(command.pattern)
                 }
                 updateUi()
             }
-            is TracerCommand.GroupBy -> {
+            is CachedValueTracerCommand.GroupBy -> {
                 if (command.groupOption != null) {
                     groupMode = command.groupOption
                 }

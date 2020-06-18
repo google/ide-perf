@@ -19,38 +19,38 @@ package com.google.idea.perf.cachedvaluetracer
 import org.junit.Test
 import kotlin.test.assertEquals
 
-private fun assertCommand(expected: TracerCommand?, actual: String) {
-    assertEquals(expected, parseTracerCommand(actual))
+private fun assertCommand(expected: CachedValueTracerCommand?, actual: String) {
+    assertEquals(expected, parseCachedValueTracerCommand(actual))
 }
 
-class TracerCommandTest {
+class CachedValueTracerCommandTest {
     @Test
     fun testCommandParser() {
         assertCommand(null, "")
         assertCommand(null, "not-a-command")
 
-        assertCommand(TracerCommand.Clear, "clear")
-        assertCommand(TracerCommand.Reset, "reset")
+        assertCommand(CachedValueTracerCommand.Clear, "clear")
+        assertCommand(CachedValueTracerCommand.Reset, "reset")
 
         assertCommand(
-            TracerCommand.Filter("com.intellij.openapi"),
+            CachedValueTracerCommand.Filter("com.intellij.openapi"),
             "filter com.intellij.openapi"
         )
         assertCommand(
-            TracerCommand.Filter(null),
+            CachedValueTracerCommand.Filter(null),
             "filter"
         )
 
         assertCommand(
-            TracerCommand.GroupBy(GroupOption.CLASS),
+            CachedValueTracerCommand.GroupBy(GroupOption.CLASS),
             "group-by class"
         )
         assertCommand(
-            TracerCommand.GroupBy(GroupOption.STACK_TRACE),
+            CachedValueTracerCommand.GroupBy(GroupOption.STACK_TRACE),
             "group-by stack-trace"
         )
         assertCommand(
-            TracerCommand.GroupBy(null),
+            CachedValueTracerCommand.GroupBy(null),
             "group-by"
         )
     }
