@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.cachedvaluetracer
 
-import com.google.idea.perf.TracerViewBase
+import com.google.idea.perf.TracerView
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
@@ -72,7 +72,7 @@ class CachedValueTracerDialog: DialogWrapper(null, null, false, IdeModalityType.
     override fun createActions(): Array<Action> = emptyArray()
 }
 
-class CachedValueTracerView(parentDisposable: Disposable): TracerViewBase() {
+class CachedValueTracerView(parentDisposable: Disposable): TracerView() {
     private val controller = CachedValueTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar

@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.TracerControllerBase
+import com.google.idea.perf.TracerController
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
@@ -47,10 +47,10 @@ import kotlin.reflect.jvm.javaMethod
 // - Show all instrumented methods in the method list view, even if there are no calls yet(?)
 // - Cancelable progress indicator for class retransformations.
 
-class TracerController(
-    private val view: TracerView, // Access from EDT only.
+class MethodTracerController(
+    private val view: MethodTracerView, // Access from EDT only.
     parentDisposable: Disposable
-): TracerControllerBase("Method Tracer", view), Disposable {
+): TracerController("Method Tracer", view), Disposable {
     private var callTree = MutableCallTree(Tracepoint.ROOT)
 
     val autocomplete = AutocompleteCompletionProvider()

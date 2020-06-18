@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.cachedvaluetracer
 
-import com.google.idea.perf.TracerControllerBase
+import com.google.idea.perf.TracerController
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.rd.attachChild
 import com.intellij.openapi.ui.Messages
@@ -24,7 +24,7 @@ import com.intellij.openapi.ui.Messages
 class CachedValueTracerController(
     private val view: CachedValueTracerView,
     parentDisposable: Disposable
-): TracerControllerBase("Cached Value Tracer", view) {
+): TracerController("Cached Value Tracer", view) {
     init {
         parentDisposable.attachChild(this)
     }

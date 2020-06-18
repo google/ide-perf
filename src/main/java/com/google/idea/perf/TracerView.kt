@@ -22,7 +22,7 @@ import com.intellij.util.textCompletion.TextFieldWithCompletion
 import javax.swing.JProgressBar
 
 /** The content for filling the tracer dialog window. */
-abstract class TracerViewBase: JBPanel<TracerViewBase>() {
+abstract class TracerView: JBPanel<TracerView>() {
     abstract val commandLine: TextFieldWithCompletion
     abstract val progressBar: JProgressBar
     abstract val refreshTimeLabel: JBLabel
