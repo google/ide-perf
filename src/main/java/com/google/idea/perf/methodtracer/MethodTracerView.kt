@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.TracerViewBase
+import com.google.idea.perf.TracerView
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
@@ -44,8 +44,8 @@ import javax.swing.border.Border
 // - DialogWrapper wrapper is still tied to a specific project window.
 
 /** Invoked by the user via the "Trace" action. */
-class TracerAction : DumbAwareAction() {
-    private var currentTracer: TracerDialog? = null
+class MethodTracerAction : DumbAwareAction() {
+    private var currentTracer: MethodTracerDialog? = null
 
     override fun actionPerformed(e: AnActionEvent) {
         val tracer = currentTracer
@@ -53,7 +53,7 @@ class TracerAction : DumbAwareAction() {
             check(!tracer.isDisposed)
             tracer.toFront()
         } else {
-            val newTracer = TracerDialog()
+            val newTracer = MethodTracerDialog()
             currentTracer = newTracer
             newTracer.disposable.attach { currentTracer = null }
             newTracer.show()
@@ -62,22 +62,22 @@ class TracerAction : DumbAwareAction() {
 }
 
 /** The dialog window that pops up via the "Trace" action. */
-class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
+class MethodTracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
     init {
         title = "Tracer"
         isModal = false
         init()
     }
 
-    override fun createCenterPanel(): JComponent = TracerView(disposable)
+    override fun createCenterPanel(): JComponent = MethodTracerView(disposable)
     override fun createContentPaneBorder(): Border? = null // No border.
     override fun getDimensionServiceKey(): String = "com.google.idea.perf.methodtracer.Tracer"
     override fun createActions(): Array<Action> = emptyArray()
 }
 
 /** The content filling the tracer dialog window. */
-class TracerView(parentDisposable: Disposable) : TracerViewBase() {
-    private val controller: TracerController = TracerController(this, parentDisposable)
+class MethodTracerView(parentDisposable: Disposable) : TracerView() {
+    private val controller = MethodTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel

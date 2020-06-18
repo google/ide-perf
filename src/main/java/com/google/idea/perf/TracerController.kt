@@ -29,12 +29,12 @@ import com.intellij.util.concurrency.AppExecutorUtil
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicBoolean
 
-abstract class TracerControllerBase(
+abstract class TracerController(
     name: String,
-    private val view: TracerViewBase
+    private val view: TracerView
 ): Disposable {
     companion object {
-        val LOG = Logger.getInstance(TracerControllerBase::class.java)
+        val LOG = Logger.getInstance(TracerController::class.java)
         const val REFRESH_DELAY_MS = 30L
     }
 
@@ -84,7 +84,7 @@ abstract class TracerControllerBase(
         return ProgressManager.getInstance().runProcess(computable, progress)
     }
 
-    protected class MyProgressIndicator(private val view: TracerViewBase) : ProgressIndicatorBase() {
+    protected class MyProgressIndicator(private val view: TracerView) : ProgressIndicatorBase() {
         override fun onRunningChange(): Unit = onChange()
 
         override fun onProgressChange(): Unit = onChange()
