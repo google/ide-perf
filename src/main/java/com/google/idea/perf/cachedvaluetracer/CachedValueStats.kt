@@ -19,8 +19,8 @@ package com.google.idea.perf.cachedvaluetracer
 data class CachedValueStats(
     val className: String,
     val lifetime: Long,
-    val hits: Int,
-    val misses: Int
+    val hits: Long,
+    val misses: Long
 ) {
     val hitMissRatio: Double
         get() = hits.toDouble() / misses

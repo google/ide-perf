@@ -118,7 +118,7 @@ class CachedValueTable(private val model: CachedValueTableModel): JBTable(model)
                 }
                 if (alreadySorted) return
                 val order = when (col) {
-                    CLASS -> SortOrder.ASCENDING
+                    CLASS, HIT_MISS_RATIO -> SortOrder.ASCENDING
                     else -> SortOrder.DESCENDING
                 }
                 sortKeys = listOf(SortKey(col, order))

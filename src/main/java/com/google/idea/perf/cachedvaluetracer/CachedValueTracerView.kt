@@ -77,7 +77,7 @@ class CachedValueTracerView(parentDisposable: Disposable): TracerView() {
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel
-    private val listView = CachedValueTable(CachedValueTableModel())
+    val listView = CachedValueTable(CachedValueTableModel())
 
     init {
         preferredSize = Dimension(500, 500)
@@ -113,13 +113,6 @@ class CachedValueTracerView(parentDisposable: Disposable): TracerView() {
 
         // List view.
         add(JBScrollPane(listView))
-        listView.setStats(listOf(
-            CachedValueStats("java.lang.String", 1000L, 100, 10),
-            CachedValueStats("java.lang.StringBuffer", 2000L, 200, 20),
-            CachedValueStats("java.lang.StringBuilder", 3000L, 300, 30),
-            CachedValueStats("java.lang.Void", 4000L, 400, 40),
-            CachedValueStats("java.lang.nio.ByteBuffer", 5000L, 500, 50)
-        ))
 
         // Render time label.
         refreshTimeLabel = JBLabel().apply {
