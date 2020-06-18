@@ -96,16 +96,16 @@ class MethodTracerController(
     }
 
     private fun handleCommand(cmd: String) {
-        when (val command = parseTracerCommand(cmd)) {
-            is TracerCommand.Clear -> {
+        when (val command = parseMethodTracerCommand(cmd)) {
+            is MethodTracerCommand.Clear -> {
                 callTree.clear()
                 updateUi()
             }
-            is TracerCommand.Reset -> {
+            is MethodTracerCommand.Reset -> {
                 callTree = MutableCallTree(Tracepoint.ROOT)
                 updateUi()
             }
-            is TracerCommand.Trace -> {
+            is MethodTracerCommand.Trace -> {
                 when (command.target) {
                     is TraceTarget.PsiFinders -> {
                         val defaultProject = ProjectManager.getInstance().defaultProject

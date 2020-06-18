@@ -19,35 +19,35 @@ package com.google.idea.perf.methodtracer
 import org.junit.Test
 import kotlin.test.assertEquals
 
-private fun assertCommand(expected: TracerCommand, actual: String) {
-    assertEquals(expected, parseTracerCommand(actual))
+private fun assertCommand(expected: MethodTracerCommand, actual: String) {
+    assertEquals(expected, parseMethodTracerCommand(actual))
 }
 
-class TracerCommandTest {
+class MethodTracerCommandTest {
     @Test
     fun testCommandParser() {
-        assertCommand(TracerCommand.Clear, "clear")
-        assertCommand(TracerCommand.Reset, "reset")
+        assertCommand(MethodTracerCommand.Clear, "clear")
+        assertCommand(MethodTracerCommand.Reset, "reset")
 
         // Untrace commands.
         assertCommand(
-            TracerCommand.Trace(false, TraceOption.ALL, TraceTarget.PsiFinders),
+            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.PsiFinders),
             "untrace psi-finders"
         )
         assertCommand(
-            TracerCommand.Trace(false, TraceOption.ALL, TraceTarget.PsiFinders),
+            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.PsiFinders),
             "untrace all psi-finders"
         )
         assertCommand(
-            TracerCommand.Trace(false, TraceOption.ALL, TraceTarget.Tracer),
+            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.Tracer),
             "untrace tracer"
         )
         assertCommand(
-            TracerCommand.Trace(false, TraceOption.CALL_COUNT, TraceTarget.Tracer),
+            MethodTracerCommand.Trace(false, TraceOption.CALL_COUNT, TraceTarget.Tracer),
             "untrace count tracer"
         )
         assertCommand(
-            TracerCommand.Trace(
+            MethodTracerCommand.Trace(
                 false,
                 TraceOption.ALL,
                 TraceTarget.Method("com.example.MyAction", "actionPerformed")
@@ -55,7 +55,7 @@ class TracerCommandTest {
             "untrace com.example.MyAction#actionPerformed"
         )
         assertCommand(
-            TracerCommand.Trace(
+            MethodTracerCommand.Trace(
                 false,
                 TraceOption.WALL_TIME,
                 TraceTarget.Method("com.example.MyAction", "actionPerformed")
@@ -65,23 +65,23 @@ class TracerCommandTest {
 
         // Trace commands.
         assertCommand(
-            TracerCommand.Trace(true, TraceOption.ALL, TraceTarget.PsiFinders),
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.PsiFinders),
             "trace psi-finders"
         )
         assertCommand(
-            TracerCommand.Trace(true, TraceOption.WALL_TIME, TraceTarget.PsiFinders),
+            MethodTracerCommand.Trace(true, TraceOption.WALL_TIME, TraceTarget.PsiFinders),
             "trace wall-time psi-finders"
         )
         assertCommand(
-            TracerCommand.Trace(true, TraceOption.ALL, TraceTarget.Tracer),
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.Tracer),
             "trace tracer"
         )
         assertCommand(
-            TracerCommand.Trace(true, TraceOption.CALL_COUNT, TraceTarget.Tracer),
+            MethodTracerCommand.Trace(true, TraceOption.CALL_COUNT, TraceTarget.Tracer),
             "trace count tracer"
         )
         assertCommand(
-            TracerCommand.Trace(
+            MethodTracerCommand.Trace(
                 true,
                 TraceOption.ALL,
                 TraceTarget.Method("com.example.MyAction", "actionPerformed")
@@ -89,7 +89,7 @@ class TracerCommandTest {
             "trace com.example.MyAction#actionPerformed"
         )
         assertCommand(
-            TracerCommand.Trace(
+            MethodTracerCommand.Trace(
                 true,
                 TraceOption.ALL,
                 TraceTarget.Method("com.example.MyAction", "actionPerformed")

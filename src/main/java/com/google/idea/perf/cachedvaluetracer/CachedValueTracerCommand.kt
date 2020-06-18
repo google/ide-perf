@@ -17,18 +17,18 @@
 package com.google.idea.perf.cachedvaluetracer
 
 /** A cached value tracer CLI command */
-sealed class TracerCommand {
+sealed class CachedValueTracerCommand {
     /** Zero out all cached value stats, but keep filters. */
-    object Clear: TracerCommand()
+    object Clear: CachedValueTracerCommand()
 
     /** Zero out all cached value stats, and clear filters. */
-    object Reset: TracerCommand()
+    object Reset: CachedValueTracerCommand()
 
     /** Filter cached values by class name. */
-    data class Filter(val pattern: String?): TracerCommand()
+    data class Filter(val pattern: String?): CachedValueTracerCommand()
 
     /** Group cached values by a specific field. */
-    data class GroupBy(val groupOption: GroupOption?): TracerCommand()
+    data class GroupBy(val groupOption: GroupOption?): CachedValueTracerCommand()
 }
 
 enum class GroupOption {
@@ -38,27 +38,27 @@ enum class GroupOption {
     STACK_TRACE
 }
 
-fun parseTracerCommand(text: String): TracerCommand? {
+fun parseCachedValueTracerCommand(text: String): CachedValueTracerCommand? {
     val tokens = text.split(' ')
 
     return when(tokens.firstOrNull()) {
-        "clear" -> TracerCommand.Clear
-        "reset" -> TracerCommand.Reset
+        "clear" -> CachedValueTracerCommand.Clear
+        "reset" -> CachedValueTracerCommand.Reset
         "filter" -> parseFilterCommand(tokens.advance())
         "group-by" -> parseGroupByCommand(tokens.advance())
         else -> null
     }
 }
 
-private fun parseFilterCommand(tokens: List<String>): TracerCommand? {
-    return TracerCommand.Filter(tokens.firstOrNull())
+private fun parseFilterCommand(tokens: List<String>): CachedValueTracerCommand? {
+    return CachedValueTracerCommand.Filter(tokens.firstOrNull())
 }
 
-private fun parseGroupByCommand(tokens: List<String>): TracerCommand? {
+private fun parseGroupByCommand(tokens: List<String>): CachedValueTracerCommand? {
     return when (tokens.firstOrNull()) {
-        "class" -> TracerCommand.GroupBy(GroupOption.CLASS)
-        "stack-trace" -> TracerCommand.GroupBy(GroupOption.STACK_TRACE)
-        else -> TracerCommand.GroupBy(null)
+        "class" -> CachedValueTracerCommand.GroupBy(GroupOption.CLASS)
+        "stack-trace" -> CachedValueTracerCommand.GroupBy(GroupOption.STACK_TRACE)
+        else -> CachedValueTracerCommand.GroupBy(null)
     }
 }
 
