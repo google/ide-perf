@@ -17,17 +17,22 @@
 package com.google.idea.perf.cachedvaluetracer
 
 import com.google.idea.perf.TracerController
+import com.google.idea.perf.fuzzyMatch
 import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.rd.attachChild
 import com.intellij.openapi.ui.Messages
 import com.intellij.psi.util.CachedValueProfiler
+import java.util.*
 
 class CachedValueTracerController(
     private val view: CachedValueTracerView,
     parentDisposable: Disposable
 ): TracerController("Cached Value Tracer", view) {
+    private val filters = ArrayList<String>()
+    private var groupMode = GroupOption.CLASS
+
     init {
         parentDisposable.attachChild(this)
         CachedValueProfiler.getInstance().isEnabled = true
@@ -51,15 +56,51 @@ class CachedValueTracerController(
     }
 
     override fun handleRawCommandFromEdt(text: String) {
-        Messages.showMessageDialog(
-            view, text, "Cached Value Tracer", Messages.getInformationIcon()
-        )
+        Messages.showInfoMessage(view, text, "Cached Value Tracer")
+        executor.execute { handleCommand(text) }
+    }
+
+    private fun handleCommand(text: String) {
+        when (val command = parseTracerCommand(text)) {
+            is TracerCommand.Clear -> {}
+            is TracerCommand.Reset -> {
+                filters.clear()
+                updateUi()
+            }
+            is TracerCommand.Filter -> {
+                if (command.pattern != null) {
+                    filters.add(command.pattern)
+                }
+                updateUi()
+            }
+            is TracerCommand.GroupBy -> {
+                if (command.groupOption != null) {
+                    groupMode = command.groupOption
+                }
+                updateUi()
+            }
+            else -> {
+                LOG.warn("Unknown command: $text")
+            }
+        }
     }
 
     private fun getStats(): List<CachedValueStats> {
         val snapshot = CachedValueProfiler.getInstance().storageSnapshot
-        return snapshot.entrySet()
-            .groupBy({ it.key.className }, { it.value })
+
+        val groupedStats = if (groupMode == GroupOption.CLASS) {
+            snapshot.entrySet().groupBy({ it.key.className }, { it.value })
+        }
+        else {
+            snapshot.entrySet().groupBy({ getStackTraceName(it.key) }, { it.value })
+        }
+
+        var filteredStats = groupedStats
+        for (filter in filters) {
+            filteredStats = filteredStats.filterKeys { fuzzyMatch(it, filter) != null }
+        }
+
+        return filteredStats
             .map { it ->
                 val values = it.value.flatten()
                 CachedValueStats(
@@ -70,4 +111,7 @@ class CachedValueTracerController(
                 )
             }
     }
+
+    private fun getStackTraceName(element: StackTraceElement): String =
+        "${element.className}#${element.methodName}(${element.lineNumber})"
 }

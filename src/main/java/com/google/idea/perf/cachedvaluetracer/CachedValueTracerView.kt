@@ -26,10 +26,11 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.ui.TextFieldWithAutoCompletion
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.util.textCompletion.DefaultTextCompletionValueDescriptor
 import com.intellij.util.textCompletion.TextFieldWithCompletion
+import com.intellij.util.textCompletion.ValuesCompletionProvider
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import java.awt.Dimension
@@ -84,11 +85,16 @@ class CachedValueTracerView(parentDisposable: Disposable): TracerView() {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
-        commandLine = TextFieldWithAutoCompletion.create(
+        commandLine = TextFieldWithCompletion(
             ProjectManager.getInstance().defaultProject,
-            emptyList(),
+            ValuesCompletionProvider(
+                DefaultTextCompletionValueDescriptor.StringValueDescriptor(),
+                emptyList()
+            ),
+            "",
             false,
-            ""
+            true,
+            true
         ).apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
             addDocumentListener(object: DocumentListener {
