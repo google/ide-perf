@@ -79,14 +79,14 @@ class CachedValueTracerController(
             is CachedValueTracerCommand.Filter -> {
                 if (command.pattern != null) {
                     filterStats(command.pattern)
+                    updateUi()
                 }
-                updateUi()
             }
             is CachedValueTracerCommand.GroupBy -> {
                 if (command.groupOption != null) {
                     groupMode = command.groupOption
+                    updateUi()
                 }
-                updateUi()
             }
             else -> {
                 LOG.warn("Unknown command: $text")
