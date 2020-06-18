@@ -66,8 +66,13 @@ class CachedValueTracerController(
 
     private fun handleCommand(text: String) {
         when (val command = parseTracerCommand(text)) {
-            is TracerCommand.Clear -> {}
+            is TracerCommand.Clear -> {
+                filteredStats.clear()
+                updateUi()
+            }
             is TracerCommand.Reset -> {
+                CachedValueProfiler.getInstance().isEnabled = false
+                CachedValueProfiler.getInstance().isEnabled = true
                 filteredStats.clear()
                 updateUi()
             }
