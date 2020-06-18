@@ -16,6 +16,8 @@
 
 package com.google.idea.perf.cachedvaluetracer
 
+import com.google.idea.perf.util.formatMsInSeconds
+import com.google.idea.perf.util.formatNum
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import java.awt.Font
@@ -68,10 +70,10 @@ class CachedValueTableModel: AbstractTableModel() {
         val stats = data!![rowIndex]
         return when (columnIndex) {
             CLASS -> stats.className
-            LIFETIME -> stats.lifetime
+            LIFETIME -> formatMsInSeconds(stats.lifetime)
             HITS -> stats.hits
             MISSES -> stats.misses
-            HIT_MISS_RATIO -> stats.hitMissRatio
+            HIT_MISS_RATIO -> formatNum(stats.hitMissRatio)
             else -> error(columnIndex)
         }
     }
