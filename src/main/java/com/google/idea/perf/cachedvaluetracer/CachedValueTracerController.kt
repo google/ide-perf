@@ -31,7 +31,7 @@ class CachedValueTracerController(
     private val view: CachedValueTracerView,
     parentDisposable: Disposable
 ): TracerController("Cached Value Tracer", view) {
-    private val filters = ArrayList<String>()
+    private val filteredStats = ArrayList<StackTraceElement>()
     private var groupMode = GroupOption.CLASS
 
     private val predictor = CachedValueTracerCommandPredictor()
@@ -68,12 +68,12 @@ class CachedValueTracerController(
         when (val command = parseTracerCommand(text)) {
             is TracerCommand.Clear -> {}
             is TracerCommand.Reset -> {
-                filters.clear()
+                filteredStats.clear()
                 updateUi()
             }
             is TracerCommand.Filter -> {
                 if (command.pattern != null) {
-                    filters.add(command.pattern)
+                    filterStats(command.pattern)
                 }
                 updateUi()
             }
@@ -92,19 +92,24 @@ class CachedValueTracerController(
     private fun getStats(): List<CachedValueStats> {
         val snapshot = CachedValueProfiler.getInstance().storageSnapshot
 
-        val groupedStats = if (groupMode == GroupOption.CLASS) {
+        if (filteredStats.isNotEmpty()) {
+            val iterator = snapshot.entrySet().iterator()
+            while (iterator.hasNext()) {
+                val (key, _) = iterator.next()
+                if (!filteredStats.contains(key)) {
+                    iterator.remove()
+                }
+            }
+        }
+
+        val groupedSnapshot = if (groupMode == GroupOption.CLASS) {
             snapshot.entrySet().groupBy({ it.key.className }, { it.value })
         }
         else {
             snapshot.entrySet().groupBy({ getStackTraceName(it.key) }, { it.value })
         }
 
-        var filteredStats = groupedStats
-        for (filter in filters) {
-            filteredStats = filteredStats.filterKeys { fuzzyMatch(it, filter) != null }
-        }
-
-        return filteredStats
+        return groupedSnapshot
             .map { it ->
                 val values = it.value.flatten()
                 CachedValueStats(
@@ -114,6 +119,37 @@ class CachedValueTracerController(
                     values.size.toLong()
                 )
             }
+    }
+
+    private fun filterStats(pattern: String) {
+        if (filteredStats.isEmpty()) {
+            val snapshot = CachedValueProfiler.getInstance().storageSnapshot
+
+            when (groupMode) {
+                GroupOption.CLASS -> {
+                    filteredStats.addAll(snapshot.keySet().filter {
+                        fuzzyMatch(it.className, pattern) != null
+                    })
+                }
+                GroupOption.STACK_TRACE -> {
+                    filteredStats.addAll(snapshot.keySet().filter {
+                        fuzzyMatch(getStackTraceName(it), pattern) != null
+                    })
+                }
+            }
+        }
+        else {
+            when (groupMode) {
+                GroupOption.CLASS -> {
+                    filteredStats.removeIf { fuzzyMatch(it.className, pattern) == null }
+                }
+                GroupOption.STACK_TRACE -> {
+                    filteredStats.removeIf {
+                        fuzzyMatch(getStackTraceName(it), pattern) == null
+                    }
+                }
+            }
+        }
     }
 
     private fun getStackTraceName(element: StackTraceElement): String =

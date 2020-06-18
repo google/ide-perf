@@ -32,7 +32,7 @@ import javax.swing.table.TableRowSorter
 private const val COL_COUNT = 5
 
 // Table columns.
-private const val CLASS = 0
+private const val NAME = 0
 private const val LIFETIME = 1
 private const val HITS = 2
 private const val MISSES = 3
@@ -49,7 +49,7 @@ class CachedValueTableModel: AbstractTableModel() {
     override fun getColumnCount(): Int = 5
 
     override fun getColumnName(column: Int): String = when (column) {
-        CLASS -> "class"
+        NAME -> "name"
         LIFETIME -> "lifetime"
         HITS -> "hits"
         MISSES -> "misses"
@@ -58,7 +58,7 @@ class CachedValueTableModel: AbstractTableModel() {
     }
 
     override fun getColumnClass(columnIndex: Int): Class<*> = when (columnIndex) {
-        CLASS -> java.lang.String::class.java
+        NAME -> java.lang.String::class.java
         LIFETIME, HITS, MISSES -> java.lang.Long::class.java
         HIT_MISS_RATIO -> java.lang.Double::class.java
         else -> error(columnIndex)
@@ -69,7 +69,7 @@ class CachedValueTableModel: AbstractTableModel() {
     override fun getValueAt(rowIndex: Int, columnIndex: Int): Any {
         val stats = data!![rowIndex]
         return when (columnIndex) {
-            CLASS -> stats.className
+            NAME -> stats.name
             LIFETIME -> formatMsInSeconds(stats.lifetime)
             HITS -> stats.hits
             MISSES -> stats.misses
@@ -95,7 +95,7 @@ class CachedValueTable(private val model: CachedValueTableModel): JBTable(model)
             // Column widths.
             tableColumn.minWidth = 100
             tableColumn.preferredWidth = when (col) {
-                CLASS -> Int.MAX_VALUE
+                NAME -> Int.MAX_VALUE
                 LIFETIME, HITS, MISSES, HIT_MISS_RATIO -> 100
                 else -> tableColumn.preferredWidth
             }
@@ -120,7 +120,7 @@ class CachedValueTable(private val model: CachedValueTableModel): JBTable(model)
                 }
                 if (alreadySorted) return
                 val order = when (col) {
-                    CLASS, HIT_MISS_RATIO -> SortOrder.ASCENDING
+                    NAME, HIT_MISS_RATIO -> SortOrder.ASCENDING
                     else -> SortOrder.DESCENDING
                 }
                 sortKeys = listOf(SortKey(col, order))

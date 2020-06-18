@@ -17,7 +17,7 @@
 package com.google.idea.perf.cachedvaluetracer
 
 data class CachedValueStats(
-    val className: String,
+    val name: String,
     val lifetime: Long,
     val hits: Long,
     val misses: Long
