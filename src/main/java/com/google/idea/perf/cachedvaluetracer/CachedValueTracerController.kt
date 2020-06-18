@@ -17,9 +17,12 @@
 package com.google.idea.perf.cachedvaluetracer
 
 import com.google.idea.perf.TracerController
+import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.rd.attachChild
 import com.intellij.openapi.ui.Messages
+import com.intellij.psi.util.CachedValueProfiler
 
 class CachedValueTracerController(
     private val view: CachedValueTracerView,
@@ -27,18 +30,44 @@ class CachedValueTracerController(
 ): TracerController("Cached Value Tracer", view) {
     init {
         parentDisposable.attachChild(this)
+        CachedValueProfiler.getInstance().isEnabled = true
+    }
+
+    override fun dispose() {
+        super.dispose()
+        CachedValueProfiler.getInstance().isEnabled = false
     }
 
     override fun updateModel(): Boolean {
-        return false
+        return true
     }
 
     override fun updateUi() {
+        val stats = getStats()
+
+        getApplication().invokeAndWait {
+            view.listView.setStats(stats)
+        }
     }
 
     override fun handleRawCommandFromEdt(text: String) {
         Messages.showMessageDialog(
             view, text, "Cached Value Tracer", Messages.getInformationIcon()
         )
+    }
+
+    private fun getStats(): List<CachedValueStats> {
+        val snapshot = CachedValueProfiler.getInstance().storageSnapshot
+        return snapshot.entrySet()
+            .groupBy({ it.key.className }, { it.value })
+            .map { it ->
+                val values = it.value.flatten()
+                CachedValueStats(
+                    it.key,
+                    values.sumByLong { it.lifetime },
+                    values.sumByLong { it.useCount },
+                    values.size.toLong()
+                )
+            }
     }
 }
