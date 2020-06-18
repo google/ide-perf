@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
+import com.google.idea.perf.TracerViewBase
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
@@ -26,7 +27,6 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.textCompletion.TextFieldWithCompletion
 import com.intellij.util.ui.JBFont
@@ -76,12 +76,12 @@ class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false
 }
 
 /** The content filling the tracer dialog window. */
-class TracerView(parentDisposable: Disposable) : JBPanel<TracerView>() {
+class TracerView(parentDisposable: Disposable) : TracerViewBase() {
     private val controller: TracerController = TracerController(this, parentDisposable)
-    private val commandLine: TextFieldWithCompletion
-    val progressBar: JProgressBar
+    override val commandLine: TextFieldWithCompletion
+    override val progressBar: JProgressBar
+    override val refreshTimeLabel: JBLabel
     val listView = TracepointTable(TracepointTableModel())
-    val refreshTimeLabel: JBLabel
 
     init {
         preferredSize = Dimension(500, 500) // Only applies to first open.
