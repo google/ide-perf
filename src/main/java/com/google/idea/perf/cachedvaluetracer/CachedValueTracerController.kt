@@ -16,8 +16,10 @@
 
 package com.google.idea.perf.cachedvaluetracer
 
+import com.google.idea.perf.CommandCompletionProvider
 import com.google.idea.perf.TracerController
 import com.google.idea.perf.fuzzyMatch
+import com.google.idea.perf.methodtracer.AgentLoader
 import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
@@ -33,8 +35,12 @@ class CachedValueTracerController(
     private val filters = ArrayList<String>()
     private var groupMode = GroupOption.CLASS
 
+    private val predictor = CachedValueTracerCommandPredictor()
+    val autocomplete = CommandCompletionProvider(predictor)
+
     init {
         parentDisposable.attachChild(this)
+        reloadAutocompleteClasses()
         CachedValueProfiler.getInstance().isEnabled = true
     }
 
@@ -114,4 +120,17 @@ class CachedValueTracerController(
 
     private fun getStackTraceName(element: StackTraceElement): String =
         "${element.className}#${element.methodName}(${element.lineNumber})"
+
+    private fun reloadAutocompleteClasses() {
+        val instrumentation = AgentLoader.instrumentation
+
+        if (instrumentation != null) {
+            predictor.setClasses(instrumentation.allLoadedClasses.filter {
+                it.canonicalName != null
+            }.sortedBy { it.canonicalName })
+        }
+        else {
+            LOG.warn("Cannot reload classes.")
+        }
+    }
 }

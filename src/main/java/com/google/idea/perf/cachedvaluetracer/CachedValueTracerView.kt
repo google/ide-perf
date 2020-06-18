@@ -87,10 +87,7 @@ class CachedValueTracerView(parentDisposable: Disposable): TracerView() {
         // Command line.
         commandLine = TextFieldWithCompletion(
             ProjectManager.getInstance().defaultProject,
-            ValuesCompletionProvider(
-                DefaultTextCompletionValueDescriptor.StringValueDescriptor(),
-                emptyList()
-            ),
+            controller.autocomplete,
             "",
             false,
             true,
