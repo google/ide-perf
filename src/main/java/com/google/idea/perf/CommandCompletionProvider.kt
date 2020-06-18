@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.methodtracer
+package com.google.idea.perf
 
-import com.google.idea.perf.fuzzyMatch
-import com.google.idea.perf.fuzzySearch
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.CompletionUtilCore
@@ -25,33 +23,31 @@ import com.intellij.codeInsight.completion.PrefixMatcher
 import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.CharFilter
 import com.intellij.codeInsight.lookup.LookupElement
-import com.intellij.openapi.progress.ProgressManager
 import com.intellij.util.textCompletion.DefaultTextCompletionValueDescriptor
 import com.intellij.util.textCompletion.TextCompletionProvider
 
-private class AutocompleteMatcher(val pattern: String): PrefixMatcher(pattern) {
+private class TokenMatcher(val pattern: String): PrefixMatcher(pattern) {
     override fun prefixMatches(name: String): Boolean {
         return fuzzyMatch(name, pattern) != null
     }
 
     override fun cloneWithPrefix(prefix: String): PrefixMatcher {
-        return AutocompleteMatcher(pattern)
+        return TokenMatcher(pattern)
     }
 }
 
-class AutocompleteCompletionProvider: TextCompletionProvider {
-    @Volatile
-    private var classNames = emptyList<String>()
+interface CommandPredictor {
+    fun predict(text: String, offset: Int): List<String>
+}
 
-    fun setClasses(classes: Collection<Class<*>>) {
-        classNames = classes.mapNotNull { it.canonicalName }
-    }
-
+class CommandCompletionProvider(
+    private val predictor: CommandPredictor
+): TextCompletionProvider {
     override fun applyPrefixMatcher(
         result: CompletionResultSet,
         prefix: String
     ): CompletionResultSet {
-        return result.withPrefixMatcher(AutocompleteMatcher(prefix))
+        return result.withPrefixMatcher(TokenMatcher(prefix))
     }
 
     override fun getAdvertisement(): String? = ""
@@ -71,7 +67,7 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
     ) {
         val text = parameters.position.text.substringBeforeLast(CompletionUtilCore.DUMMY_IDENTIFIER)
         val offset = parameters.offset
-        val suggestions = predict(text, offset)
+        val suggestions = predictor.predict(text, offset)
 
         val descriptor = DefaultTextCompletionValueDescriptor.StringValueDescriptor()
         val elements = ArrayList<LookupElement>()
@@ -90,54 +86,5 @@ class AutocompleteCompletionProvider: TextCompletionProvider {
             return CharFilter.Result.HIDE_LOOKUP
         }
         return CharFilter.Result.ADD_TO_PREFIX
-    }
-
-    private fun predict(text: String, offset: Int): List<String> {
-        val tokens = text.trimStart().split(' ', '\t')
-        val normalizedText = tokens.joinToString(" ")
-        val command = parseTracerCommand(normalizedText)
-        val tokenIndex = getTokenIndex(normalizedText, offset)
-        val token = tokens.getOrElse(tokenIndex) { "" }
-
-        return when (tokenIndex) {
-            0 -> predictToken(
-                listOf("clear", "reset", "trace", "untrace"), token
-            )
-            1 -> when (command) {
-                is TracerCommand.Trace -> {
-                    val options = predictToken(listOf("all", "count", "wall-time"), token)
-                    val classes = predictToken(classNames, token)
-                    return options + classes
-                }
-                else -> emptyList()
-            }
-            2 -> when {
-                command is TracerCommand.Trace && command.target is TraceTarget.Method ->
-                    predictMethodToken(command.target.className, token)
-                command is TracerCommand.Trace -> predictToken(classNames, token)
-                else -> emptyList()
-            }
-            3 -> when {
-                command is TracerCommand.Trace && command.target is TraceTarget.Method ->
-                    predictMethodToken(command.target.className, token)
-                else -> emptyList()
-            }
-            else -> emptyList()
-        }
-    }
-
-    private fun predictToken(choices: Collection<String>, token: String): List<String> {
-        return fuzzySearch(choices, token, -1) { ProgressManager.checkCanceled() }
-            .map { it.source }
-    }
-
-    private fun predictMethodToken(className: String, token: String): List<String> {
-        val clazz = Class.forName(className)
-        val methodNames = clazz.methods.map { it.name.substringAfter('$') }
-        return predictToken(methodNames, token)
-    }
-
-    private fun getTokenIndex(input: String, index: Int): Int {
-        return input.subSequence(0, index).count { it.isWhitespace() || it == '#' }
     }
 }

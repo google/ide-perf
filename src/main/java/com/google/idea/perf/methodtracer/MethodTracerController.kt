@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
+import com.google.idea.perf.CommandCompletionProvider
 import com.google.idea.perf.TracerController
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
@@ -53,7 +54,8 @@ class MethodTracerController(
 ): TracerController("Method Tracer", view), Disposable {
     private var callTree = MutableCallTree(Tracepoint.ROOT)
 
-    val autocomplete = AutocompleteCompletionProvider()
+    private val predictor = MethodTracerCommandPredictor()
+    val autocomplete = CommandCompletionProvider(predictor)
 
     init {
         CallTreeManager.collectAndReset() // Clear trees accumulated while the tracer was closed.
@@ -217,7 +219,7 @@ class MethodTracerController(
         val instrumentation = AgentLoader.instrumentation
 
         if (instrumentation != null) {
-            autocomplete.setClasses(instrumentation.allLoadedClasses.filter {
+            predictor.setClasses(instrumentation.allLoadedClasses.filter {
                 it.canonicalName != null
             }.sortedBy { it.canonicalName })
         }
