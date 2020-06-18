@@ -16,28 +16,19 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.util.formatNsInUs
+import com.google.idea.perf.TracerControllerBase
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
-import com.intellij.openapi.application.invokeLater
-import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.util.ProgressIndicatorBase
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attachChild
-import com.intellij.openapi.util.Computable
 import com.intellij.psi.PsiElementFinder
-import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.ui.UIUtil
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.IOException
 import java.lang.instrument.UnmodifiableClassException
 import java.lang.reflect.Method
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.imageio.ImageIO
 import kotlin.reflect.jvm.javaMethod
 
@@ -59,20 +50,10 @@ import kotlin.reflect.jvm.javaMethod
 class TracerController(
     private val view: TracerView, // Access from EDT only.
     parentDisposable: Disposable
-): Disposable {
-    // For simplicity we run all tasks on a single-thread executor.
-    // Most data structures below are assumed to be accessed only from this executor.
-    private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("Tracer", 1)
+): TracerControllerBase("Method Tracer", view), Disposable {
     private var callTree = MutableCallTree(Tracepoint.ROOT)
-    private val dataRefreshLoopStarted = AtomicBoolean()
 
-    val autocomplete =
-        AutocompleteCompletionProvider()
-
-    companion object {
-        private val LOG = Logger.getInstance(TracerController::class.java)
-        private const val REFRESH_DELAY_MS: Long = 30L
-    }
+    val autocomplete = AutocompleteCompletionProvider()
 
     init {
         CallTreeManager.collectAndReset() // Clear trees accumulated while the tracer was closed.
@@ -80,31 +61,17 @@ class TracerController(
         parentDisposable.attachChild(this)
     }
 
-    override fun dispose() {
-        executor.shutdownNow()
-    }
-
-    fun startDataRefreshLoop() {
-        check(dataRefreshLoopStarted.compareAndSet(false, true))
-        executor.scheduleWithFixedDelay(this::dataRefreshLoop, 0, REFRESH_DELAY_MS, MILLISECONDS)
-    }
-
-    private fun dataRefreshLoop() {
-        val startTime = System.nanoTime()
-
+    override fun updateModel(): Boolean {
         val treeDeltas = CallTreeManager.collectAndReset()
         if (treeDeltas.isNotEmpty()) {
             treeDeltas.forEach(callTree::accumulate)
-            updateTracepointUi()
+            return true
         }
-
-        val endTime = System.nanoTime()
-        val elapsedNanos = endTime - startTime
-        updateRefreshTimeUi(elapsedNanos)
+        return false
     }
 
     /** Refreshes the UI with the current state of [callTree]. */
-    private fun updateTracepointUi() {
+    override fun updateUi() {
         val allStats = TreeAlgorithms.computeFlatTracepointStats(callTree)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
 
@@ -114,17 +81,9 @@ class TracerController(
         }
     }
 
-    /** Updates the refresh time label  a new value of [refreshTime]. */
-    private fun updateRefreshTimeUi(refreshTime: Long) {
-        getApplication().invokeAndWait {
-            val timeText = formatNsInUs(refreshTime)
-            view.refreshTimeLabel.text = "Refresh time: %9s".format(timeText)
-        }
-    }
-
-    fun handleRawCommandFromEdt(rawCmd: String) {
-        if (rawCmd.isBlank()) return
-        val cmd = rawCmd.trim()
+    override fun handleRawCommandFromEdt(text: String) {
+        if (text.isBlank()) return
+        val cmd = text.trim()
         if (cmd.startsWith("save")) {
             // Special case: handle this command while we're still on the EDT.
             val path = cmd.substringAfter("save").trim()
@@ -135,16 +94,14 @@ class TracerController(
     }
 
     private fun handleCommand(cmd: String) {
-        val command = parseTracerCommand(cmd)
-
-        when (command) {
+        when (val command = parseTracerCommand(cmd)) {
             is TracerCommand.Clear -> {
                 callTree.clear()
-                updateTracepointUi()
+                updateUi()
             }
             is TracerCommand.Reset -> {
                 callTree = MutableCallTree(Tracepoint.ROOT)
-                updateTracepointUi()
+                updateUi()
             }
             is TracerCommand.Trace -> {
                 when (command.target) {
@@ -161,9 +118,9 @@ class TracerController(
                     is TraceTarget.Tracer -> {
                         traceAndRetransform(
                             command.enable,
-                            TracerController::dataRefreshLoop.javaMethod!!,
-                            TracerController::updateTracepointUi.javaMethod!!,
-                            TracerController::handleCommand.javaMethod!!
+                            this::dataRefreshLoop.javaMethod!!,
+                            this::updateUi.javaMethod!!,
+                            this::handleCommand.javaMethod!!
                         )
                     }
                     is TraceTarget.Method -> {
@@ -256,12 +213,6 @@ class TracerController(
         }
     }
 
-    private fun <T> runWithProgress(action: (ProgressIndicator) -> T): T {
-        val progress = MyProgressIndicator(view)
-        val computable = Computable { action(progress) }
-        return ProgressManager.getInstance().runProcess(computable, progress)
-    }
-
     private fun reloadAutocompleteClasses() {
         val instrumentation = AgentLoader.instrumentation
 
@@ -272,23 +223,6 @@ class TracerController(
         }
         else {
             LOG.warn("Cannot reload classes.")
-        }
-    }
-
-    private class MyProgressIndicator(private val view: TracerView) : ProgressIndicatorBase() {
-
-        override fun onRunningChange(): Unit = onChange()
-
-        override fun onProgressChange(): Unit = onChange()
-
-        private fun onChange() {
-            invokeLater {
-                view.progressBar.isVisible = isRunning
-                view.progressBar.isIndeterminate = isIndeterminate
-                view.progressBar.minimum = 0
-                view.progressBar.maximum = 100
-                view.progressBar.value = (fraction * 100).toInt().coerceIn(0, 100)
-            }
         }
     }
 }

@@ -16,35 +16,29 @@
 
 package com.google.idea.perf.cachedvaluetracer
 
+import com.google.idea.perf.TracerControllerBase
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.rd.attachChild
-import com.intellij.util.concurrency.AppExecutorUtil
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import com.intellij.openapi.ui.Messages
 
 class CachedValueTracerController(
     private val view: CachedValueTracerView,
     parentDisposable: Disposable
-): Disposable {
-    companion object {
-        private val LOG = Logger.getInstance(CachedValueTracerController::class.java)
-        private const val REFRESH_DELAY_MS = 30L
-    }
-
-    private val executor = AppExecutorUtil.createBoundedScheduledExecutorService("CachedValue Tracer", 1)
-
+): TracerControllerBase("Cached Value Tracer", view) {
     init {
         parentDisposable.attachChild(this)
     }
 
-    override fun dispose() {
-        executor.shutdownNow()
+    override fun updateModel(): Boolean {
+        return false
     }
 
-    fun startDataRefreshLoop() {
-        executor.scheduleWithFixedDelay(this::dataRefreshLoop, 0L, REFRESH_DELAY_MS, MILLISECONDS)
+    override fun updateUi() {
     }
 
-    private fun dataRefreshLoop() {
+    override fun handleRawCommandFromEdt(text: String) {
+        Messages.showMessageDialog(
+            view, text, "Cached Value Tracer", Messages.getInformationIcon()
+        )
     }
 }

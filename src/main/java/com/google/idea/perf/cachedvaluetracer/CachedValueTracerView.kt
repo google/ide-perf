@@ -16,18 +16,28 @@
 
 package com.google.idea.perf.cachedvaluetracer
 
+import com.google.idea.perf.TracerViewBase
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.ui.components.JBPanel
+import com.intellij.ui.TextFieldWithAutoCompletion
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.components.JBTextField
+import com.intellij.util.textCompletion.TextFieldWithCompletion
+import com.intellij.util.ui.JBFont
+import com.intellij.util.ui.JBUI
 import java.awt.Dimension
 import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
+import javax.swing.JPanel
+import javax.swing.JProgressBar
 import javax.swing.border.Border
 
 class CachedValueTracerAction: DumbAwareAction() {
@@ -62,24 +72,48 @@ class CachedValueTracerDialog: DialogWrapper(null, null, false, IdeModalityType.
     override fun createActions(): Array<Action> = emptyArray()
 }
 
-class CachedValueTracerView(parentDisposable: Disposable): JBPanel<CachedValueTracerView>() {
+class CachedValueTracerView(parentDisposable: Disposable): TracerViewBase() {
     private val controller = CachedValueTracerController(this, parentDisposable)
-    private val commandLine: JBTextField
-    val tableView = CachedValueTable(CachedValueTableModel())
+    override val commandLine: TextFieldWithCompletion
+    override val progressBar: JProgressBar
+    override val refreshTimeLabel: JBLabel
+    private val listView = CachedValueTable(CachedValueTableModel())
 
     init {
         preferredSize = Dimension(500, 500)
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
-        commandLine = JBTextField().apply {
-            maximumSize = Dimension(Int.MAX_VALUE, minimumSize.height)
+        commandLine = TextFieldWithAutoCompletion.create(
+            ProjectManager.getInstance().defaultProject,
+            emptyList(),
+            false,
+            ""
+        ).apply {
+            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+            addDocumentListener(object: DocumentListener {
+                override fun beforeDocumentChange(event: DocumentEvent) {
+                    if (event.newFragment.contains('\n')) {
+                        controller.handleRawCommandFromEdt(text)
+                        ApplicationManager.getApplication().invokeLater {
+                            this@apply.text = ""
+                        }
+                    }
+                }
+            })
         }
         add(commandLine)
 
+        // Progress bar.
+        progressBar = JProgressBar().apply {
+            isVisible = false
+            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+        }
+        add(progressBar)
+
         // List view.
-        add(JBScrollPane(tableView))
-        tableView.setStats(listOf(
+        add(JBScrollPane(listView))
+        listView.setStats(listOf(
             CachedValueStats("java.lang.String", 1000L, 100, 10),
             CachedValueStats("java.lang.StringBuffer", 2000L, 200, 20),
             CachedValueStats("java.lang.StringBuilder", 3000L, 300, 30),
@@ -87,6 +121,16 @@ class CachedValueTracerView(parentDisposable: Disposable): JBPanel<CachedValueTr
             CachedValueStats("java.lang.nio.ByteBuffer", 5000L, 500, 50)
         ))
 
+        // Render time label.
+        refreshTimeLabel = JBLabel().apply {
+            font = JBUI.Fonts.create(JBFont.MONOSPACED, font.size)
+        }
+        add(JPanel().apply {
+            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+            add(refreshTimeLabel)
+        })
+
+        // Start trace data collection.
         controller.startDataRefreshLoop()
     }
 }
