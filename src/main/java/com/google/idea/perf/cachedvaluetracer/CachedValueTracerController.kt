@@ -24,7 +24,6 @@ import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.rd.attachChild
-import com.intellij.openapi.ui.Messages
 import com.intellij.psi.util.CachedValueProfiler
 import java.util.*
 
@@ -62,7 +61,6 @@ class CachedValueTracerController(
     }
 
     override fun handleRawCommandFromEdt(text: String) {
-        Messages.showInfoMessage(view, text, "Cached Value Tracer")
         executor.execute { handleCommand(text) }
     }
 
