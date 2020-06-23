@@ -18,14 +18,17 @@ package com.google.idea.perf.cachedvaluetracer
 
 /** A cached value tracer CLI command */
 sealed class CachedValueTracerCommand {
-    /** Zero out all cached value stats, but keep filters. */
+    /** Zero out all cached value stats. */
     object Clear: CachedValueTracerCommand()
 
-    /** Zero out all cached value stats, and clear filters. */
+    /** Remove all cached value stats, and clear filters. */
     object Reset: CachedValueTracerCommand()
 
     /** Filter cached values by class name. */
     data class Filter(val pattern: String?): CachedValueTracerCommand()
+
+    /** Clear filters. */
+    object ClearFilters: CachedValueTracerCommand()
 
     /** Group cached values by a specific field. */
     data class GroupBy(val groupOption: GroupOption?): CachedValueTracerCommand()
@@ -45,6 +48,7 @@ fun parseCachedValueTracerCommand(text: String): CachedValueTracerCommand? {
         "clear" -> CachedValueTracerCommand.Clear
         "reset" -> CachedValueTracerCommand.Reset
         "filter" -> parseFilterCommand(tokens.advance())
+        "clear-filters" -> CachedValueTracerCommand.ClearFilters
         "group-by" -> parseGroupByCommand(tokens.advance())
         else -> null
     }
