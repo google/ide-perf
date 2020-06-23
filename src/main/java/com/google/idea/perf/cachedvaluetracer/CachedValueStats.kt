@@ -16,6 +16,13 @@
 
 package com.google.idea.perf.cachedvaluetracer
 
+/**
+ * Represents an aggregation of cached values properties.
+ * @property name a name that represents the cached value aggregation
+ * @property lifetime the aggregate lifetime of cached values
+ * @property hits the number of times a cached value was reused
+ * @property misses the number of times a cached value was created or invalidated
+ */
 data class CachedValueStats(
     val name: String,
     val lifetime: Long,
