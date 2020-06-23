@@ -22,6 +22,6 @@ data class CachedValueStats(
     val hits: Long,
     val misses: Long
 ) {
-    val hitMissRatio: Double
-        get() = hits.toDouble() / misses
+    val hitRatio: Double
+        get() = hits.toDouble() / (hits + misses)
 }
