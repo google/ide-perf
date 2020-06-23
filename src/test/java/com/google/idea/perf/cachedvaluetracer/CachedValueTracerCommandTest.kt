@@ -42,6 +42,11 @@ class CachedValueTracerCommandTest {
         )
 
         assertCommand(
+            CachedValueTracerCommand.ClearFilters,
+            "clear-filters"
+        )
+
+        assertCommand(
             CachedValueTracerCommand.GroupBy(GroupOption.CLASS),
             "group-by class"
         )

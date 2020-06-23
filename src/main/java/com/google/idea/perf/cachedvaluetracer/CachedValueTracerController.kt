@@ -31,7 +31,8 @@ class CachedValueTracerController(
     private val view: CachedValueTracerView,
     parentDisposable: Disposable
 ): TracerController("Cached Value Tracer", view) {
-    private val filteredStats = ArrayList<StackTraceElement>()
+    private val currentStats = mutableMapOf<String, MutableCachedValueStats>()
+    private val filteredStatKeys = ArrayList<StackTraceElement>()
     private var groupMode = GroupOption.CLASS
 
     private val predictor = CachedValueTracerCommandPredictor()
@@ -53,10 +54,13 @@ class CachedValueTracerController(
     }
 
     override fun updateUi() {
-        val stats = getStats()
+        val newStats = getNewStats()
+        for (stat in newStats) {
+            currentStats[stat.name] = stat
+        }
 
         getApplication().invokeAndWait {
-            view.listView.setStats(stats)
+            view.listView.setStats(currentStats.values.toList())
         }
     }
 
@@ -67,24 +71,38 @@ class CachedValueTracerController(
     private fun handleCommand(text: String) {
         when (val command = parseCachedValueTracerCommand(text)) {
             is CachedValueTracerCommand.Clear -> {
-                filteredStats.clear()
+                CachedValueProfiler.getInstance().isEnabled = false
+                CachedValueProfiler.getInstance().isEnabled = true
+                for ((_, stat) in currentStats) {
+                    stat.lifetime = 0L
+                    stat.hits = 0L
+                    stat.misses = 0L
+                }
                 updateUi()
             }
             is CachedValueTracerCommand.Reset -> {
                 CachedValueProfiler.getInstance().isEnabled = false
                 CachedValueProfiler.getInstance().isEnabled = true
-                filteredStats.clear()
+                currentStats.clear()
+                filteredStatKeys.clear()
                 updateUi()
             }
             is CachedValueTracerCommand.Filter -> {
                 if (command.pattern != null) {
                     filterStats(command.pattern)
+                    currentStats.clear()
                     updateUi()
                 }
+            }
+            is CachedValueTracerCommand.ClearFilters -> {
+                filteredStatKeys.clear()
+                currentStats.clear()
+                updateUi()
             }
             is CachedValueTracerCommand.GroupBy -> {
                 if (command.groupOption != null) {
                     groupMode = command.groupOption
+                    currentStats.clear()
                     updateUi()
                 }
             }
@@ -94,14 +112,14 @@ class CachedValueTracerController(
         }
     }
 
-    private fun getStats(): List<CachedValueStats> {
+    private fun getNewStats(): List<MutableCachedValueStats> {
         val snapshot = CachedValueProfiler.getInstance().storageSnapshot
 
-        if (filteredStats.isNotEmpty()) {
+        if (filteredStatKeys.isNotEmpty()) {
             val iterator = snapshot.entrySet().iterator()
             while (iterator.hasNext()) {
                 val (key, _) = iterator.next()
-                if (!filteredStats.contains(key)) {
+                if (!filteredStatKeys.contains(key)) {
                     iterator.remove()
                 }
             }
@@ -117,7 +135,7 @@ class CachedValueTracerController(
         return groupedSnapshot
             .map { it ->
                 val values = it.value.flatten()
-                CachedValueStats(
+                MutableCachedValueStats(
                     it.key,
                     values.sumByLong { it.lifetime },
                     values.sumByLong { it.useCount },
@@ -127,17 +145,17 @@ class CachedValueTracerController(
     }
 
     private fun filterStats(pattern: String) {
-        if (filteredStats.isEmpty()) {
+        if (filteredStatKeys.isEmpty()) {
             val snapshot = CachedValueProfiler.getInstance().storageSnapshot
 
             when (groupMode) {
                 GroupOption.CLASS -> {
-                    filteredStats.addAll(snapshot.keySet().filter {
+                    filteredStatKeys.addAll(snapshot.keySet().filter {
                         fuzzyMatch(it.className, pattern) != null
                     })
                 }
                 GroupOption.STACK_TRACE -> {
-                    filteredStats.addAll(snapshot.keySet().filter {
+                    filteredStatKeys.addAll(snapshot.keySet().filter {
                         fuzzyMatch(getStackTraceName(it), pattern) != null
                     })
                 }
@@ -146,10 +164,10 @@ class CachedValueTracerController(
         else {
             when (groupMode) {
                 GroupOption.CLASS -> {
-                    filteredStats.removeIf { fuzzyMatch(it.className, pattern) == null }
+                    filteredStatKeys.removeIf { fuzzyMatch(it.className, pattern) == null }
                 }
                 GroupOption.STACK_TRACE -> {
-                    filteredStats.removeIf {
+                    filteredStatKeys.removeIf {
                         fuzzyMatch(getStackTraceName(it), pattern) == null
                     }
                 }

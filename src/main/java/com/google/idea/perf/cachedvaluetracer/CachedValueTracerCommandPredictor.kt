@@ -37,7 +37,7 @@ class CachedValueTracerCommandPredictor: CommandPredictor {
 
         return when (tokenIndex) {
             0 -> predictToken(
-                listOf("clear", "reset", "filter", "group-by"), token
+                listOf("clear", "reset", "filter", "clear-filters", "group-by"), token
             )
             1 -> when (command) {
                 is CachedValueTracerCommand.Filter -> predictToken(classNames, token)
