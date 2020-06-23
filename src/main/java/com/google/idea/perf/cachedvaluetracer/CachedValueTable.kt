@@ -73,7 +73,7 @@ class CachedValueTableModel: AbstractTableModel() {
             LIFETIME -> formatMsInSeconds(stats.lifetime)
             HITS -> stats.hits
             MISSES -> stats.misses
-            HIT_MISS_RATIO -> formatNum(stats.hitMissRatio)
+            HIT_MISS_RATIO -> formatNum(stats.hitRatio)
             else -> error(columnIndex)
         }
     }
