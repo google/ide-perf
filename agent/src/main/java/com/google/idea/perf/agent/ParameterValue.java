@@ -16,8 +16,20 @@
 
 package com.google.idea.perf.agent;
 
-/** Handler for method entry/exit events coming from instrumented bytecode. */
-public interface MethodListener {
-    void enter(int methodId, ParameterValue[] args);
-    void leave(int methodId);
+public final class ParameterValue {
+    private final Object value;
+    private final byte index;
+
+    public ParameterValue(Object value, byte index) {
+        this.value = value;
+        this.index = index;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public byte getIndex() {
+        return index;
+    }
 }

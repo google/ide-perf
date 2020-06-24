@@ -29,9 +29,11 @@ object TracepointFlags {
 class Tracepoint(
     val displayName: String,
     val description: String? = null,
-    flags: Int = TracepointFlags.TRACE_ALL
+    flags: Int = TracepointFlags.TRACE_ALL,
+    parameters: Int = 0
 ) {
     val flags: AtomicInteger
+    val parameters: AtomicInteger
 
     companion object {
         /** A special tracepoint representing the root of a call tree. */
@@ -44,6 +46,7 @@ class Tracepoint(
         }
 
         this.flags = AtomicInteger(flags)
+        this.parameters = AtomicInteger(parameters)
     }
 
     fun hasFlags(flags: Int): Boolean {

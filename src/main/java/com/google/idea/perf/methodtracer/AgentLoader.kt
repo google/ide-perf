@@ -18,6 +18,7 @@ package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.agent.AgentMain
 import com.google.idea.perf.agent.MethodListener
+import com.google.idea.perf.agent.ParameterValue
 import com.google.idea.perf.agent.Trampoline
 import com.intellij.execution.process.OSProcessUtil
 import com.intellij.ide.plugins.PluginManagerCore
@@ -103,7 +104,7 @@ object AgentLoader {
     /** Dispatches method entry/exit events to the [CallTreeManager]. */
     private class TracerMethodListener : MethodListener {
 
-        override fun enter(methodId: Int) {
+        override fun enter(methodId: Int, args: Array<ParameterValue>?) {
             val tracepoint = TracerConfig.getTracepoint(methodId)
             CallTreeManager.enter(tracepoint)
         }
