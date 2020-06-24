@@ -16,6 +16,8 @@
 
 package com.google.idea.perf.methodtracer
 
+import com.google.idea.perf.agent.ParameterValue
+
 // Things to improve:
 // - Think about the behavior we want for recursive calls.
 // - Keep track of CPU time too by using ManagementFactory.getThreadMXBean().
@@ -54,6 +56,7 @@ class CallTreeBuilder(
         override var callCount: Long = 0
         override var wallTime: Long = 0
         override var maxWallTime: Long = 0
+        override var parameterValues: MutableMap<ParameterValue, Int> = LinkedHashMap()
         override val children: MutableMap<Tracepoint, Tree> = LinkedHashMap()
 
         var startWallTime: Long = 0
@@ -67,10 +70,17 @@ class CallTreeBuilder(
         }
     }
 
-    fun push(tracepoint: Tracepoint) {
+    fun push(tracepoint: Tracepoint, args: Array<ParameterValue>? = null) {
         val parent = currentNode
         val child = parent.children.getOrPut(tracepoint) { Tree(tracepoint, parent) }
         val flags = tracepoint.flags.get()
+
+        if (args != null) {
+            for (pv in args) {
+                child.parameterValues.putIfAbsent(pv, 0)
+                child.parameterValues.compute(pv) { _, count -> count!! + 1 }
+            }
+        }
 
         child.tracepointFlags = flags
 
@@ -130,12 +140,14 @@ class CallTreeBuilder(
         root.startWallTime = oldRoot.startWallTime
         root.continuedWallTime = oldRoot.continuedWallTime
         root.tracepointFlags = oldRoot.tracepointFlags
+        root.parameterValues = oldRoot.parameterValues.toMutableMap()
         currentNode = root
         for (node in stack.subList(1, stack.size)) {
             val copy = Tree(node.tracepoint, parent = currentNode)
             copy.startWallTime = node.startWallTime
             copy.continuedWallTime = node.continuedWallTime
             copy.tracepointFlags = node.tracepointFlags
+            copy.parameterValues = node.parameterValues.toMutableMap()
             currentNode.children[node.tracepoint] = copy
             currentNode = copy
         }

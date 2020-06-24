@@ -106,7 +106,7 @@ object AgentLoader {
 
         override fun enter(methodId: Int, args: Array<ParameterValue>?) {
             val tracepoint = TracerConfig.getTracepoint(methodId)
-            CallTreeManager.enter(tracepoint)
+            CallTreeManager.enter(tracepoint, args)
         }
 
         override fun leave(methodId: Int) {
@@ -119,7 +119,7 @@ object AgentLoader {
                 // Trigger class loading for CallTreeManager early so that it doesn't happen
                 // during tracing. This reduces the chance of invoking an instrumented method
                 // from a tracing hook (causing infinite recursion).
-                CallTreeManager.enter(Tracepoint.ROOT)
+                CallTreeManager.enter(Tracepoint.ROOT, null)
                 CallTreeManager.leave(Tracepoint.ROOT)
                 CallTreeManager.collectAndReset()
             }

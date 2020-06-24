@@ -16,6 +16,8 @@
 
 package com.google.idea.perf.methodtracer
 
+import com.google.idea.perf.agent.ParameterValue
+
 // Things to improve:
 // - GC the state for dead threads.
 
@@ -39,11 +41,11 @@ object CallTreeManager {
     // Synchronized by monitor lock.
     private val allThreadState = mutableListOf<ThreadState>()
 
-    fun enter(tracepoint: Tracepoint) {
+    fun enter(tracepoint: Tracepoint, args: Array<ParameterValue>?) {
         val state = threadState.get()
         synchronized(state) {
             doPreventingRecursion(state) {
-                state.callTreeBuilder.push(tracepoint)
+                state.callTreeBuilder.push(tracepoint, args)
             }
         }
     }

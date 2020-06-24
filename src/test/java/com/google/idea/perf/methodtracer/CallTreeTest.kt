@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
+import com.google.idea.perf.agent.ParameterValue
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -28,6 +29,7 @@ class CallTreeTest {
         override val maxWallTime: Long,
         childrenList: List<Tree> = emptyList()
     ) : CallTree {
+        override val parameterValues = emptyMap<ParameterValue, Int>()
         override val children = childrenList.associateBy { it.tracepoint }
     }
 

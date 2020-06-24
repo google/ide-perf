@@ -16,6 +16,8 @@
 
 package com.google.idea.perf.agent;
 
+import java.util.Objects;
+
 public final class ParameterValue {
     private final Object value;
     private final byte index;
@@ -31,5 +33,24 @@ public final class ParameterValue {
 
     public byte getIndex() {
         return index;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ParameterValue that = (ParameterValue) o;
+        return index == that.index && Objects.equals(value, that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value, index);
     }
 }
