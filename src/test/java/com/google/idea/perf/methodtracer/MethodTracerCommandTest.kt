@@ -50,7 +50,7 @@ class MethodTracerCommandTest {
             MethodTracerCommand.Trace(
                 false,
                 TraceOption.ALL,
-                TraceTarget.Method("com.example.MyAction", "actionPerformed")
+                TraceTarget.Method("com.example.MyAction", "actionPerformed", emptyList())
             ),
             "untrace com.example.MyAction#actionPerformed"
         )
@@ -58,9 +58,33 @@ class MethodTracerCommandTest {
             MethodTracerCommand.Trace(
                 false,
                 TraceOption.WALL_TIME,
-                TraceTarget.Method("com.example.MyAction", "actionPerformed")
+                TraceTarget.Method("com.example.MyAction", "actionPerformed", emptyList())
             ),
             "untrace wall-time com.example.MyAction#actionPerformed"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(
+                false,
+                TraceOption.ALL,
+                TraceTarget.Method(
+                    "com.example.MyAction",
+                    "actionPerformed",
+                    listOf(ParameterIndex(0))
+                )
+            ),
+            "untrace all com.example.MyAction#actionPerformed[0]"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(
+                false,
+                TraceOption.ALL,
+                TraceTarget.Method(
+                    "com.example.MyAction",
+                    "actionPerformed",
+                    listOf(ParameterIndex(0), ParameterIndex(1))
+                )
+            ),
+            "untrace all com.example.MyAction#actionPerformed[0,1]"
         )
 
         // Trace commands.
@@ -84,7 +108,7 @@ class MethodTracerCommandTest {
             MethodTracerCommand.Trace(
                 true,
                 TraceOption.ALL,
-                TraceTarget.Method("com.example.MyAction", "actionPerformed")
+                TraceTarget.Method("com.example.MyAction", "actionPerformed", emptyList())
             ),
             "trace com.example.MyAction#actionPerformed"
         )
@@ -92,9 +116,33 @@ class MethodTracerCommandTest {
             MethodTracerCommand.Trace(
                 true,
                 TraceOption.ALL,
-                TraceTarget.Method("com.example.MyAction", "actionPerformed")
+                TraceTarget.Method("com.example.MyAction", "actionPerformed", emptyList())
             ),
             "trace all com.example.MyAction#actionPerformed"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(
+                true,
+                TraceOption.ALL,
+                TraceTarget.Method(
+                    "com.example.MyAction",
+                    "actionPerformed",
+                    listOf(ParameterIndex(0))
+                )
+            ),
+            "trace all com.example.MyAction#actionPerformed[0]"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(
+                true,
+                TraceOption.ALL,
+                TraceTarget.Method(
+                    "com.example.MyAction",
+                    "actionPerformed",
+                    listOf(ParameterIndex(0), ParameterIndex(1))
+                )
+            ),
+            "trace all com.example.MyAction#actionPerformed[0,1]"
         )
     }
 }
