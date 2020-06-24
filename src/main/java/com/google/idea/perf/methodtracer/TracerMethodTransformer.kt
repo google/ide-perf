@@ -24,8 +24,10 @@ import org.objectweb.asm.ClassReader.SKIP_FRAMES
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
+import org.objectweb.asm.ClassWriter.COMPUTE_MAXS
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes.ACC_STATIC
 import org.objectweb.asm.Opcodes.ASM8
 import org.objectweb.asm.Type
 import org.objectweb.asm.commons.AdviceAdapter
@@ -75,7 +77,7 @@ class TracerMethodTransformer : ClassFileTransformer {
         classBytes: ByteArray
     ): ByteArray? {
         val reader = ClassReader(classBytes)
-        val writer = ClassWriter(reader, COMPUTE_FRAMES)
+        val writer = ClassWriter(reader, COMPUTE_MAXS or COMPUTE_FRAMES)
 
         val classVisitor = object : ClassVisitor(ASM_API, writer) {
 
@@ -91,6 +93,7 @@ class TracerMethodTransformer : ClassFileTransformer {
                 val tracepoint = TracerConfig.getTracepoint(id)
                 val parameters = tracepoint.parameters.get()
                 val parameterTypes = Type.getArgumentTypes(desc)
+                val parameterBaseIndex = if (access and ACC_STATIC == 0) 1 else 0
 
                 if (!tracepoint.isEnabled) {
                     return methodWriter
@@ -169,11 +172,16 @@ class TracerMethodTransformer : ClassFileTransformer {
                         var storeIndex = arraySize - 1
                         for ((parameterIndex, parameterType) in parameterTypes.withIndex()) {
                             if (parameters and (1 shl parameterIndex) != 0) {
-                                // Push ParameterValue[] onto the stack
-                                mv.visitInsn(DUP)
+                                // Pseudocode for:
+                                // boxedArg = loadArg(args[parameterIndex])
+                                // pvs[storeIndex] = ParameterValue(boxedArg, parameterIndex)
 
-                                // Push an instance of ParameterValue onto the stack
-                                loadArg(parameterIndex, parameterType)
+                                mv.visitInsn(DUP)
+                                mv.visitLdcInsn(storeIndex)
+
+                                mv.visitTypeInsn(NEW, PARAMETER_VALUE_NAME)
+                                mv.visitInsn(DUP)
+                                loadArg(parameterBaseIndex + parameterIndex, parameterType)
                                 mv.visitLdcInsn(parameterIndex)
                                 mv.visitMethodInsn(
                                     INVOKESPECIAL,
@@ -183,8 +191,6 @@ class TracerMethodTransformer : ClassFileTransformer {
                                     false
                                 )
 
-                                // Store instance of ParameterValue onto the stack
-                                mv.visitLdcInsn(storeIndex)
                                 mv.visitInsn(AASTORE)
                                 storeIndex--
                             }
