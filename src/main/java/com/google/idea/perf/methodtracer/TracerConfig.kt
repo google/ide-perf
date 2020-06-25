@@ -64,7 +64,7 @@ object TracerConfig {
 
         lock.withLock {
             val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
-            classConfig.methodNames.put(methodName, TracepointProperties(flags, parameterBits))
+            classConfig.methodNames[methodName] = TracepointProperties(flags, parameterBits)
 
             // If the tracepoint already exists, set tracepoint properties.
             for ((signature, methodId) in classConfig.methodIds) {

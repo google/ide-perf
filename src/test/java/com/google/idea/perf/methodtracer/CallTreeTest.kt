@@ -46,7 +46,7 @@ class CallTreeTest {
 
     init {
         // Enforce LF line endings for developers on Windows.
-        System.setProperty("line.separator", "\n");
+        System.setProperty("line.separator", "\n")
     }
 
     @Test
@@ -275,7 +275,7 @@ class CallTreeTest {
         )
 
         // Given an enabled tracepoint, disable tracepoint and build tree midway.
-        builder.push(simple);
+        builder.push(simple)
         clock.time++
         simple.unsetFlags(TracepointFlags.TRACE_ALL)
         buildAndCheckTree(
