@@ -16,7 +16,6 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.ParameterValue
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -24,12 +23,19 @@ class CallTreeTest {
 
     private class Tree(
         override val tracepoint: Tracepoint,
-        override val callCount: Long,
-        override val wallTime: Long,
-        override val maxWallTime: Long,
+        callCount: Long,
+        wallTime: Long,
+        maxWallTime: Long,
         childrenList: List<Tree> = emptyList()
     ) : CallTree {
-        override val parameterValues = emptyMap<ParameterValue, Int>()
+        class Stats(
+            override val callCount: Long,
+            override val wallTime: Long,
+            override val maxWallTime: Long
+        ): CallTree.Stats
+
+        override val stats = Stats(callCount, wallTime, maxWallTime)
+        override val parameterValues = emptyMap<ParameterValueList, Stats>()
         override val children = childrenList.associateBy { it.tracepoint }
     }
 
@@ -154,7 +160,8 @@ class CallTreeTest {
         builder.pop(mutualRecursion1)
 
         fun StringBuilder.printTree(node: CallTree, indent: String) {
-            with(node) {
+            val tracepoint = node.tracepoint
+            with(node.stats) {
                 appendln("$indent$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns")
             }
             for (child in node.children.values) {
@@ -226,7 +233,8 @@ class CallTreeTest {
         val simple = Tracepoint("simple1", null, TracepointFlags.TRACE_ALL)
 
         fun StringBuilder.printTree(node: CallTree, indent: String) {
-            with(node) {
+            val tracepoint = node.tracepoint
+            with(node.stats) {
                 appendln("$indent$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns")
             }
             for (child in node.children.values) {

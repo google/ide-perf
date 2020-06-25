@@ -39,16 +39,22 @@ object TracerConfig {
         val methodIds = mutableMapOf<String, Int>() // Map from method signature to method id.
     }
 
-    fun traceMethods(classJvmName: String, methodName: String) {
+    fun traceMethods(classJvmName: String, methodName: String, parameters: Collection<Int>) {
+        var parameterBits = 0
+        for (index in parameters) {
+            parameterBits = parameterBits or (1 shl index)
+        }
+
         lock.withLock {
             val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
             classConfig.methodNames.add(methodName)
 
-            // Re-enable tracepoints that were disabled via untrace.
+            // Set tracepoint properties.
             for ((signature, methodId) in classConfig.methodIds) {
                 if (signature.substringBefore('(') == methodName) {
                     val tracepoint = getTracepoint(methodId)
                     tracepoint.setFlags(TracepointFlags.TRACE_ALL)
+                    tracepoint.parameters.set(parameterBits)
                 }
             }
         }
@@ -82,6 +88,7 @@ object TracerConfig {
                     if (methodId != null) {
                         val tracepoint = getTracepoint(methodId)
                         tracepoint.unsetFlags(TracepointFlags.TRACE_ALL)
+                        tracepoint.parameters.set(0)
                     }
                 }
             }
@@ -102,6 +109,7 @@ object TracerConfig {
             if (methodId != null) {
                 val tracepoint = getTracepoint(methodId)
                 tracepoint.unsetFlags(TracepointFlags.TRACE_ALL)
+                tracepoint.parameters.set(0)
             }
         }
     }

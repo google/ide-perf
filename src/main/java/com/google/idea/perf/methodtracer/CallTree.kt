@@ -16,26 +16,44 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.ParameterValue
-
 /** A call tree, represented recursively. */
 interface CallTree {
+    interface Stats {
+        val callCount: Long
+        val wallTime: Long
+        val maxWallTime: Long
+    }
+
     val tracepoint: Tracepoint
-    val callCount: Long
-    val wallTime: Long
-    val maxWallTime: Long
-    val parameterValues: Map<ParameterValue, Int>
+    val stats: Stats
+    val parameterValues: Map<ParameterValueList, Stats>
     val children: Map<Tracepoint, CallTree>
 }
 
 /** A mutable call tree implementation. */
 class MutableCallTree(
     override val tracepoint: Tracepoint
-) : CallTree {
-    override var callCount: Long = 0
-    override var wallTime: Long = 0
-    override var maxWallTime: Long = 0
-    override val parameterValues: MutableMap<ParameterValue, Int> = LinkedHashMap()
+): CallTree {
+    class MutableStats: CallTree.Stats {
+        override var callCount: Long = 0L
+        override var wallTime: Long = 0L
+        override var maxWallTime: Long = 0L
+
+        fun accumulate(other: CallTree.Stats) {
+            callCount += other.callCount
+            wallTime += other.wallTime
+            maxWallTime = maxOf(wallTime, other.maxWallTime)
+        }
+
+        fun clear() {
+            callCount = 0L
+            wallTime = 0L
+            maxWallTime = 0L
+        }
+    }
+
+    override val stats = MutableStats()
+    override val parameterValues: MutableMap<ParameterValueList, MutableStats> = LinkedHashMap()
     override val children: MutableMap<Tracepoint, MutableCallTree> = LinkedHashMap()
 
     /** Accumulates the data from another call tree into this one. */
@@ -44,13 +62,11 @@ class MutableCallTree(
             "Doesn't make sense to sum call tree nodes representing different tracepoints"
         }
 
-        callCount += other.callCount
-        wallTime += other.wallTime
-        maxWallTime = maxWallTime.coerceAtLeast(other.maxWallTime)
+        stats.accumulate(other.stats)
 
-        for ((parameterValue, count) in other.parameterValues) {
-            parameterValues.putIfAbsent(parameterValue, 0)
-            parameterValues.compute(parameterValue) { _, thisCount -> thisCount!! + count }
+        for ((parameterValue, stats) in other.parameterValues) {
+            parameterValues.computeIfAbsent(parameterValue) { MutableStats() }
+            parameterValues[parameterValue]!!.accumulate(stats)
         }
 
         for ((childTracepoint, otherChild) in other.children) {
@@ -60,10 +76,8 @@ class MutableCallTree(
     }
 
     fun clear() {
-        callCount = 0
-        wallTime = 0
-        maxWallTime = 0
+        stats.clear()
         children.values.forEach(MutableCallTree::clear)
-        parameterValues.clear()
+        parameterValues.forEach { (_, stats) -> stats.clear() }
     }
 }

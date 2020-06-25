@@ -53,15 +53,26 @@ class CallTreeBuilder(
         override val tracepoint: Tracepoint,
         val parent: Tree?
     ) : CallTree {
-        override var callCount: Long = 0
-        override var wallTime: Long = 0
-        override var maxWallTime: Long = 0
-        override var parameterValues: MutableMap<ParameterValue, Int> = LinkedHashMap()
+        class MutableStats: CallTree.Stats {
+            override var callCount: Long = 0L
+            override var wallTime: Long = 0L
+            override var maxWallTime: Long = 0L
+
+            fun accumulate(other: CallTree.Stats) {
+                callCount += other.callCount
+                wallTime += other.wallTime
+                maxWallTime = maxOf(maxWallTime, other.maxWallTime)
+            }
+        }
+
+        override val stats = MutableStats()
+        override val parameterValues: MutableMap<ParameterValueList, MutableStats> = LinkedHashMap()
         override val children: MutableMap<Tracepoint, Tree> = LinkedHashMap()
 
         var startWallTime: Long = 0
         var continuedWallTime: Long = 0
         var tracepointFlags: Int = 0
+        var args: ParameterValueList? = null
 
         init {
             require(parent != null || tracepoint == Tracepoint.ROOT) {
@@ -74,18 +85,18 @@ class CallTreeBuilder(
         val parent = currentNode
         val child = parent.children.getOrPut(tracepoint) { Tree(tracepoint, parent) }
         val flags = tracepoint.flags.get()
-
-        if (args != null) {
-            for (pv in args) {
-                child.parameterValues.putIfAbsent(pv, 0)
-                child.parameterValues.compute(pv) { _, count -> count!! + 1 }
-            }
-        }
+        val parameterValueList = if (args != null) ParameterValueList(args) else null
 
         child.tracepointFlags = flags
+        child.args = parameterValueList
 
         if ((flags and TracepointFlags.TRACE_CALL_COUNT) != 0) {
-            child.callCount++
+            child.stats.callCount++
+
+            if (parameterValueList != null) {
+                child.parameterValues.computeIfAbsent(parameterValueList) { Tree.MutableStats() }
+                child.parameterValues[parameterValueList]!!.callCount++
+            }
         }
 
         if ((flags and TracepointFlags.TRACE_WALL_TIME) != 0) {
@@ -116,10 +127,20 @@ class CallTreeBuilder(
 
         if ((child.tracepointFlags and TracepointFlags.TRACE_WALL_TIME) != 0) {
             val now = clock.sample()
-            child.wallTime += now - child.continuedWallTime
-            child.maxWallTime = child.maxWallTime.coerceAtLeast(now - child.startWallTime)
+            val elapsedTime = now - child.continuedWallTime
+            val newMaxWallTime = maxOf(child.stats.maxWallTime, now - child.startWallTime)
+            child.stats.wallTime += elapsedTime
+            child.stats.maxWallTime = newMaxWallTime
+
+            val list = child.args
+            if (list != null) {
+                child.parameterValues.computeIfAbsent(list) { Tree.MutableStats() }
+                child.parameterValues[list]!!.wallTime += elapsedTime
+                child.parameterValues[list]!!.maxWallTime = newMaxWallTime
+            }
         }
 
+        child.args = null
         currentNode = parent
     }
 
@@ -128,26 +149,37 @@ class CallTreeBuilder(
         val now = clock.sample()
         val stack = generateSequence(currentNode, Tree::parent).toList().asReversed()
         for (node in stack) {
+            val nodeArgs = node.args
             val elapsedTime = now - node.continuedWallTime
-            node.wallTime += elapsedTime
+            node.stats.wallTime += elapsedTime
+            node.stats.maxWallTime = maxOf(node.stats.maxWallTime, now - node.startWallTime)
             node.continuedWallTime = now
-            node.maxWallTime = node.maxWallTime.coerceAtLeast(now - node.startWallTime)
+
+            if (nodeArgs != null) {
+                node.parameterValues.computeIfAbsent(nodeArgs) { Tree.MutableStats() }
+                node.parameterValues[nodeArgs]!!.accumulate(node.stats)
+                node.args = null
+            }
         }
 
         // Reset to a new tree and copy over the current stack.
         val oldRoot = root
+        val oldArgs = oldRoot.args
         root = Tree(Tracepoint.ROOT, parent = null)
+        root.parameterValues.putAll(oldRoot.parameterValues)
         root.startWallTime = oldRoot.startWallTime
         root.continuedWallTime = oldRoot.continuedWallTime
         root.tracepointFlags = oldRoot.tracepointFlags
-        root.parameterValues = oldRoot.parameterValues.toMutableMap()
+        root.args = if (oldArgs != null) ParameterValueList(oldArgs.items) else null
         currentNode = root
         for (node in stack.subList(1, stack.size)) {
             val copy = Tree(node.tracepoint, parent = currentNode)
+            val nodeArgs = node.args
             copy.startWallTime = node.startWallTime
             copy.continuedWallTime = node.continuedWallTime
             copy.tracepointFlags = node.tracepointFlags
-            copy.parameterValues = node.parameterValues.toMutableMap()
+            copy.parameterValues.putAll(node.parameterValues)
+            copy.args = if (nodeArgs != null) ParameterValueList(nodeArgs.items) else null
             currentNode.children[node.tracepoint] = copy
             currentNode = copy
         }

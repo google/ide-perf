@@ -128,10 +128,11 @@ class MethodTracerController(
                     is TraceTarget.Method -> {
                         val className = command.target.className
                         val methodName = command.target.methodName
+                        val parameters = command.target.parameterIndexes?.map { it.index }
                         val classJvmName = className.replace('.', '/')
-                        if (methodName != null) {
+                        if (methodName != null && parameters != null) {
                             if (command.enable) {
-                                TracerConfig.traceMethods(classJvmName, methodName)
+                                TracerConfig.traceMethods(classJvmName, methodName, parameters)
                             }
                             else {
                                 TracerConfig.untraceMethods(classJvmName, methodName)
