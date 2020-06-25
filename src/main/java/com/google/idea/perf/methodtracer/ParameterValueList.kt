@@ -30,7 +30,7 @@ class ParameterValueList(val items: Array<ParameterValue>) {
         return true
     }
 
-    override fun hashCode(): Int {
-        return items.contentHashCode()
-    }
+    override fun hashCode(): Int = items.contentHashCode()
+
+    override fun toString(): String = items.map { it.value }.joinToString(", ")
 }
