@@ -18,11 +18,11 @@ package com.google.idea.perf.agent;
 
 import java.util.Objects;
 
-public final class ParameterValue {
+public final class Argument {
     private final Object value;
     private final byte index;
 
-    public ParameterValue(Object value, byte index) {
+    public Argument(Object value, byte index) {
         this.value = value;
         this.index = index;
     }
@@ -45,7 +45,7 @@ public final class ParameterValue {
             return false;
         }
 
-        ParameterValue that = (ParameterValue) o;
+        Argument that = (Argument) o;
         return index == that.index && Objects.equals(value, that.value);
     }
 

@@ -16,30 +16,30 @@
 
 package com.google.idea.perf.methodtracer
 
-class ParameterValueListStats(
-    val args: ParameterValueList,
+class ArgSetStats(
+    val args: ArgSet,
     var callCount: Long = 0L,
     var wallTime: Long = 0L,
     var maxWallTime: Long = 0L
 )
 
-class ParameterValueStatMap private constructor(
-    val tracepoints: Map<Tracepoint, List<ParameterValueListStats>>
+class ArgStatMap private constructor(
+    val tracepoints: Map<Tracepoint, List<ArgSetStats>>
 ) {
     companion object {
-        fun fromCallTree(root: CallTree): ParameterValueStatMap {
-            val allStats = mutableMapOf<Tracepoint, MutableMap<ParameterValueList, ParameterValueListStats>>()
+        fun fromCallTree(root: CallTree): ArgStatMap {
+            val allStats = mutableMapOf<Tracepoint, MutableMap<ArgSet, ArgSetStats>>()
             val ancestors = mutableSetOf<Tracepoint>()
 
             fun dfs(node: CallTree) {
                 val nonRecursive = node.tracepoint !in ancestors
 
-                if (node.parameterValues.isNotEmpty()) {
-                    val pvStats = allStats.getOrPut(node.tracepoint) { mutableMapOf() }
+                if (node.argSetStats.isNotEmpty()) {
+                    val argSetStats = allStats.getOrPut(node.tracepoint) { mutableMapOf() }
 
-                    for ((args, stats) in node.parameterValues) {
-                        val accumulatedStats = pvStats.getOrPut(args) {
-                            ParameterValueListStats(args)
+                    for ((args, stats) in node.argSetStats) {
+                        val accumulatedStats = argSetStats.getOrPut(args) {
+                            ArgSetStats(args)
                         }
                         accumulatedStats.callCount += stats.callCount
 
@@ -64,7 +64,7 @@ class ParameterValueStatMap private constructor(
             dfs(root)
             assert(ancestors.isEmpty())
 
-            return ParameterValueStatMap(allStats.mapValues { it.value.values.toList() })
+            return ArgStatMap(allStats.mapValues { it.value.values.toList() })
         }
     }
 }

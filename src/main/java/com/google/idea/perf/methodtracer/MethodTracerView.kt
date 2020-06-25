@@ -82,9 +82,9 @@ class MethodTracerView(parentDisposable: Disposable) : TracerView() {
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel
-    val tabs: JBTabbedPane
     val listView = TracepointTable(TracepointTableModel())
-    val parameterValueViews = LinkedHashMap<Tracepoint, ParameterValueListTable>()
+    private val tabs: JBTabbedPane
+    private val argSetStatViews = LinkedHashMap<Tracepoint, ArgSetTable>()
 
     init {
         preferredSize = Dimension(500, 500) // Only applies to first open.
@@ -141,10 +141,10 @@ class MethodTracerView(parentDisposable: Disposable) : TracerView() {
         controller.startDataRefreshLoop()
     }
 
-    fun updateTabs(parameterValueStatMap: ParameterValueStatMap) {
-        for ((tracepoint, stats) in parameterValueStatMap.tracepoints) {
-            val table = parameterValueViews.computeIfAbsent(tracepoint) {
-                ParameterValueListTable(ParameterValueListTableModel())
+    fun updateTabs(argStatMap: ArgStatMap) {
+        for ((tracepoint, stats) in argStatMap.tracepoints) {
+            val table = argSetStatViews.computeIfAbsent(tracepoint) {
+                ArgSetTable(ArgSetTableModel())
             }
             table.setStats(stats)
 
@@ -155,7 +155,7 @@ class MethodTracerView(parentDisposable: Disposable) : TracerView() {
 
         for (i in tabs.tabCount - 1 downTo 1) {
             val title = tabs.getTitleAt(i)
-            if (!parameterValueStatMap.tracepoints.any { it.key.displayName == title }) {
+            if (!argStatMap.tracepoints.any { it.key.displayName == title }) {
                 tabs.removeTabAt(i)
             }
         }

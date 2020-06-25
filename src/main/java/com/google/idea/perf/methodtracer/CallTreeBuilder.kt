@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.ParameterValue
+import com.google.idea.perf.agent.Argument
 
 // Things to improve:
 // - Think about the behavior we want for recursive calls.
@@ -66,13 +66,13 @@ class CallTreeBuilder(
         }
 
         override val stats = MutableStats()
-        override val parameterValues: MutableMap<ParameterValueList, MutableStats> = LinkedHashMap()
+        override val argSetStats: MutableMap<ArgSet, MutableStats> = LinkedHashMap()
         override val children: MutableMap<Tracepoint, Tree> = LinkedHashMap()
 
         var startWallTime: Long = 0
         var continuedWallTime: Long = 0
         var tracepointFlags: Int = 0
-        var args: ParameterValueList? = null
+        var argSet: ArgSet? = null
 
         init {
             require(parent != null || tracepoint == Tracepoint.ROOT) {
@@ -81,21 +81,21 @@ class CallTreeBuilder(
         }
     }
 
-    fun push(tracepoint: Tracepoint, args: Array<ParameterValue>? = null) {
+    fun push(tracepoint: Tracepoint, args: Array<Argument>? = null) {
         val parent = currentNode
         val child = parent.children.getOrPut(tracepoint) { Tree(tracepoint, parent) }
         val flags = tracepoint.flags.get()
-        val parameterValueList = if (args != null) ParameterValueList(args) else null
+        val argSet = if (args != null) ArgSet(args) else null
 
         child.tracepointFlags = flags
-        child.args = parameterValueList
+        child.argSet = argSet
 
         if ((flags and TracepointFlags.TRACE_CALL_COUNT) != 0) {
             child.stats.callCount++
 
-            if (parameterValueList != null) {
-                child.parameterValues.computeIfAbsent(parameterValueList) { Tree.MutableStats() }
-                child.parameterValues[parameterValueList]!!.callCount++
+            if (argSet != null) {
+                child.argSetStats.computeIfAbsent(argSet) { Tree.MutableStats() }
+                child.argSetStats[argSet]!!.callCount++
             }
         }
 
@@ -132,15 +132,15 @@ class CallTreeBuilder(
             child.stats.wallTime += elapsedTime
             child.stats.maxWallTime = newMaxWallTime
 
-            val list = child.args
+            val list = child.argSet
             if (list != null) {
-                child.parameterValues.computeIfAbsent(list) { Tree.MutableStats() }
-                child.parameterValues[list]!!.wallTime += elapsedTime
-                child.parameterValues[list]!!.maxWallTime = newMaxWallTime
+                child.argSetStats.computeIfAbsent(list) { Tree.MutableStats() }
+                child.argSetStats[list]!!.wallTime += elapsedTime
+                child.argSetStats[list]!!.maxWallTime = newMaxWallTime
             }
         }
 
-        child.args = null
+        child.argSet = null
         currentNode = parent
     }
 
@@ -149,37 +149,37 @@ class CallTreeBuilder(
         val now = clock.sample()
         val stack = generateSequence(currentNode, Tree::parent).toList().asReversed()
         for (node in stack) {
-            val nodeArgs = node.args
+            val nodeArgs = node.argSet
             val elapsedTime = now - node.continuedWallTime
             node.stats.wallTime += elapsedTime
             node.stats.maxWallTime = maxOf(node.stats.maxWallTime, now - node.startWallTime)
             node.continuedWallTime = now
 
             if (nodeArgs != null) {
-                node.parameterValues.computeIfAbsent(nodeArgs) { Tree.MutableStats() }
-                node.parameterValues[nodeArgs]!!.accumulate(node.stats)
-                node.args = null
+                node.argSetStats.computeIfAbsent(nodeArgs) { Tree.MutableStats() }
+                node.argSetStats[nodeArgs]!!.accumulate(node.stats)
+                node.argSet = null
             }
         }
 
         // Reset to a new tree and copy over the current stack.
         val oldRoot = root
-        val oldArgs = oldRoot.args
+        val oldArgs = oldRoot.argSet
         root = Tree(Tracepoint.ROOT, parent = null)
-        root.parameterValues.putAll(oldRoot.parameterValues)
+        root.argSetStats.putAll(oldRoot.argSetStats)
         root.startWallTime = oldRoot.startWallTime
         root.continuedWallTime = oldRoot.continuedWallTime
         root.tracepointFlags = oldRoot.tracepointFlags
-        root.args = if (oldArgs != null) ParameterValueList(oldArgs.items) else null
+        root.argSet = if (oldArgs != null) ArgSet(oldArgs.items) else null
         currentNode = root
         for (node in stack.subList(1, stack.size)) {
             val copy = Tree(node.tracepoint, parent = currentNode)
-            val nodeArgs = node.args
+            val nodeArgs = node.argSet
             copy.startWallTime = node.startWallTime
             copy.continuedWallTime = node.continuedWallTime
             copy.tracepointFlags = node.tracepointFlags
-            copy.parameterValues.putAll(node.parameterValues)
-            copy.args = if (nodeArgs != null) ParameterValueList(nodeArgs.items) else null
+            copy.argSetStats.putAll(node.argSetStats)
+            copy.argSet = if (nodeArgs != null) ArgSet(nodeArgs.items) else null
             currentNode.children[node.tracepoint] = copy
             currentNode = copy
         }

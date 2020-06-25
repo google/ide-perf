@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.ParameterValue
+import com.google.idea.perf.agent.Argument
 import com.google.idea.perf.agent.Trampoline
 import com.intellij.openapi.diagnostic.Logger
 import org.objectweb.asm.ClassReader
@@ -52,8 +52,8 @@ class TracerMethodTransformer : ClassFileTransformer {
         private val TRAMPOLINE_ENTER_METHOD = Method.getMethod(Trampoline::enter.javaMethod)
         private val TRAMPOLINE_LEAVE_METHOD = Method.getMethod(Trampoline::leave.javaMethod)
 
-        private val PARAMETER_VALUE_NAME = Type.getType(ParameterValue::class.java).internalName
-        private val PARAMETER_VALUE_CONSTRUCTOR = Method.getMethod(ParameterValue::class.constructors.first().javaConstructor)
+        private val ARGUMENT_NAME = Type.getType(Argument::class.java).internalName
+        private val ARGUMENT_CONSTRUCTOR = Method.getMethod(Argument::class.constructors.first().javaConstructor)
     }
 
     override fun transform(
@@ -152,7 +152,7 @@ class TracerMethodTransformer : ClassFileTransformer {
                         }
                     }
 
-                    private fun loadParameterValues() {
+                    private fun loadArgSet() {
                         if (parameters == 0) {
                             mv.visitInsn(ACONST_NULL)
                             return
@@ -165,29 +165,29 @@ class TracerMethodTransformer : ClassFileTransformer {
                             }
                         }
 
-                        // Create new ParameterValue[]
+                        // Create new Argument[]
                         mv.visitLdcInsn(arraySize)
-                        mv.visitTypeInsn(ANEWARRAY, Type.getInternalName(ParameterValue::class.java))
+                        mv.visitTypeInsn(ANEWARRAY, Type.getInternalName(Argument::class.java))
 
                         var storeIndex = arraySize - 1
                         for ((parameterIndex, parameterType) in parameterTypes.withIndex()) {
                             if (parameters and (1 shl parameterIndex) != 0) {
                                 // Pseudocode for:
                                 // boxedArg = loadArg(args[parameterIndex])
-                                // pvs[storeIndex] = ParameterValue(boxedArg, parameterIndex)
+                                // args[storeIndex] = Argument(boxedArg, parameterIndex)
 
                                 mv.visitInsn(DUP)
                                 mv.visitLdcInsn(storeIndex)
 
-                                mv.visitTypeInsn(NEW, PARAMETER_VALUE_NAME)
+                                mv.visitTypeInsn(NEW, ARGUMENT_NAME)
                                 mv.visitInsn(DUP)
                                 loadArg(parameterBaseIndex + parameterIndex, parameterType)
                                 mv.visitLdcInsn(parameterIndex)
                                 mv.visitMethodInsn(
                                     INVOKESPECIAL,
-                                    PARAMETER_VALUE_NAME,
-                                    PARAMETER_VALUE_CONSTRUCTOR.name,
-                                    PARAMETER_VALUE_CONSTRUCTOR.descriptor,
+                                    ARGUMENT_NAME,
+                                    ARGUMENT_CONSTRUCTOR.name,
+                                    ARGUMENT_CONSTRUCTOR.descriptor,
                                     false
                                 )
 
@@ -199,7 +199,7 @@ class TracerMethodTransformer : ClassFileTransformer {
 
                     private fun invokeEnter() {
                         mv.visitLdcInsn(id)
-                        loadParameterValues()
+                        loadArgSet()
 
                         mv.visitMethodInsn(
                             INVOKESTATIC,

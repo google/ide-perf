@@ -35,7 +35,7 @@ class CallTreeTest {
         ): CallTree.Stats
 
         override val stats = Stats(callCount, wallTime, maxWallTime)
-        override val parameterValues = emptyMap<ParameterValueList, Stats>()
+        override val argSetStats = emptyMap<ArgSet, Stats>()
         override val children = childrenList.associateBy { it.tracepoint }
     }
 

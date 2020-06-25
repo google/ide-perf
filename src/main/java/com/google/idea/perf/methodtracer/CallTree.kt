@@ -26,7 +26,7 @@ interface CallTree {
 
     val tracepoint: Tracepoint
     val stats: Stats
-    val parameterValues: Map<ParameterValueList, Stats>
+    val argSetStats: Map<ArgSet, Stats>
     val children: Map<Tracepoint, CallTree>
 }
 
@@ -53,7 +53,7 @@ class MutableCallTree(
     }
 
     override val stats = MutableStats()
-    override val parameterValues: MutableMap<ParameterValueList, MutableStats> = LinkedHashMap()
+    override val argSetStats: MutableMap<ArgSet, MutableStats> = LinkedHashMap()
     override val children: MutableMap<Tracepoint, MutableCallTree> = LinkedHashMap()
 
     /** Accumulates the data from another call tree into this one. */
@@ -64,9 +64,9 @@ class MutableCallTree(
 
         stats.accumulate(other.stats)
 
-        for ((parameterValue, stats) in other.parameterValues) {
-            parameterValues.computeIfAbsent(parameterValue) { MutableStats() }
-            parameterValues[parameterValue]!!.accumulate(stats)
+        for ((argSet, stats) in other.argSetStats) {
+            argSetStats.computeIfAbsent(argSet) { MutableStats() }
+            argSetStats[argSet]!!.accumulate(stats)
         }
 
         for ((childTracepoint, otherChild) in other.children) {
@@ -78,6 +78,6 @@ class MutableCallTree(
     fun clear() {
         stats.clear()
         children.values.forEach(MutableCallTree::clear)
-        parameterValues.forEach { (_, stats) -> stats.clear() }
+        argSetStats.forEach { (_, stats) -> stats.clear() }
     }
 }

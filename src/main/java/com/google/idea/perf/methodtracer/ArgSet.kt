@@ -16,14 +16,14 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.ParameterValue
+import com.google.idea.perf.agent.Argument
 
-class ParameterValueList(val items: Array<ParameterValue>) {
+class ArgSet(val items: Array<Argument>) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ParameterValueList
+        other as ArgSet
 
         if (!items.contentEquals(other.items)) return false
 

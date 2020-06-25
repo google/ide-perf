@@ -29,17 +29,17 @@ import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.JTableHeader
 import javax.swing.table.TableRowSorter
 
-private const val PARAMETER_VALUE_LIST = 0
+private const val ARG_SET = 0
 private const val CALLS = 1
 private const val WALL_TIME = 2
 private const val MAX_WALL_TIME = 3
 private const val COL_COUNT = 4
 
-/** Table model for [ParameterValueListTable]. */
-class ParameterValueListTableModel: AbstractTableModel() {
-    private var data: List<ParameterValueListStats>? = null
+/** Table model for [ArgSetTable]. */
+class ArgSetTableModel: AbstractTableModel() {
+    private var data: List<ArgSetStats>? = null
 
-    fun setStats(newStats: List<ParameterValueListStats>?) {
+    fun setStats(newStats: List<ArgSetStats>?) {
         data = newStats
         fireTableDataChanged()
     }
@@ -51,7 +51,7 @@ class ParameterValueListTableModel: AbstractTableModel() {
     override fun getValueAt(rowIndex: Int, columnIndex: Int): Any {
         val stats = data!![rowIndex]
         return when (columnIndex) {
-            PARAMETER_VALUE_LIST -> stats.args.toString()
+            ARG_SET -> stats.args.toString()
             CALLS -> stats.callCount
             WALL_TIME -> stats.wallTime
             MAX_WALL_TIME -> stats.maxWallTime
@@ -60,7 +60,7 @@ class ParameterValueListTableModel: AbstractTableModel() {
     }
 
     override fun getColumnName(column: Int): String = when (column) {
-        PARAMETER_VALUE_LIST -> "arguments"
+        ARG_SET -> "arguments"
         CALLS -> "calls"
         WALL_TIME -> "wall time"
         MAX_WALL_TIME -> "max wall time"
@@ -68,7 +68,7 @@ class ParameterValueListTableModel: AbstractTableModel() {
     }
 
     override fun getColumnClass(columnIndex: Int): Class<*> = when (columnIndex) {
-        PARAMETER_VALUE_LIST -> java.lang.String::class.java
+        ARG_SET -> java.lang.String::class.java
         CALLS, WALL_TIME, MAX_WALL_TIME -> java.lang.Long::class.java
         else -> error(columnIndex)
     }
@@ -76,7 +76,7 @@ class ParameterValueListTableModel: AbstractTableModel() {
     override fun isCellEditable(rowIndex: Int, columnIndex: Int): Boolean = false
 }
 
-class ParameterValueListTable(private val model: ParameterValueListTableModel): JBTable(model) {
+class ArgSetTable(private val model: ArgSetTableModel): JBTable(model) {
     init {
         font = JBUI.Fonts.create(Font.MONOSPACED, font.size)
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
@@ -90,7 +90,7 @@ class ParameterValueListTable(private val model: ParameterValueListTableModel): 
             // Column widths.
             tableColumn.minWidth = 100
             tableColumn.preferredWidth = when (col) {
-                PARAMETER_VALUE_LIST -> Integer.MAX_VALUE
+                ARG_SET -> Integer.MAX_VALUE
                 CALLS, WALL_TIME, MAX_WALL_TIME -> 100
                 else -> tableColumn.preferredWidth
             }
@@ -120,14 +120,14 @@ class ParameterValueListTable(private val model: ParameterValueListTableModel): 
         }
 
         // Limit sorting directions.
-        rowSorter = object : TableRowSorter<ParameterValueListTableModel>(model) {
+        rowSorter = object : TableRowSorter<ArgSetTableModel>(model) {
             override fun toggleSortOrder(col: Int) {
                 val alreadySorted = sortKeys.any {
                     it.column == col && it.sortOrder != SortOrder.UNSORTED
                 }
                 if (alreadySorted) return
                 val order = when (col) {
-                    PARAMETER_VALUE_LIST -> SortOrder.ASCENDING
+                    ARG_SET -> SortOrder.ASCENDING
                     else -> SortOrder.DESCENDING
                 }
                 sortKeys = listOf(SortKey(col, order))
@@ -146,7 +146,7 @@ class ParameterValueListTable(private val model: ParameterValueListTableModel): 
         }
     }
 
-    fun setStats(newStats: List<ParameterValueListStats>?) {
+    fun setStats(newStats: List<ArgSetStats>?) {
         // Changing table data clears the current row selection, so we have to restore it manually.
         val selection = selectionModel.leadSelectionIndex
         model.setStats(newStats)

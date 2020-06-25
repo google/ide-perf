@@ -76,12 +76,12 @@ class MethodTracerController(
     override fun updateUi() {
         val allStats = TreeAlgorithms.computeFlatTracepointStats(callTree)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
-        val parameterValueStatMap = ParameterValueStatMap.fromCallTree(callTree)
+        val argStatMap = ArgStatMap.fromCallTree(callTree)
 
         // We use invokeAndWait to ensure proper backpressure for the data refresh loop.
         getApplication().invokeAndWait {
             view.listView.setTracepointStats(visibleStats)
-            view.updateTabs(parameterValueStatMap)
+            view.updateTabs(argStatMap)
         }
     }
 
