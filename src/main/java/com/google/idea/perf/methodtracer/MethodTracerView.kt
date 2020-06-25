@@ -143,9 +143,7 @@ class MethodTracerView(parentDisposable: Disposable) : TracerView() {
 
     fun updateTabs(argStatMap: ArgStatMap) {
         for ((tracepoint, stats) in argStatMap.tracepoints) {
-            val table = argSetStatViews.computeIfAbsent(tracepoint) {
-                ArgSetTable(ArgSetTableModel())
-            }
+            val table = argSetStatViews.getOrPut(tracepoint) { ArgSetTable(ArgSetTableModel()) }
             table.setStats(stats)
 
             if (tabs.indexOfTab(tracepoint.displayName) == -1) {

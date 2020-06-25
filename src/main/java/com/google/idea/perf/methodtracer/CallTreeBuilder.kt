@@ -94,8 +94,8 @@ class CallTreeBuilder(
             child.stats.callCount++
 
             if (argSet != null) {
-                child.argSetStats.computeIfAbsent(argSet) { Tree.MutableStats() }
-                child.argSetStats[argSet]!!.callCount++
+                val stats = child.argSetStats.getOrPut(argSet) { Tree.MutableStats() }
+                stats.callCount++
             }
         }
 
@@ -134,9 +134,9 @@ class CallTreeBuilder(
 
             val list = child.argSet
             if (list != null) {
-                child.argSetStats.computeIfAbsent(list) { Tree.MutableStats() }
-                child.argSetStats[list]!!.wallTime += elapsedTime
-                child.argSetStats[list]!!.maxWallTime = newMaxWallTime
+                val stats = child.argSetStats.getOrPut(list) { Tree.MutableStats() }
+                stats.wallTime += elapsedTime
+                stats.maxWallTime = newMaxWallTime
             }
         }
 
@@ -156,8 +156,8 @@ class CallTreeBuilder(
             node.continuedWallTime = now
 
             if (nodeArgs != null) {
-                node.argSetStats.computeIfAbsent(nodeArgs) { Tree.MutableStats() }
-                node.argSetStats[nodeArgs]!!.accumulate(node.stats)
+                val stats = node.argSetStats.getOrPut(nodeArgs) { Tree.MutableStats() }
+                stats.accumulate(node.stats)
                 node.argSet = null
             }
         }

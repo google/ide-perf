@@ -65,8 +65,8 @@ class MutableCallTree(
         stats.accumulate(other.stats)
 
         for ((argSet, stats) in other.argSetStats) {
-            argSetStats.computeIfAbsent(argSet) { MutableStats() }
-            argSetStats[argSet]!!.accumulate(stats)
+            val thisStats = argSetStats.getOrPut(argSet) { MutableStats() }
+            thisStats.accumulate(stats)
         }
 
         for ((childTracepoint, otherChild) in other.children) {
