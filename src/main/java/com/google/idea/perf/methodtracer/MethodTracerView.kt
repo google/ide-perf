@@ -153,7 +153,7 @@ class MethodTracerView(parentDisposable: Disposable) : TracerView() {
 
         for (i in tabs.tabCount - 1 downTo 1) {
             val title = tabs.getTitleAt(i)
-            if (!argStatMap.tracepoints.any { it.key.displayName == title }) {
+            if (argStatMap.tracepoints.none { it.key.displayName == title }) {
                 tabs.removeTabAt(i)
             }
         }

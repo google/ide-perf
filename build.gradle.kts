@@ -102,7 +102,6 @@ tasks.test {
 dependencies {
     // Using 'compileOnly' because the agent is loaded in the boot classpath.
     compileOnly(project(":agent"))
-    testCompileOnly(project(":agent"))
 
     implementation("org.ow2.asm:asm:8.0.1")
     implementation("org.ow2.asm:asm-commons:8.0.1") {

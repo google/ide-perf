@@ -24,10 +24,7 @@ class ArgSet(val items: Array<Argument>) {
         if (javaClass != other?.javaClass) return false
 
         other as ArgSet
-
-        if (!items.contentEquals(other.items)) return false
-
-        return true
+        return items.contentEquals(other.items)
     }
 
     override fun hashCode(): Int = items.contentHashCode()

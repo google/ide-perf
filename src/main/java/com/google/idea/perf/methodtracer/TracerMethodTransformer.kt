@@ -158,12 +158,7 @@ class TracerMethodTransformer : ClassFileTransformer {
                             return
                         }
 
-                        var arraySize = 0
-                        for (index in parameterTypes.indices) {
-                            if (parameters and (1 shl index) != 0) {
-                                arraySize++
-                            }
-                        }
+                        val arraySize = Integer.bitCount(parameters)
 
                         // Create new Argument[]
                         mv.visitLdcInsn(arraySize)

@@ -164,22 +164,20 @@ class CallTreeBuilder(
 
         // Reset to a new tree and copy over the current stack.
         val oldRoot = root
-        val oldArgs = oldRoot.argSet
         root = Tree(Tracepoint.ROOT, parent = null)
         root.argSetStats.putAll(oldRoot.argSetStats)
         root.startWallTime = oldRoot.startWallTime
         root.continuedWallTime = oldRoot.continuedWallTime
         root.tracepointFlags = oldRoot.tracepointFlags
-        root.argSet = if (oldArgs != null) ArgSet(oldArgs.items) else null
+        root.argSet = oldRoot.argSet
         currentNode = root
         for (node in stack.subList(1, stack.size)) {
             val copy = Tree(node.tracepoint, parent = currentNode)
-            val nodeArgs = node.argSet
             copy.startWallTime = node.startWallTime
             copy.continuedWallTime = node.continuedWallTime
             copy.tracepointFlags = node.tracepointFlags
             copy.argSetStats.putAll(node.argSetStats)
-            copy.argSet = if (nodeArgs != null) ArgSet(nodeArgs.items) else null
+            copy.argSet = node.argSet
             currentNode.children[node.tracepoint] = copy
             currentNode = copy
         }
