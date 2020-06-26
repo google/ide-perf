@@ -34,7 +34,7 @@ object TracerConfig {
     private val classConfigs = mutableMapOf<String, ClassConfig>() // Keyed by 'JVM' class name.
 
     private class TracepointProperties(
-        val flags: Int = 0,
+        val flags: Int = TracepointFlags.TRACE_ALL,
         val parameters: Int = 0
     ) {
         companion object {
