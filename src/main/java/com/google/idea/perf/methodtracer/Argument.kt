@@ -27,7 +27,5 @@ class Argument(val value: Any?, val index: Byte) {
         return index == that.index && value == that.value
     }
 
-    override fun hashCode(): Int {
-        return Objects.hash(value, index)
-    }
+    override fun hashCode(): Int = Objects.hash(value, index)
 }
