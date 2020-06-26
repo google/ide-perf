@@ -27,6 +27,14 @@ class ArgStatMap private constructor(
     val tracepoints: Map<Tracepoint, List<ArgSetStats>>
 ) {
     companion object {
+        //
+        // TODO: Cover this corner case:
+        // f(1), 10 ms
+        //   f(2), 5 ms
+        // f(2), 10 ms
+        //
+        // In this case, argument stats should also have CallTree children.
+        //
         fun fromCallTree(root: CallTree): ArgStatMap {
             val allStats = mutableMapOf<Tracepoint, MutableMap<ArgSet, ArgSetStats>>()
             val ancestors = mutableSetOf<Pair<Tracepoint, ArgSet>>()
