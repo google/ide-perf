@@ -29,18 +29,17 @@ class ArgStatMap private constructor(
     companion object {
         fun fromCallTree(root: CallTree): ArgStatMap {
             val allStats = mutableMapOf<Tracepoint, MutableMap<ArgSet, ArgSetStats>>()
-            val ancestors = mutableSetOf<Tracepoint>()
+            val ancestors = mutableSetOf<Pair<Tracepoint, ArgSet>>()
 
             fun dfs(node: CallTree) {
-                val nonRecursive = node.tracepoint !in ancestors
+                val scopedAncestors = mutableSetOf<Pair<Tracepoint, ArgSet>>()
 
                 if (node.argSetStats.isNotEmpty()) {
                     val argSetStats = allStats.getOrPut(node.tracepoint) { mutableMapOf() }
 
                     for ((args, stats) in node.argSetStats) {
-                        val accumulatedStats = argSetStats.getOrPut(args) {
-                            ArgSetStats(args)
-                        }
+                        val nonRecursive = node.tracepoint to args !in ancestors
+                        val accumulatedStats = argSetStats.getOrPut(args) { ArgSetStats(args) }
                         accumulatedStats.callCount += stats.callCount
 
                         if (nonRecursive) {
@@ -48,17 +47,18 @@ class ArgStatMap private constructor(
                             accumulatedStats.maxWallTime = maxOf(
                                 accumulatedStats.maxWallTime, stats.maxWallTime
                             )
+                            scopedAncestors.add(node.tracepoint to args)
                         }
                     }
                 }
+
+                ancestors.addAll(scopedAncestors)
 
                 for (child in node.children.values) {
                     dfs(child)
                 }
 
-                if (nonRecursive) {
-                    ancestors.remove(node.tracepoint)
-                }
+                ancestors.removeAll(scopedAncestors)
             }
 
             dfs(root)

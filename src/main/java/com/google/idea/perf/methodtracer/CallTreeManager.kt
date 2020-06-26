@@ -16,8 +16,6 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.Argument
-
 // Things to improve:
 // - GC the state for dead threads.
 

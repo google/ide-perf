@@ -27,7 +27,7 @@ public class Trampoline {
     public static MethodListener methodListener; // Set by the tracer.
 
     // These methods are called from instrumented bytecode.
-    public static void enter(int methodId, Argument[] args) {
+    public static void enter(int methodId, Object[] args) {
         methodListener.enter(methodId, args);
     }
 

@@ -16,7 +16,6 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.Argument
 import com.google.idea.perf.agent.Trampoline
 import com.intellij.openapi.diagnostic.Logger
 import org.objectweb.asm.ClassReader

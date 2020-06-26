@@ -16,16 +16,18 @@
 
 package com.google.idea.perf.methodtracer
 
-class ArgSet(val items: Array<Argument>) {
+import java.util.*
+
+class Argument(val value: Any?, val index: Byte) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+        if (other == null || javaClass != other.javaClass) return false
 
-        other as ArgSet
-        return items.contentEquals(other.items)
+        val that = other as Argument
+        return index == that.index && value == that.value
     }
 
-    override fun hashCode(): Int = items.contentHashCode()
-
-    override fun toString(): String = items.map { it.value }.joinToString(", ")
+    override fun hashCode(): Int {
+        return Objects.hash(value, index)
+    }
 }

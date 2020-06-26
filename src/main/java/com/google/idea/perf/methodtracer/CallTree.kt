@@ -42,7 +42,7 @@ class MutableCallTree(
         fun accumulate(other: CallTree.Stats) {
             callCount += other.callCount
             wallTime += other.wallTime
-            maxWallTime = maxOf(wallTime, other.maxWallTime)
+            maxWallTime = maxOf(maxWallTime, other.maxWallTime)
         }
 
         fun clear() {
