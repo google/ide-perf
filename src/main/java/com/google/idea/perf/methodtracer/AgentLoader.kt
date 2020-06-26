@@ -17,6 +17,7 @@
 package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.agent.AgentMain
+import com.google.idea.perf.agent.Argument
 import com.google.idea.perf.agent.MethodListener
 import com.google.idea.perf.agent.Trampoline
 import com.intellij.execution.process.OSProcessUtil

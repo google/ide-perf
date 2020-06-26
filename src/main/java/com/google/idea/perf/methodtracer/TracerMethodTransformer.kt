@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
+import com.google.idea.perf.agent.Argument
 import com.google.idea.perf.agent.Trampoline
 import com.intellij.openapi.diagnostic.Logger
 import org.objectweb.asm.ClassReader
@@ -152,12 +153,17 @@ class TracerMethodTransformer : ClassFileTransformer {
                     }
 
                     private fun loadArgSet() {
-                        if (parameters == 0) {
+                        var arraySize = 0
+                        for (parameterIndex in parameterTypes.indices) {
+                            if (parameters and (1 shl parameterIndex) != 0) {
+                                arraySize++
+                            }
+                        }
+
+                        if (arraySize == 0) {
                             mv.visitInsn(ACONST_NULL)
                             return
                         }
-
-                        val arraySize = Integer.bitCount(parameters)
 
                         // Create new Argument[]
                         mv.visitLdcInsn(arraySize)
