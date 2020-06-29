@@ -83,21 +83,17 @@ tasks.runIde {
     jvmArgs("-Djdk.module.illegalAccess.silent=true")
     jvmArgs("-XX:+UseCompressedOops")
 
-    if (findProperty("loadAgentAtStartup") == "true") {
-        // Add the -javaagent startup flag.
-        val agentName = tasks.getByPath(":agent:jar").outputs.files.singleFile.name
-        val agentPath = "${intellij.sandboxDirectory}/plugins/${intellij.pluginName}/$agentName"
-        jvmArgs("-javaagent:$agentPath")
-    } else {
-        // Let the agent load itself later.
-        systemProperty("jdk.attach.allowAttachSelf", true)
-    }
+    val loadAgentAtStartup = findProperty("loadAgentAtStartup") == "true"
+    enableAgent(loadAgentAtStartup)
 }
 
 tasks.test {
     testLogging.exceptionFormat = FULL
+    enableAgent(atStartup = true) // TODO: Ideally we would also test loading the agent on demand.
+}
 
-    if (findProperty("loadAgentAtStartup") == "true") {
+fun JavaForkOptions.enableAgent(atStartup: Boolean) {
+    if (atStartup) {
         // Add the -javaagent startup flag.
         val agentName = tasks.getByPath(":agent:jar").outputs.files.singleFile.name
         val agentPath = "${intellij.sandboxDirectory}/plugins/${intellij.pluginName}/$agentName"
@@ -111,7 +107,6 @@ tasks.test {
 dependencies {
     // Using 'compileOnly' because the agent is loaded in the boot classpath.
     compileOnly(project(":agent"))
-    testCompileOnly(project(":agent"))
 
     implementation("org.ow2.asm:asm:8.0.1")
     implementation("org.ow2.asm:asm-commons:8.0.1") {

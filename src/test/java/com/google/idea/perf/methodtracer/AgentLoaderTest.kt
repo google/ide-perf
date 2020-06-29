@@ -24,9 +24,6 @@ class AgentLoaderTest : BasePlatformTestCase() {
 
     @Test
     fun testLoadAgent() {
-        check(SystemProperties.`is`("jdk.attach.allowAttachSelf")) {
-            "Must set VM option -Djdk.attach.allowAttachSelf=true to load the agent"
-        }
         checkNotNull(AgentLoader.instrumentation) {
             "The instrumentation agent failed to load. See the log for details."
         }
