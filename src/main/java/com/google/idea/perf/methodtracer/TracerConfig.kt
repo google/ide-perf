@@ -33,22 +33,45 @@ object TracerConfig {
     private val lock = ReentrantLock() // Protects the data structures below.
     private val classConfigs = mutableMapOf<String, ClassConfig>() // Keyed by 'JVM' class name.
 
-    /** Specifies which methods to instrument for a given class. */
-    private class ClassConfig {
-        val methodNames = mutableSetOf<String>() // Set of simple method names to instrument.
-        val methodIds = mutableMapOf<String, Int>() // Map from method signature to method id.
+    private class TracepointProperties(
+        val flags: Int = TracepointFlags.TRACE_ALL,
+        val parameters: Int = 0
+    ) {
+        companion object {
+            val DEFAULT = TracepointProperties()
+        }
     }
 
-    fun traceMethods(classJvmName: String, methodName: String) {
+    /** Specifies which methods to instrument for a given class. */
+    private class ClassConfig {
+        /** Set of simple method names to instrumental and their associated properties. */
+        val methodNames = mutableMapOf<String, TracepointProperties>()
+
+        /** Map from method signature to method ID. */
+        val methodIds = mutableMapOf<String, Int>()
+    }
+
+    fun traceMethods(
+        classJvmName: String,
+        methodName: String,
+        flags: Int,
+        parameters: Collection<Int>
+    ) {
+        var parameterBits = 0
+        for (index in parameters) {
+            parameterBits = parameterBits or (1 shl index)
+        }
+
         lock.withLock {
             val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
-            classConfig.methodNames.add(methodName)
+            classConfig.methodNames[methodName] = TracepointProperties(flags, parameterBits)
 
-            // Re-enable tracepoints that were disabled via untrace.
+            // If the tracepoint already exists, set tracepoint properties.
             for ((signature, methodId) in classConfig.methodIds) {
                 if (signature.substringBefore('(') == methodName) {
                     val tracepoint = getTracepoint(methodId)
                     tracepoint.setFlags(TracepointFlags.TRACE_ALL)
+                    tracepoint.parameters.set(parameterBits)
                 }
             }
         }
@@ -66,7 +89,9 @@ object TracerConfig {
         lock.withLock {
             val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
             val methodSignature = "$methodName$methodDesc"
-            val tracepoint = createTracepoint(classJvmName, methodName, methodDesc)
+            val tracepoint = createTracepoint(
+                classJvmName, methodName, methodDesc, TracepointProperties.DEFAULT
+            )
             classConfig.methodIds.getOrPut(methodSignature) { tracepoints.append(tracepoint) }
         }
     }
@@ -82,6 +107,7 @@ object TracerConfig {
                     if (methodId != null) {
                         val tracepoint = getTracepoint(methodId)
                         tracepoint.unsetFlags(TracepointFlags.TRACE_ALL)
+                        tracepoint.parameters.set(0)
                     }
                 }
             }
@@ -102,6 +128,7 @@ object TracerConfig {
             if (methodId != null) {
                 val tracepoint = getTracepoint(methodId)
                 tracepoint.unsetFlags(TracepointFlags.TRACE_ALL)
+                tracepoint.parameters.set(0)
             }
         }
     }
@@ -136,8 +163,9 @@ object TracerConfig {
                 return existingId
             }
 
-            if (classConfig.methodNames.contains(methodName)) {
-                val tracepoint = createTracepoint(classJvmName, methodName, methodDesc)
+            val properties = classConfig.methodNames[methodName]
+            if (properties != null) {
+                val tracepoint = createTracepoint(classJvmName, methodName, methodDesc, properties)
                 val newId = tracepoints.append(tracepoint)
                 classConfig.methodIds[methodSignature] = newId
                 return newId
@@ -152,13 +180,16 @@ object TracerConfig {
     private fun createTracepoint(
         classJvmName: String,
         methodName: String,
-        methodDesc: String
+        methodDesc: String,
+        properties: TracepointProperties
     ): Tracepoint {
         val classShortName = classJvmName.substringAfterLast('/')
         val className = classJvmName.replace('/', '.')
         return Tracepoint(
             displayName = "$classShortName.$methodName()",
-            description = "$className#$methodName$methodDesc"
+            description = "$className#$methodName$methodDesc",
+            flags = properties.flags,
+            parameters = properties.parameters
         )
     }
 }

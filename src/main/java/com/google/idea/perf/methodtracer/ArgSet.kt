@@ -14,10 +14,20 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.agent;
+package com.google.idea.perf.methodtracer
 
-/** Handler for method entry/exit events coming from instrumented bytecode. */
-public interface MethodListener {
-    void enter(int methodId, Object[] args);
-    void leave(int methodId);
+import com.google.idea.perf.agent.Argument
+
+class ArgSet(val items: Array<Argument>) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ArgSet
+        return items.contentEquals(other.items)
+    }
+
+    override fun hashCode(): Int = items.contentHashCode()
+
+    override fun toString(): String = items.map { it.value }.joinToString(", ")
 }

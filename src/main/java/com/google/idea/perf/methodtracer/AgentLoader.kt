@@ -17,6 +17,7 @@
 package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.agent.AgentMain
+import com.google.idea.perf.agent.Argument
 import com.google.idea.perf.agent.MethodListener
 import com.google.idea.perf.agent.Trampoline
 import com.intellij.execution.process.OSProcessUtil
@@ -103,9 +104,11 @@ object AgentLoader {
     /** Dispatches method entry/exit events to the [CallTreeManager]. */
     private class TracerMethodListener : MethodListener {
 
-        override fun enter(methodId: Int) {
+        override fun enter(methodId: Int, args: Array<Any>?) {
             val tracepoint = TracerConfig.getTracepoint(methodId)
-            CallTreeManager.enter(tracepoint)
+
+            @Suppress("UNCHECKED_CAST")
+            CallTreeManager.enter(tracepoint, args as Array<Argument>?)
         }
 
         override fun leave(methodId: Int) {
@@ -118,7 +121,7 @@ object AgentLoader {
                 // Trigger class loading for CallTreeManager early so that it doesn't happen
                 // during tracing. This reduces the chance of invoking an instrumented method
                 // from a tracing hook (causing infinite recursion).
-                CallTreeManager.enter(Tracepoint.ROOT)
+                CallTreeManager.enter(Tracepoint.ROOT, null)
                 CallTreeManager.leave(Tracepoint.ROOT)
                 CallTreeManager.collectAndReset()
             }

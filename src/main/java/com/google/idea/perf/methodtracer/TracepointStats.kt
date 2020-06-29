@@ -36,10 +36,10 @@ object TreeAlgorithms {
         fun bfs(node: CallTree) {
             val nonRecursive = node.tracepoint !in ancestors
             val stats = allStats.getOrPut(node.tracepoint) { TracepointStats(node.tracepoint) }
-            stats.callCount += node.callCount
+            stats.callCount += node.stats.callCount
             if (nonRecursive) {
-                stats.wallTime += node.wallTime
-                stats.maxWallTime = stats.maxWallTime.coerceAtLeast(node.maxWallTime)
+                stats.wallTime += node.stats.wallTime
+                stats.maxWallTime = stats.maxWallTime.coerceAtLeast(node.stats.maxWallTime)
                 ancestors.add(node.tracepoint)
             }
             for (child in node.children.values) {

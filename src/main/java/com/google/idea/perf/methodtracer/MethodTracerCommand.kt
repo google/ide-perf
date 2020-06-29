@@ -51,8 +51,14 @@ sealed class TraceTarget {
     object PsiFinders: TraceTarget()
 
     /** Trace a specific method. */
-    data class Method(val className: String, val methodName: String?): TraceTarget()
+    data class Method(
+        val className: String,
+        val methodName: String?,
+        val parameterIndexes: List<ParameterIndex>?
+    ): TraceTarget()
 }
+
+data class ParameterIndex(val index: Int)
 
 fun parseMethodTracerCommand(text: String): MethodTracerCommand? {
     // Grammar is simple enough for a basic split() parser.
@@ -69,6 +75,8 @@ fun parseMethodTracerCommand(text: String): MethodTracerCommand? {
         else -> null
     }
 }
+
+private class InternalParseException(message: String): Exception(message)
 
 private fun parseTraceCommand(tokens: List<String>, enable: Boolean): MethodTracerCommand? {
     return when (tokens.size) {
@@ -96,14 +104,40 @@ private fun parseTraceTarget(tokens: List<String>): TraceTarget? {
         "psi-finders" -> TraceTarget.PsiFinders
         "tracer" -> TraceTarget.Tracer
         else -> {
-            val splitIndex = token.indexOf('#')
+            var splitIndex = token.indexOf('#')
             if (splitIndex == -1) {
-                TraceTarget.Method(token, null)
+                TraceTarget.Method(token, null, null)
             }
             else {
                 val className = token.substring(0, splitIndex)
-                val methodName = token.substring(splitIndex + 1)
-                TraceTarget.Method(className, methodName)
+                val methodNameAndIndexer = token.substring(splitIndex + 1)
+                splitIndex = methodNameAndIndexer.indexOf('[')
+
+                if (splitIndex == -1) {
+                    TraceTarget.Method(className, methodNameAndIndexer, emptyList())
+                }
+                else {
+                    val methodName = methodNameAndIndexer.substring(0, splitIndex)
+
+                    try {
+                        val indexerText = methodNameAndIndexer.substring(splitIndex + 1)
+                        if (!indexerText.endsWith(']')) {
+                            throw InternalParseException("Expected ']'")
+                        }
+
+                        val indexes = indexerText
+                            .substring(0, indexerText.lastIndex)
+                            .split(',')
+                            .map { ParameterIndex(it.trim().toInt()) }
+                        TraceTarget.Method(className, methodName, indexes)
+                    }
+                    catch (ex: InternalParseException) {
+                        TraceTarget.Method(className, methodName, null)
+                    }
+                    catch (ex: NumberFormatException) {
+                        TraceTarget.Method(className, methodName, null)
+                    }
+                }
             }
         }
     }

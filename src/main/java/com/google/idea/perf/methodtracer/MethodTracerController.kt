@@ -76,10 +76,12 @@ class MethodTracerController(
     override fun updateUi() {
         val allStats = TreeAlgorithms.computeFlatTracepointStats(callTree)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
+        val argStatMap = ArgStatMap.fromCallTree(callTree)
 
         // We use invokeAndWait to ensure proper backpressure for the data refresh loop.
         getApplication().invokeAndWait {
             view.listView.setTracepointStats(visibleStats)
+            view.updateTabs(argStatMap)
         }
     }
 
@@ -128,10 +130,16 @@ class MethodTracerController(
                     is TraceTarget.Method -> {
                         val className = command.target.className
                         val methodName = command.target.methodName
+                        val parameters = command.target.parameterIndexes?.map { it.index }
                         val classJvmName = className.replace('.', '/')
-                        if (methodName != null) {
+                        if (methodName != null && parameters != null) {
                             if (command.enable) {
-                                TracerConfig.traceMethods(classJvmName, methodName)
+                                TracerConfig.traceMethods(
+                                    classJvmName,
+                                    methodName,
+                                    TracepointFlags.TRACE_ALL,
+                                    parameters
+                                )
                             }
                             else {
                                 TracerConfig.untraceMethods(classJvmName, methodName)
