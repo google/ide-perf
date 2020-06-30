@@ -47,18 +47,23 @@ class MethodTracerCommandPredictor: CommandPredictor {
                 }
                 else -> emptyList()
             }
-            2 -> when {
-                command is MethodTracerCommand.Trace && command.target is TraceTarget.Method ->
-                    predictMethodToken(command.target.className, token)
-                command is MethodTracerCommand.Trace -> predictToken(classNames, token)
-                else -> emptyList()
-            }
-            3 -> when {
-                command is MethodTracerCommand.Trace && command.target is TraceTarget.Method ->
-                    predictMethodToken(command.target.className, token)
+            2, 3 -> when (command) {
+                is MethodTracerCommand.Trace -> predictClassOrMethod(command, token)
                 else -> emptyList()
             }
             else -> emptyList()
+        }
+    }
+
+    private fun predictClassOrMethod(
+        command: MethodTracerCommand.Trace, token: String
+    ): List<String> {
+        val target = command.target
+        return if (target is TraceTarget.Method && target.className.isNotBlank()) {
+            predictMethodToken(target.className, token)
+        }
+        else {
+            predictToken(classNames, token)
         }
     }
 
