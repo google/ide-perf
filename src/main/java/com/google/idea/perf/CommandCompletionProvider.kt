@@ -16,6 +16,7 @@
 
 package com.google.idea.perf
 
+import com.google.idea.perf.util.fuzzyMatch
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.CompletionUtilCore
