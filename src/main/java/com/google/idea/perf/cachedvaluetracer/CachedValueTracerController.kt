@@ -26,11 +26,16 @@ import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.rd.attachChild
 import com.intellij.psi.util.CachedValueProfiler
 import java.util.*
+import java.util.concurrent.TimeUnit.SECONDS
 
 class CachedValueTracerController(
     private val view: CachedValueTracerView,
     parentDisposable: Disposable
 ): TracerController("Cached Value Tracer", view) {
+    companion object {
+        const val AUTOCOMPLETE_RELOAD_INTERVAL = 120L
+    }
+
     private val currentStats = mutableMapOf<String, MutableCachedValueStats>()
     private val filteredStatKeys = ArrayList<StackTraceElement>()
     private var groupMode = GroupOption.CLASS
@@ -40,13 +45,18 @@ class CachedValueTracerController(
 
     init {
         parentDisposable.attachChild(this)
-        reloadAutocompleteClasses()
         CachedValueProfiler.getInstance().isEnabled = true
     }
 
     override fun dispose() {
         super.dispose()
         CachedValueProfiler.getInstance().isEnabled = false
+    }
+
+    override fun start() {
+        executor.scheduleWithFixedDelay(
+            this::reloadAutocompleteClasses, 0L, AUTOCOMPLETE_RELOAD_INTERVAL, SECONDS
+        )
     }
 
     override fun updateModel(): Boolean {

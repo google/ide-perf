@@ -52,7 +52,10 @@ abstract class TracerController(
         executor.scheduleWithFixedDelay(
             this::dataRefreshLoop, 0, REFRESH_DELAY_MS, MILLISECONDS
         )
+        start()
     }
+
+    abstract fun start()
 
     protected fun dataRefreshLoop() {
         val startTime = System.nanoTime()

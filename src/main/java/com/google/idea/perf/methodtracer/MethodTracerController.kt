@@ -30,6 +30,7 @@ import java.io.File
 import java.io.IOException
 import java.lang.instrument.UnmodifiableClassException
 import java.lang.reflect.Method
+import java.util.concurrent.TimeUnit.SECONDS
 import javax.imageio.ImageIO
 import kotlin.reflect.jvm.javaMethod
 
@@ -52,6 +53,10 @@ class MethodTracerController(
     private val view: MethodTracerView, // Access from EDT only.
     parentDisposable: Disposable
 ): TracerController("Method Tracer", view), Disposable {
+    companion object {
+        const val AUTOCOMPLETE_RELOAD_INTERVAL = 120L
+    }
+
     private var callTree = MutableCallTree(Tracepoint.ROOT)
 
     private val predictor = MethodTracerCommandPredictor()
@@ -59,8 +64,13 @@ class MethodTracerController(
 
     init {
         CallTreeManager.collectAndReset() // Clear trees accumulated while the tracer was closed.
-        reloadAutocompleteClasses()
         parentDisposable.attachChild(this)
+    }
+
+    override fun start() {
+        executor.scheduleWithFixedDelay(
+            this::reloadAutocompleteClasses, 0L, AUTOCOMPLETE_RELOAD_INTERVAL, SECONDS
+        )
     }
 
     override fun updateModel(): Boolean {
