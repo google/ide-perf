@@ -92,7 +92,8 @@ class MethodTracerController(
             // Special case: handle this command while we're still on the EDT.
             val path = cmd.substringAfter("save").trim()
             savePngFromEdt(path)
-        } else {
+        }
+        else {
             executor.execute { handleCommand(cmd) }
         }
     }
@@ -189,9 +190,11 @@ class MethodTracerController(
                 progress.checkCanceled()
                 try {
                     instrumentation.retransformClasses(clazz)
-                } catch (e: UnmodifiableClassException) {
+                }
+                catch (e: UnmodifiableClassException) {
                     LOG.warn("Cannot instrument non-modifiable class: ${clazz.name}")
-                } catch (e: Throwable) {
+                }
+                catch (e: Throwable) {
                     LOG.error("Failed to retransform class: ${clazz.name}", e)
                 }
                 if (!progress.isIndeterminate) {
@@ -217,7 +220,8 @@ class MethodTracerController(
         getApplication().executeOnPooledThread {
             try {
                 ImageIO.write(img, "png", file)
-            } catch (e: IOException) {
+            }
+            catch (e: IOException) {
                 LOG.warn("Failed to write png to $path", e)
             }
         }

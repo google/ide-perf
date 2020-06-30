@@ -45,7 +45,7 @@ import javax.swing.border.Border
 // - DialogWrapper wrapper is still tied to a specific project window.
 
 /** Invoked by the user via the "Trace" action. */
-class MethodTracerAction : DumbAwareAction() {
+class MethodTracerAction: DumbAwareAction() {
     private var currentTracer: MethodTracerDialog? = null
 
     override fun actionPerformed(e: AnActionEvent) {
@@ -53,7 +53,8 @@ class MethodTracerAction : DumbAwareAction() {
         if (tracer != null) {
             check(!tracer.isDisposed)
             tracer.toFront()
-        } else {
+        }
+        else {
             val newTracer = MethodTracerDialog()
             currentTracer = newTracer
             newTracer.disposable.attach { currentTracer = null }
@@ -63,7 +64,7 @@ class MethodTracerAction : DumbAwareAction() {
 }
 
 /** The dialog window that pops up via the "Trace" action. */
-class MethodTracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
+class MethodTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
     init {
         title = "Tracer"
         isModal = false
@@ -77,7 +78,7 @@ class MethodTracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE,
 }
 
 /** The content filling the tracer dialog window. */
-class MethodTracerView(parentDisposable: Disposable) : TracerView() {
+class MethodTracerView(parentDisposable: Disposable): TracerView() {
     private val controller = MethodTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar

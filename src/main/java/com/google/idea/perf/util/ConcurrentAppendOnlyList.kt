@@ -24,7 +24,7 @@ package com.google.idea.perf.util
  * Calls to [get] are O(1) and lock-free.
  * Calls to [append] are amortized O(1) but require locking.
  */
-class ConcurrentAppendOnlyList<T : Any>(initialCapacity: Int = 0) {
+class ConcurrentAppendOnlyList<T: Any>(initialCapacity: Int = 0) {
 
     @Volatile
     private var data = arrayOfNulls<Any?>(initialCapacity)

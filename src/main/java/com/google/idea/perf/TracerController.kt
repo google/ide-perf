@@ -84,7 +84,7 @@ abstract class TracerController(
         return ProgressManager.getInstance().runProcess(computable, progress)
     }
 
-    protected class MyProgressIndicator(private val view: TracerView) : ProgressIndicatorBase() {
+    protected class MyProgressIndicator(private val view: TracerView): ProgressIndicatorBase() {
         override fun onRunningChange(): Unit = onChange()
 
         override fun onProgressChange(): Unit = onChange()

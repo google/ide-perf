@@ -68,7 +68,8 @@ object CallTreeManager {
             state.busy = true
             try {
                 action()
-            } finally {
+            }
+            finally {
                 state.busy = false
             }
         }

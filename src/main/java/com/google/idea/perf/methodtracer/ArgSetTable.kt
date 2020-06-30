@@ -98,7 +98,7 @@ class ArgSetTable(private val model: ArgSetTableModel): JBTable(model) {
             // Locale-aware and unit-aware rendering for numbers.
             when (col) {
                 CALLS, WALL_TIME, MAX_WALL_TIME -> {
-                    tableColumn.cellRenderer = object : DefaultTableCellRenderer() {
+                    tableColumn.cellRenderer = object: DefaultTableCellRenderer() {
                         init {
                             horizontalAlignment = SwingConstants.RIGHT
                         }
@@ -120,7 +120,7 @@ class ArgSetTable(private val model: ArgSetTableModel): JBTable(model) {
         }
 
         // Limit sorting directions.
-        rowSorter = object : TableRowSorter<ArgSetTableModel>(model) {
+        rowSorter = object: TableRowSorter<ArgSetTableModel>(model) {
             override fun toggleSortOrder(col: Int) {
                 val alreadySorted = sortKeys.any {
                     it.column == col && it.sortOrder != SortOrder.UNSORTED
@@ -137,7 +137,7 @@ class ArgSetTable(private val model: ArgSetTableModel): JBTable(model) {
     }
 
     override fun createDefaultTableHeader(): JTableHeader {
-        return object : JBTableHeader() {
+        return object: JBTableHeader() {
             init {
                 // Override the renderer that JBTableHeader sets.
                 // The default, center-aligned renderer looks better.

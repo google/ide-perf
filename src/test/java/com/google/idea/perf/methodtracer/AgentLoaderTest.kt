@@ -17,10 +17,9 @@
 package com.google.idea.perf.methodtracer
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import com.intellij.util.SystemProperties
 import org.junit.Test
 
-class AgentLoaderTest : BasePlatformTestCase() {
+class AgentLoaderTest: BasePlatformTestCase() {
 
     @Test
     fun testLoadAgent() {

@@ -29,7 +29,7 @@ class CallTreeTest {
         maxWallTime: Long,
         override val argSetStats: Map<ArgSet, Stats> = emptyMap(),
         childrenList: List<Tree> = emptyList()
-    ) : CallTree {
+    ): CallTree {
 
         override val stats = Stats(callCount, wallTime, maxWallTime)
         override val children = childrenList.associateBy { it.tracepoint }
@@ -44,7 +44,7 @@ class CallTreeTest {
     private fun newArgSet(vararg values: Any?): ArgSet =
         ArgSet(values.mapIndexed { i, value -> Argument(value, i.toByte()) }.toTypedArray())
 
-    class TestClock : CallTreeBuilder.Clock {
+    class TestClock: CallTreeBuilder.Clock {
         var time = 0L
         override fun sample(): Long = time
     }
