@@ -36,7 +36,7 @@ class MethodTracerCommandTest {
         assertCommand(MethodTracerCommand.Clear, "  clear")
         assertCommand(MethodTracerCommand.Clear, "  clear  ")
 
-        // Untrace commands.
+        // Basic untrace commands.
         assertCommand(
             MethodTracerCommand.Trace(false, TraceOption.ALL, null),
             "untrace"
@@ -62,6 +62,26 @@ class MethodTracerCommandTest {
             MethodTracerCommand.Trace(false, TraceOption.CALL_COUNT, TraceTarget.Tracer),
             "untrace count tracer"
         )
+
+        // Wildcard untrace commands.
+        assertCommand(
+            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.All),
+            "untrace *"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.WildcardClass("Test")),
+            "untrace Test*"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.WildcardMethod("Test", "")),
+            "untrace Test#*"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.WildcardMethod("Test", "get")),
+            "untrace Test#get*"
+        )
+
+        // Method untrace commands.
         assertCommand(
             MethodTracerCommand.Trace(
                 false,
@@ -95,7 +115,7 @@ class MethodTracerCommandTest {
             "untrace all com.example.MyAction#actionPerformed[0,1]"
         )
 
-        // Trace commands.
+        // Basic trace commands.
         assertCommand(
             MethodTracerCommand.Trace(true, TraceOption.ALL, null),
             "trace"
@@ -104,7 +124,6 @@ class MethodTracerCommandTest {
             MethodTracerCommand.Trace(true, TraceOption.WALL_TIME, null),
             "trace wall-time"
         )
-
         assertCommand(
             MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.PsiFinders),
             "trace psi-finders"
@@ -121,6 +140,26 @@ class MethodTracerCommandTest {
             MethodTracerCommand.Trace(true, TraceOption.CALL_COUNT, TraceTarget.Tracer),
             "trace count tracer"
         )
+
+        // Wildcard trace commands.
+        assertCommand(
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.All),
+            "trace *"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.WildcardClass("Test")),
+            "trace Test*"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.WildcardMethod("Test", "")),
+            "trace Test#*"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.WildcardMethod("Test", "get")),
+            "trace Test#get*"
+        )
+
+        // Method trace commands.
         assertCommand(
             MethodTracerCommand.Trace(
                 true,
