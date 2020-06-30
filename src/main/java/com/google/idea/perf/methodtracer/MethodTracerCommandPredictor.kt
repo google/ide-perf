@@ -68,9 +68,14 @@ class MethodTracerCommandPredictor: CommandPredictor {
     }
 
     private fun predictMethodToken(className: String, token: String): List<String> {
-        val clazz = Class.forName(className)
-        val methodNames = clazz.methods.map { it.name.substringAfter('$') }
-        return predictToken(methodNames, token)
+        return try {
+            val clazz = Class.forName(className)
+            val methodNames = clazz.methods.map { it.name.substringAfter('$') }
+            predictToken(methodNames, token)
+        }
+        catch (ex: ClassNotFoundException) {
+            emptyList()
+        }
     }
 
     private fun getTokenIndex(input: String, index: Int): Int {
