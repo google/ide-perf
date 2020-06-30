@@ -108,11 +108,9 @@ object AgentLoader {
     /** Dispatches method entry/exit events to the [CallTreeManager]. */
     private class TracerMethodListener: MethodListener {
 
-        override fun enter(methodId: Int, args: Array<Any>?) {
+        override fun enter(methodId: Int, args: Array<Argument>?) {
             val tracepoint = TracerConfig.getTracepoint(methodId)
-
-            @Suppress("UNCHECKED_CAST")
-            CallTreeManager.enter(tracepoint, args as Array<Argument>?)
+            CallTreeManager.enter(tracepoint, args)
         }
 
         override fun leave(methodId: Int) {
