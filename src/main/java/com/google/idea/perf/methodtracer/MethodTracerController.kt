@@ -138,6 +138,15 @@ class MethodTracerController(
                             this::handleCommand.javaMethod!!
                         )
                     }
+                    is TraceTarget.All -> {
+                        if (command.enable) {
+                            LOG.warn("Tracing all methods is prohibited.")
+                        }
+                        else {
+                            val classNames = TracerConfig.removeAllTracing()
+                            retransformClasses(classNames.toSet())
+                        }
+                    }
                     is TraceTarget.Method -> {
                         val traceOption = command.traceOption
                         val className = command.target.className

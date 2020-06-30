@@ -57,6 +57,20 @@ sealed class TraceTarget {
     /** Trace some important methods of the PSI. */
     object PsiFinders: TraceTarget()
 
+    /** Trace everything. */
+    object All: TraceTarget()
+
+    /** Trace all methods of classes that match a wildcard. */
+    data class WildcardClass(
+        val className: String
+    ): TraceTarget()
+
+    /** Trace methods that match a wildcard. */
+    data class WildcardMethod(
+        val className: String,
+        val methodName: String
+    ): TraceTarget()
+
     /** Trace a specific method. */
     data class Method(
         val className: String,
@@ -102,15 +116,23 @@ private fun parseTraceTarget(tokens: List<Token>): TraceTarget? {
     val third = tokens.getOrNull(2)
     val fourth = tokens.getOrNull(3)
 
-    return when {
-        first is PsiFindersKeyword -> TraceTarget.PsiFinders
-        first is TracerKeyword -> TraceTarget.Tracer
-        first is Identifier && second is HashSymbol && third is Identifier && fourth is OpenBracketSymbol ->
-            TraceTarget.Method(first.textString, third.textString, parseParameterList(tokens.advance(4)))
-        first is Identifier && second is HashSymbol && third is Identifier ->
-            TraceTarget.Method(first.textString, third.textString, emptyList())
-        first is Identifier ->
-            TraceTarget.Method(first.textString, null, null)
+    return when (first) {
+        is PsiFindersKeyword -> TraceTarget.PsiFinders
+        is TracerKeyword -> TraceTarget.Tracer
+        is AsteriskSymbol -> TraceTarget.All
+        is Identifier -> when {
+            second is AsteriskSymbol ->
+                TraceTarget.WildcardClass(first.textString)
+            second is HashSymbol && third is Identifier && fourth is AsteriskSymbol ->
+                TraceTarget.WildcardMethod(first.textString, third.textString)
+            second is HashSymbol && third is AsteriskSymbol ->
+                TraceTarget.WildcardMethod(first.textString, "")
+            second is HashSymbol && third is Identifier && fourth is OpenBracketSymbol ->
+                TraceTarget.Method(first.textString, third.textString, parseParameterList(tokens.advance(4)))
+            second is HashSymbol && third is Identifier ->
+                TraceTarget.Method(first.textString, third.textString, emptyList())
+            else -> TraceTarget.Method(first.textString, null, null)
+        }
         else -> null
     }
 }
@@ -161,6 +183,7 @@ private object WallTimeKeyword: Token()
 private object PsiFindersKeyword: Token()
 private object TracerKeyword: Token()
 private object HashSymbol: Token()
+private object AsteriskSymbol: Token()
 private object CommaSymbol: Token()
 private object OpenBracketSymbol: Token()
 private object CloseBracketSymbol: Token()
@@ -213,6 +236,10 @@ private fun tokenize(text: CharSequence): List<Token> {
             }
             '#' -> {
                 tokens.add(HashSymbol)
+                offset++
+            }
+            '*' -> {
+                tokens.add(AsteriskSymbol)
                 offset++
             }
             ',' -> {
