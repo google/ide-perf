@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.util
 
 import java.nio.file.Files
 import java.nio.file.Paths

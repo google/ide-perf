@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.util
 
 import org.junit.Test
 import kotlin.test.assertNotNull
