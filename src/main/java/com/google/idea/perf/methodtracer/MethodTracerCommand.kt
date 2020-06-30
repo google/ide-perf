@@ -39,7 +39,14 @@ enum class TraceOption {
     /** Option to trace the number of calls to a method. */
     CALL_COUNT,
     /** Option to trace the execution time of a method. */
-    WALL_TIME
+    WALL_TIME;
+
+    val tracepointFlag: Int
+        get() = when (this) {
+            ALL -> TracepointFlags.TRACE_ALL
+            CALL_COUNT -> TracepointFlags.TRACE_CALL_COUNT
+            WALL_TIME -> TracepointFlags.TRACE_WALL_TIME
+        }
 }
 
 /** A set of methods that the tracer will trace. */
