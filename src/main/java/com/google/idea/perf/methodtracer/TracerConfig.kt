@@ -89,10 +89,16 @@ object TracerConfig {
         lock.withLock {
             val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
             val methodSignature = "$methodName$methodDesc"
-            val tracepoint = createTracepoint(
-                classJvmName, methodName, methodDesc, TracepointProperties.DEFAULT
-            )
-            classConfig.methodIds.getOrPut(methodSignature) { tracepoints.append(tracepoint) }
+            val methodId = classConfig.methodIds.getOrPut(methodSignature) {
+                val tracepoint = createTracepoint(
+                    classJvmName, methodName, methodDesc, TracepointProperties.DEFAULT
+                )
+                tracepoints.append(tracepoint)
+            }
+
+            val tracepoint = getTracepoint(methodId)
+            tracepoint.parameters.set(0)
+            tracepoint.setFlags(TracepointFlags.TRACE_ALL)
         }
     }
 
