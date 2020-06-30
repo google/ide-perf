@@ -41,7 +41,7 @@ private const val MAX_WALL_TIME = 3
 private const val COL_COUNT = 4
 
 /** The table model for [TracepointTable]. */
-class TracepointTableModel : AbstractTableModel() {
+class TracepointTableModel: AbstractTableModel() {
     private var data: List<TracepointStats>? = null
 
     fun setTracepointStats(newStats: List<TracepointStats>?) {
@@ -82,7 +82,7 @@ class TracepointTableModel : AbstractTableModel() {
 }
 
 /** Displays a list of tracepoints alongside their call counts and timing measurements. */
-class TracepointTable(private val model: TracepointTableModel) : JBTable(model) {
+class TracepointTable(private val model: TracepointTableModel): JBTable(model) {
 
     init {
         font = JBUI.Fonts.create(Font.MONOSPACED, font.size)
@@ -105,7 +105,7 @@ class TracepointTable(private val model: TracepointTableModel) : JBTable(model) 
             // Locale-aware and unit-aware rendering for numbers.
             when (col) {
                 CALLS, WALL_TIME, MAX_WALL_TIME -> {
-                    tableColumn.cellRenderer = object : DefaultTableCellRenderer() {
+                    tableColumn.cellRenderer = object: DefaultTableCellRenderer() {
                         init {
                             horizontalAlignment = SwingConstants.RIGHT
                         }
@@ -127,7 +127,7 @@ class TracepointTable(private val model: TracepointTableModel) : JBTable(model) 
         }
 
         // Limit sorting directions.
-        rowSorter = object : TableRowSorter<TracepointTableModel>(model) {
+        rowSorter = object: TableRowSorter<TracepointTableModel>(model) {
             override fun toggleSortOrder(col: Int) {
                 val alreadySorted = sortKeys.any {
                     it.column == col && it.sortOrder != SortOrder.UNSORTED
@@ -144,7 +144,7 @@ class TracepointTable(private val model: TracepointTableModel) : JBTable(model) 
     }
 
     override fun createDefaultTableHeader(): JTableHeader {
-        return object : JBTableHeader() {
+        return object: JBTableHeader() {
             init {
                 // Override the renderer that JBTableHeader sets.
                 // The default, center-aligned renderer looks better.

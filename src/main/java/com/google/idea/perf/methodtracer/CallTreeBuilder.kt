@@ -45,14 +45,14 @@ class CallTreeBuilder(
         fun sample(): Long
     }
 
-    object SystemClock : Clock {
+    object SystemClock: Clock {
         override fun sample(): Long = System.nanoTime()
     }
 
     private class Tree(
         override val tracepoint: Tracepoint,
         val parent: Tree?
-    ) : CallTree {
+    ): CallTree {
         class MutableStats(
             override var callCount: Long = 0L,
             override var wallTime: Long = 0L,

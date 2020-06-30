@@ -45,7 +45,8 @@ object AgentLoader {
             // classes---otherwise NoClassDefFoundError is imminent. So we use reflection.
             Class.forName("com.google.idea.perf.agent.AgentMain", false, null)
             true
-        } catch (e: ClassNotFoundException) {
+        }
+        catch (e: ClassNotFoundException) {
             false
         }
 
@@ -53,12 +54,14 @@ object AgentLoader {
         if (agentLoadedAtStartup) {
             instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
             LOG.info("Agent was loaded at startup")
-        } else {
+        }
+        else {
             try {
                 tryLoadAgentAfterStartup()
                 instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
                 LOG.info("Agent was loaded on demand")
-            } catch (e: Throwable) {
+            }
+            catch (e: Throwable) {
                 val msg = """
                     [Tracer] Failed to attach the instrumentation agent after startup.
                     On JDK 9+, make sure jdk.attach.allowAttachSelf is set to true.
@@ -96,13 +99,14 @@ object AgentLoader {
         val vm = VirtualMachine.attach(OSProcessUtil.getApplicationPid())
         try {
             vm.loadAgent(agentJar.absolutePath)
-        } finally {
+        }
+        finally {
             vm.detach()
         }
     }
 
     /** Dispatches method entry/exit events to the [CallTreeManager]. */
-    private class TracerMethodListener : MethodListener {
+    private class TracerMethodListener: MethodListener {
 
         override fun enter(methodId: Int, args: Array<Any>?) {
             val tracepoint = TracerConfig.getTracepoint(methodId)
