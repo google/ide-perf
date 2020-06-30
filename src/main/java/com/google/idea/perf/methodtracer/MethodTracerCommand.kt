@@ -61,95 +61,179 @@ sealed class TraceTarget {
     data class Method(
         val className: String,
         val methodName: String?,
-        val parameterIndexes: List<ParameterIndex>?
+        val parameterIndexes: List<Int>?
     ): TraceTarget()
 }
 
-data class ParameterIndex(val index: Int)
-
 fun parseMethodTracerCommand(text: String): MethodTracerCommand? {
-    // Grammar is simple enough for a basic split() parser.
-    val tokens = text.split(' ')
+    val tokens = tokenize(text)
     if (tokens.isEmpty()) {
         return null
     }
 
     return when (tokens.first()) {
-        "clear" -> if (tokens.size <= 1) MethodTracerCommand.Clear else null
-        "reset" -> if (tokens.size <= 1) MethodTracerCommand.Reset else null
-        "trace" -> parseTraceCommand(tokens.advance(), true)
-        "untrace" -> parseTraceCommand(tokens.advance(), false)
+        ClearKeyword -> MethodTracerCommand.Clear
+        ResetKeyword -> MethodTracerCommand.Reset
+        TraceKeyword -> parseTraceCommand(tokens.advance(), true)
+        UntraceKeyword -> parseTraceCommand(tokens.advance(), false)
         else -> null
     }
 }
 
-private class InternalParseException(message: String): Exception(message)
-
-private fun parseTraceCommand(tokens: List<String>, enable: Boolean): MethodTracerCommand? {
-    return when (tokens.size) {
-        0 -> MethodTracerCommand.Trace(enable, null, null)
-        1 -> MethodTracerCommand.Trace(enable, TraceOption.ALL, parseTraceTarget(tokens))
-        else -> {
-            val option = parseTraceOption(tokens)
-            val target = parseTraceTarget(tokens.advance())
-            MethodTracerCommand.Trace(enable, option, target)
-        }
+private fun parseTraceCommand(tokens: List<Token>, enable: Boolean): MethodTracerCommand? {
+    return when (val option = parseTraceOption(tokens)) {
+        null -> MethodTracerCommand.Trace(enable, TraceOption.ALL, parseTraceTarget(tokens))
+        else -> MethodTracerCommand.Trace(enable, option, parseTraceTarget(tokens.advance()))
     }
 }
 
-private fun parseTraceOption(tokens: List<String>): TraceOption? {
+private fun parseTraceOption(tokens: List<Token>): TraceOption? {
     return when (tokens.first()) {
-        "all" -> TraceOption.ALL
-        "count" -> TraceOption.CALL_COUNT
-        "wall-time" -> TraceOption.WALL_TIME
+        AllKeyword -> TraceOption.ALL
+        CountKeyword -> TraceOption.CALL_COUNT
+        WallTimeKeyword -> TraceOption.WALL_TIME
         else -> null
     }
 }
 
-private fun parseTraceTarget(tokens: List<String>): TraceTarget? {
-    return when (val token = tokens.first()) {
-        "psi-finders" -> TraceTarget.PsiFinders
-        "tracer" -> TraceTarget.Tracer
-        else -> {
-            var splitIndex = token.indexOf('#')
-            if (splitIndex == -1) {
-                TraceTarget.Method(token, null, null)
-            }
-            else {
-                val className = token.substring(0, splitIndex)
-                val methodNameAndIndexer = token.substring(splitIndex + 1)
-                splitIndex = methodNameAndIndexer.indexOf('[')
+private fun parseTraceTarget(tokens: List<Token>): TraceTarget? {
+    val first = tokens.firstOrNull()
+    val second = tokens.getOrNull(1)
+    val third = tokens.getOrNull(2)
+    val fourth = tokens.getOrNull(3)
 
-                if (splitIndex == -1) {
-                    TraceTarget.Method(className, methodNameAndIndexer, emptyList())
-                }
-                else {
-                    val methodName = methodNameAndIndexer.substring(0, splitIndex)
-
-                    try {
-                        val indexerText = methodNameAndIndexer.substring(splitIndex + 1)
-                        if (!indexerText.endsWith(']')) {
-                            throw InternalParseException("Expected ']'")
-                        }
-
-                        val indexes = indexerText
-                            .substring(0, indexerText.lastIndex)
-                            .split(',')
-                            .map { ParameterIndex(it.trim().toInt()) }
-                        TraceTarget.Method(className, methodName, indexes)
-                    }
-                    catch (ex: InternalParseException) {
-                        TraceTarget.Method(className, methodName, null)
-                    }
-                    catch (ex: NumberFormatException) {
-                        TraceTarget.Method(className, methodName, null)
-                    }
-                }
-            }
-        }
+    return when {
+        first is PsiFindersKeyword -> TraceTarget.PsiFinders
+        first is TracerKeyword -> TraceTarget.Tracer
+        first is Identifier && second is HashSymbol && third is Identifier && fourth is OpenBracketSymbol ->
+            TraceTarget.Method(first.textString, third.textString, parseParameterList(tokens.advance(4)))
+        first is Identifier && second is HashSymbol && third is Identifier ->
+            TraceTarget.Method(first.textString, third.textString, emptyList())
+        first is Identifier ->
+            TraceTarget.Method(first.textString, null, null)
+        else -> null
     }
 }
 
-private fun <E> List<E>.advance(): List<E> {
-    return this.subList(1, this.size)
+private fun parseParameterList(tokens: List<Token>): List<Int>? {
+    val parameters = mutableListOf<Int>()
+
+    when (val token = tokens.firstOrNull()) {
+        is IntLiteral -> parameters.add(token.value)
+        else -> return null
+    }
+
+    var nextToken = tokens.advance()
+    while (nextToken.firstOrNull() is CommaSymbol) {
+        nextToken = nextToken.advance()
+        when (val token = nextToken.firstOrNull()) {
+            is IntLiteral -> parameters.add(token.value)
+            else -> return null
+        }
+        nextToken = nextToken.advance()
+    }
+
+    return when (nextToken.firstOrNull()) {
+        is CloseBracketSymbol -> return parameters
+        else -> null
+    }
+}
+
+private fun <E> List<E>.advance(numTokens: Int = 1): List<E> {
+    return this.subList(numTokens, this.size)
+}
+
+private sealed class Token
+private object UnrecognizedToken: Token()
+private data class Identifier(val text: CharSequence): Token() {
+    val textString: String
+        get() = text.toString()
+}
+private data class IntLiteral(val value: Int): Token()
+private object EndOfLine: Token()
+private object ClearKeyword: Token()
+private object ResetKeyword: Token()
+private object TraceKeyword: Token()
+private object UntraceKeyword: Token()
+private object AllKeyword: Token()
+private object CountKeyword: Token()
+private object WallTimeKeyword: Token()
+private object PsiFindersKeyword: Token()
+private object TracerKeyword: Token()
+private object HashSymbol: Token()
+private object CommaSymbol: Token()
+private object OpenBracketSymbol: Token()
+private object CloseBracketSymbol: Token()
+
+private fun tokenize(text: CharSequence): List<Token> {
+    fun Char.isIdentifierChar() =
+        this in 'A'..'Z' || this in 'a'..'z' || this in '0'..'9' ||
+                this == '.' || this == '-' || this == '_' || this == '$'
+
+    val tokens = mutableListOf<Token>()
+    var offset = 0
+
+    while (true) {
+        while (offset < text.length && text[offset].isWhitespace()) {
+            offset++
+        }
+
+        if (offset >= text.length) {
+            break
+        }
+
+        when (text[offset]) {
+            in 'A'..'Z', in 'a'..'z' -> {
+                val startOffset = offset
+                while (offset < text.length && text[offset].isIdentifierChar()) {
+                    offset++
+                }
+
+                when (val identifierText = text.subSequence(startOffset, offset)) {
+                    "clear" -> tokens.add(ClearKeyword)
+                    "reset" -> tokens.add(ResetKeyword)
+                    "trace" -> tokens.add(TraceKeyword)
+                    "untrace" -> tokens.add(UntraceKeyword)
+                    "all" -> tokens.add(AllKeyword)
+                    "count" -> tokens.add(CountKeyword)
+                    "wall-time" -> tokens.add(WallTimeKeyword)
+                    "psi-finders" -> tokens.add(PsiFindersKeyword)
+                    "tracer" -> tokens.add(TracerKeyword)
+                    else -> tokens.add(Identifier(identifierText))
+                }
+            }
+            in '0'..'9' -> {
+                var value = 0
+                while (offset < text.length && text[offset] in '0'..'9') {
+                    value = (value * 10) + (text[offset].toInt() - '0'.toInt())
+                    offset++
+                }
+
+                tokens.add(IntLiteral(value))
+            }
+            '#' -> {
+                tokens.add(HashSymbol)
+                offset++
+            }
+            ',' -> {
+                tokens.add(CommaSymbol)
+                offset++
+            }
+            '[' -> {
+                tokens.add(OpenBracketSymbol)
+                offset++
+            }
+            ']' -> {
+                tokens.add(CloseBracketSymbol)
+                offset++
+            }
+            else -> {
+                tokens.add(UnrecognizedToken)
+                offset++
+            }
+        }
+    }
+
+    tokens.add(EndOfLine)
+    return tokens
 }

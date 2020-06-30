@@ -142,7 +142,7 @@ class MethodTracerController(
                         val traceOption = command.traceOption
                         val className = command.target.className
                         val methodName = command.target.methodName
-                        val parameters = command.target.parameterIndexes?.map { it.index }
+                        val parameters = command.target.parameterIndexes
                         val classJvmName = className.replace('.', '/')
                         if (traceOption != null && methodName != null && parameters != null) {
                             if (command.enable) {
