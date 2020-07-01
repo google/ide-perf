@@ -18,6 +18,9 @@ package com.google.idea.perf.methodtracer
 
 /** A tracer CLI command */
 sealed class MethodTracerCommand {
+    /** Unrecognized command. */
+    object Unknown: MethodTracerCommand()
+
     /** Zero out all tracepoint data, but keep call tree. */
     object Clear: MethodTracerCommand()
 
@@ -30,6 +33,17 @@ sealed class MethodTracerCommand {
         val traceOption: TraceOption?,
         val target: TraceTarget?
     ): MethodTracerCommand()
+
+    val errors: List<String>
+        get() = when (this) {
+            Unknown -> listOf("Unknown command")
+            is Trace -> when {
+                traceOption == null -> listOf("Expected a trace option")
+                target == null -> listOf("Expected a trace target")
+                else -> target.errors
+            }
+            else -> emptyList()
+        }
 }
 
 /** Represents what to trace */
@@ -77,12 +91,22 @@ sealed class TraceTarget {
         val methodName: String?,
         val parameterIndexes: List<Int>?
     ): TraceTarget()
+
+    val errors: List<String>
+        get() = when (this) {
+            is Method -> when {
+                methodName == null -> listOf("Expected a method name")
+                parameterIndexes == null -> listOf("Invalid parameter index syntax")
+                else -> emptyList()
+            }
+            else -> emptyList()
+        }
 }
 
-fun parseMethodTracerCommand(text: String): MethodTracerCommand? {
+fun parseMethodTracerCommand(text: String): MethodTracerCommand {
     val tokens = tokenize(text)
     if (tokens.isEmpty()) {
-        return null
+        return MethodTracerCommand.Unknown
     }
 
     return when (tokens.first()) {
@@ -90,11 +114,11 @@ fun parseMethodTracerCommand(text: String): MethodTracerCommand? {
         ResetKeyword -> MethodTracerCommand.Reset
         TraceKeyword -> parseTraceCommand(tokens.advance(), true)
         UntraceKeyword -> parseTraceCommand(tokens.advance(), false)
-        else -> null
+        else -> MethodTracerCommand.Unknown
     }
 }
 
-private fun parseTraceCommand(tokens: List<Token>, enable: Boolean): MethodTracerCommand? {
+private fun parseTraceCommand(tokens: List<Token>, enable: Boolean): MethodTracerCommand {
     return when (val option = parseTraceOption(tokens)) {
         null -> MethodTracerCommand.Trace(enable, TraceOption.ALL, parseTraceTarget(tokens))
         else -> MethodTracerCommand.Trace(enable, option, parseTraceTarget(tokens.advance()))
