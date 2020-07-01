@@ -19,7 +19,7 @@ package com.google.idea.perf.methodtracer
 import org.junit.Test
 import kotlin.test.assertEquals
 
-private fun assertCommand(expected: MethodTracerCommand?, actual: String) {
+private fun assertCommand(expected: MethodTracerCommand, actual: String) {
     assertEquals(expected, parseMethodTracerCommand(actual))
 }
 
@@ -27,7 +27,7 @@ class MethodTracerCommandTest {
     @Test
     fun testCommandParser() {
         // Basic commands.
-        assertCommand(null, "nonexistent-command")
+        assertCommand(MethodTracerCommand.Unknown, "unknown-command")
         assertCommand(MethodTracerCommand.Clear, "clear")
         assertCommand(MethodTracerCommand.Reset, "reset")
 

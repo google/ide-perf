@@ -16,6 +16,8 @@
 
 package com.google.idea.perf
 
+import com.intellij.openapi.ui.MessageType
+import com.intellij.openapi.ui.popup.util.PopupUtil
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.textCompletion.TextFieldWithCompletion
@@ -26,4 +28,8 @@ abstract class TracerView: JBPanel<TracerView>() {
     abstract val commandLine: TextFieldWithCompletion
     abstract val progressBar: JProgressBar
     abstract val refreshTimeLabel: JBLabel
+
+    fun showCommandBalloon(message: String, type: MessageType) {
+        PopupUtil.showBalloonForComponent(commandLine, message, type, true, null)
+    }
 }

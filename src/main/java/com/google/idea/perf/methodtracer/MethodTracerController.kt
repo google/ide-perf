@@ -23,6 +23,7 @@ import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attachChild
+import com.intellij.openapi.ui.MessageType
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.ui.UIUtil
 import java.awt.image.BufferedImage
@@ -109,7 +110,16 @@ class MethodTracerController(
     }
 
     private fun handleCommand(cmd: String) {
-        when (val command = parseMethodTracerCommand(cmd)) {
+        val command = parseMethodTracerCommand(cmd)
+        val errors = command.errors
+
+        if (errors.isNotEmpty()) {
+            errors.forEach { LOG.warn(it) }
+            view.showCommandBalloon(errors.joinToString("\n"), MessageType.ERROR)
+            return
+        }
+
+        when (command) {
             is MethodTracerCommand.Clear -> {
                 callTree.clear()
                 updateUi()
@@ -141,6 +151,9 @@ class MethodTracerController(
                     is TraceTarget.All -> {
                         if (command.enable) {
                             LOG.warn("Tracing all methods is prohibited.")
+                            view.showCommandBalloon(
+                                "Tracing all methods is prohibited", MessageType.ERROR
+                            )
                         }
                         else {
                             val classNames = TracerConfig.removeAllTracing()
@@ -171,7 +184,8 @@ class MethodTracerController(
                 }
             }
             else -> {
-                LOG.warn("Unknown command: $cmd")
+                LOG.warn("Command not implemented.")
+                view.showCommandBalloon("Command not implemented", MessageType.ERROR)
             }
         }
     }
