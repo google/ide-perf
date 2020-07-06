@@ -59,7 +59,7 @@ class MethodTracerCommandPredictor: CommandPredictor {
         command: MethodTracerCommand.Trace, token: String
     ): List<String> {
         val target = command.target
-        return if (target is TraceTarget.Method && target.className.isNotBlank()) {
+        return if (target is TraceTarget.Method && target.methodName != null) {
             predictMethodToken(target.className, token)
         }
         else {
@@ -73,14 +73,14 @@ class MethodTracerCommandPredictor: CommandPredictor {
     }
 
     private fun predictMethodToken(className: String, token: String): List<String> {
-        return try {
-            val clazz = Class.forName(className)
-            val methodNames = clazz.methods.map { it.name.substringAfter('$') }
-            predictToken(methodNames, token)
+        val clazz = AgentLoader.instrumentation?.allLoadedClasses?.firstOrNull {
+            it.canonicalName == className
         }
-        catch (ex: ClassNotFoundException) {
-            emptyList()
+        val methodNames = clazz?.methods?.map { it.name.substringAfter('$') }
+        if (methodNames != null) {
+            return predictToken(methodNames, token)
         }
+        return emptyList()
     }
 
     private fun getTokenIndex(input: String, index: Int): Int {
