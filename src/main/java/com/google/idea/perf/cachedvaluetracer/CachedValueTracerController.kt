@@ -53,7 +53,7 @@ class CachedValueTracerController(
         CachedValueProfiler.getInstance().isEnabled = false
     }
 
-    override fun start() {
+    override fun onControllerInitialize() {
         executor.scheduleWithFixedDelay(
             this::reloadAutocompleteClasses, 0L, AUTOCOMPLETE_RELOAD_INTERVAL, SECONDS
         )
