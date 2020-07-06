@@ -172,7 +172,7 @@ class MethodTracerCommandTest {
             MethodTracerCommand.Trace(
                 true,
                 TraceOption.ALL,
-                TraceTarget.Method("com.example.MyAction", null, null)
+                TraceTarget.Method("com.example.MyAction", "", null)
             ),
             "trace com.example.MyAction#"
         )
@@ -196,7 +196,7 @@ class MethodTracerCommandTest {
             MethodTracerCommand.Trace(
                 true,
                 TraceOption.ALL,
-                TraceTarget.Method("com.example.MyAction", null, null)
+                TraceTarget.Method("com.example.MyAction", "", null)
             ),
             "trace all com.example.MyAction#"
         )

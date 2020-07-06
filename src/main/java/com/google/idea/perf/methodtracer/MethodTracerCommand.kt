@@ -155,6 +155,8 @@ private fun parseTraceTarget(tokens: List<Token>): TraceTarget? {
                 TraceTarget.Method(first.textString, third.textString, parseParameterList(tokens.advance(4)))
             second is HashSymbol && third is Identifier ->
                 TraceTarget.Method(first.textString, third.textString, emptyList())
+            second is HashSymbol ->
+                TraceTarget.Method(first.textString, "", null)
             else -> TraceTarget.Method(first.textString, null, null)
         }
         else -> null
