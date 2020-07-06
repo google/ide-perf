@@ -75,14 +75,12 @@ sealed class TraceTarget {
     object All: TraceTarget()
 
     /** Trace all methods of classes that match a wildcard. */
-    data class WildcardClass(
-        val className: String
-    ): TraceTarget()
+    data class ClassPattern(val classPattern: String): TraceTarget()
 
     /** Trace methods that match a wildcard. */
-    data class WildcardMethod(
+    data class MethodPattern(
         val className: String,
-        val methodName: String
+        val methodPattern: String
     ): TraceTarget()
 
     /** Trace a specific method. */
@@ -140,25 +138,21 @@ private fun parseTraceTarget(tokens: List<Token>): TraceTarget? {
     val third = tokens.getOrNull(2)
     val fourth = tokens.getOrNull(3)
 
-    return when (first) {
-        is PsiFindersKeyword -> TraceTarget.PsiFinders
-        is TracerKeyword -> TraceTarget.Tracer
-        is AsteriskSymbol -> TraceTarget.All
-        is Identifier -> when {
-            second is AsteriskSymbol ->
-                TraceTarget.WildcardClass(first.textString)
-            second is HashSymbol && third is Identifier && fourth is AsteriskSymbol ->
-                TraceTarget.WildcardMethod(first.textString, third.textString)
-            second is HashSymbol && third is AsteriskSymbol ->
-                TraceTarget.WildcardMethod(first.textString, "")
-            second is HashSymbol && third is Identifier && fourth is OpenBracketSymbol ->
-                TraceTarget.Method(first.textString, third.textString, parseParameterList(tokens.advance(4)))
-            second is HashSymbol && third is Identifier ->
-                TraceTarget.Method(first.textString, third.textString, emptyList())
-            second is HashSymbol ->
-                TraceTarget.Method(first.textString, "", null)
-            else -> TraceTarget.Method(first.textString, null, null)
-        }
+    return when {
+        first is PsiFindersKeyword -> TraceTarget.PsiFinders
+        first is TracerKeyword -> TraceTarget.Tracer
+        first is Pattern && first.text == "*" -> TraceTarget.All
+        first is Pattern -> TraceTarget.ClassPattern(first.textString)
+        first is Identifier && second is HashSymbol && third is Pattern ->
+            TraceTarget.MethodPattern(first.textString, third.textString)
+        first is Identifier && second is HashSymbol && third is Identifier && fourth is OpenBracketSymbol ->
+            TraceTarget.Method(first.textString, third.textString, parseParameterList(tokens.advance(4)))
+        first is Identifier && second is HashSymbol && third is Identifier ->
+            TraceTarget.Method(first.textString, third.textString, emptyList())
+        first is Identifier && second is HashSymbol ->
+            TraceTarget.Method(first.textString, "", null)
+        first is Identifier ->
+            TraceTarget.Method(first.textString, null, null)
         else -> null
     }
 }
@@ -194,8 +188,10 @@ private fun <E> List<E>.advance(numTokens: Int = 1): List<E> {
 private sealed class Token
 private object UnrecognizedToken: Token()
 private data class Identifier(val text: CharSequence): Token() {
-    val textString: String
-        get() = text.toString()
+    val textString: String get() = text.toString()
+}
+private data class Pattern(val text: CharSequence): Token() {
+    val textString: String get() = text.toString()
 }
 private data class IntLiteral(val value: Int): Token()
 private object EndOfLine: Token()
@@ -209,7 +205,6 @@ private object WallTimeKeyword: Token()
 private object PsiFindersKeyword: Token()
 private object TracerKeyword: Token()
 private object HashSymbol: Token()
-private object AsteriskSymbol: Token()
 private object CommaSymbol: Token()
 private object OpenBracketSymbol: Token()
 private object CloseBracketSymbol: Token()
@@ -217,7 +212,7 @@ private object CloseBracketSymbol: Token()
 private fun tokenize(text: CharSequence): List<Token> {
     fun Char.isIdentifierChar() =
         this in 'A'..'Z' || this in 'a'..'z' || this in '0'..'9' ||
-                this == '.' || this == '-' || this == '_' || this == '$'
+                this == '.' || this == '-' || this == '_' || this == '$' || this == '*'
 
     val tokens = mutableListOf<Token>()
     var offset = 0
@@ -232,7 +227,7 @@ private fun tokenize(text: CharSequence): List<Token> {
         }
 
         when (text[offset]) {
-            in 'A'..'Z', in 'a'..'z' -> {
+            in 'A'..'Z', in 'a'..'z', '.', '-', '_', '$', '*' -> {
                 val startOffset = offset
                 while (offset < text.length && text[offset].isIdentifierChar()) {
                     offset++
@@ -248,7 +243,14 @@ private fun tokenize(text: CharSequence): List<Token> {
                     "wall-time" -> tokens.add(WallTimeKeyword)
                     "psi-finders" -> tokens.add(PsiFindersKeyword)
                     "tracer" -> tokens.add(TracerKeyword)
-                    else -> tokens.add(Identifier(identifierText))
+                    else -> {
+                        if (identifierText.contains('*')) {
+                            tokens.add(Pattern(identifierText))
+                        }
+                        else {
+                            tokens.add(Identifier(identifierText))
+                        }
+                    }
                 }
             }
             in '0'..'9' -> {
@@ -257,33 +259,13 @@ private fun tokenize(text: CharSequence): List<Token> {
                     value = (value * 10) + (text[offset].toInt() - '0'.toInt())
                     offset++
                 }
-
                 tokens.add(IntLiteral(value))
             }
-            '#' -> {
-                tokens.add(HashSymbol)
-                offset++
-            }
-            '*' -> {
-                tokens.add(AsteriskSymbol)
-                offset++
-            }
-            ',' -> {
-                tokens.add(CommaSymbol)
-                offset++
-            }
-            '[' -> {
-                tokens.add(OpenBracketSymbol)
-                offset++
-            }
-            ']' -> {
-                tokens.add(CloseBracketSymbol)
-                offset++
-            }
-            else -> {
-                tokens.add(UnrecognizedToken)
-                offset++
-            }
+            '#' -> { tokens.add(HashSymbol); offset++ }
+            ',' -> { tokens.add(CommaSymbol); offset++ }
+            '[' -> { tokens.add(OpenBracketSymbol); offset++ }
+            ']' -> { tokens.add(CloseBracketSymbol); offset++ }
+            else -> { tokens.add(UnrecognizedToken); offset++ }
         }
     }
 
