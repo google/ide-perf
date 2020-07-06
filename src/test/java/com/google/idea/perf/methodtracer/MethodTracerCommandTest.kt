@@ -69,15 +69,15 @@ class MethodTracerCommandTest {
             "untrace *"
         )
         assertCommand(
-            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.WildcardClass("Test")),
+            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.ClassPattern("Test*")),
             "untrace Test*"
         )
         assertCommand(
-            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.WildcardMethod("Test", "")),
+            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.MethodPattern("Test", "*")),
             "untrace Test#*"
         )
         assertCommand(
-            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.WildcardMethod("Test", "get")),
+            MethodTracerCommand.Trace(false, TraceOption.ALL, TraceTarget.MethodPattern("Test", "get*")),
             "untrace Test#get*"
         )
 
@@ -147,15 +147,23 @@ class MethodTracerCommandTest {
             "trace *"
         )
         assertCommand(
-            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.WildcardClass("Test")),
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.ClassPattern("*Test")),
+            "trace *Test"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.ClassPattern("Test*")),
             "trace Test*"
         )
         assertCommand(
-            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.WildcardMethod("Test", "")),
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.MethodPattern("Test", "*")),
             "trace Test#*"
         )
         assertCommand(
-            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.WildcardMethod("Test", "get")),
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.MethodPattern("Test", "*Value")),
+            "trace Test#*Value"
+        )
+        assertCommand(
+            MethodTracerCommand.Trace(true, TraceOption.ALL, TraceTarget.MethodPattern("Test", "get*")),
             "trace Test#get*"
         )
 
