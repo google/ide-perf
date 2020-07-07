@@ -156,8 +156,41 @@ class MethodTracerController(
                             )
                         }
                         else {
-                            val classNames = TracerConfig.removeAllTracing()
+                            val classNames = TracerConfig.untraceAll()
                             retransformClasses(classNames.toSet())
+                        }
+                    }
+                    is TraceTarget.ClassPattern -> {
+                        val traceOption = command.traceOption
+                        val classPattern = command.target.classPattern
+                        if (traceOption != null) {
+                            val classes = if (command.enable) {
+                                TracerConfig.trace(
+                                    TracePattern.ByClassPattern(classPattern),
+                                    traceOption.tracepointFlag
+                                )
+                            }
+                            else {
+                                TracerConfig.untrace(TracePattern.ByClassPattern(classPattern))
+                            }
+                            retransformClasses(classes.toSet())
+                        }
+                    }
+                    is TraceTarget.MethodPattern -> {
+                        val traceOption = command.traceOption
+                        val className = command.target.className
+                        val methodPattern = command.target.methodPattern
+                        if (traceOption != null) {
+                            if (command.enable) {
+                                TracerConfig.trace(
+                                    TracePattern.ByMethodPattern(className, methodPattern),
+                                    traceOption.tracepointFlag
+                                )
+                            }
+                            else {
+                                TracerConfig.untrace(TracePattern.ByMethodPattern(className, methodPattern))
+                            }
+                            retransformClasses(setOf(className))
                         }
                     }
                     is TraceTarget.Method -> {
@@ -165,18 +198,16 @@ class MethodTracerController(
                         val className = command.target.className
                         val methodName = command.target.methodName
                         val parameters = command.target.parameterIndexes
-                        val classJvmName = className.replace('.', '/')
                         if (traceOption != null && methodName != null && parameters != null) {
                             if (command.enable) {
-                                TracerConfig.traceMethods(
-                                    classJvmName,
-                                    methodName,
+                                TracerConfig.trace(
+                                    TracePattern.ByMethodName(className, methodName),
                                     traceOption.tracepointFlag,
                                     parameters
                                 )
                             }
                             else {
-                                TracerConfig.untraceMethods(classJvmName, methodName)
+                                TracerConfig.untrace(TracePattern.ByMethodName(className, methodName))
                             }
                             retransformClasses(setOf(className))
                         }
@@ -193,10 +224,10 @@ class MethodTracerController(
     private fun traceAndRetransform(enable: Boolean, vararg methods: Method) {
         if (methods.isEmpty()) return
         if (enable) {
-            methods.forEach(TracerConfig::traceMethod)
+            methods.forEach { TracerConfig.trace(TracePattern.Exact(it), TracepointFlags.TRACE_ALL, emptyList()) }
         }
         else {
-            methods.forEach(TracerConfig::untraceMethod)
+            methods.forEach { TracerConfig.untrace(TracePattern.Exact(it)) }
         }
         val classes = methods.map { it.declaringClass }.toSet()
         retransformClasses(classes)

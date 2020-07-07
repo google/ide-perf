@@ -80,8 +80,24 @@ class TracerMethodTransformer: ClassFileTransformer {
         val reader = ClassReader(classBytes)
         val writer = ClassWriter(reader, COMPUTE_MAXS or COMPUTE_FRAMES)
 
-        val classVisitor = object: ClassVisitor(ASM_API, writer) {
+        val methodSignatures = mutableListOf<String>()
+        val methodSignatureReader = object: ClassVisitor(ASM_API) {
+            override fun visitMethod(
+                access: Int,
+                name: String?,
+                descriptor: String?,
+                signature: String?,
+                exceptions: Array<out String>?
+            ): MethodVisitor? {
+                methodSignatures.add("$name$descriptor")
+                return super.visitMethod(access, name, descriptor, signature, exceptions)
+            }
+        }
+        reader.accept(methodSignatureReader, 0)
 
+        TracerConfig.applyCommands(className, methodSignatures)
+
+        val classVisitor = object: ClassVisitor(ASM_API, writer) {
             override fun visitMethod(
                 access: Int,
                 method: String,
