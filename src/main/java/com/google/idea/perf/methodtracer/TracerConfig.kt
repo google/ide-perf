@@ -179,13 +179,13 @@ object TracerConfig {
         flags: Int = 0,
         parameters: Collection<Int> = emptyList()
     ): List<String> {
-        val classes = AgentLoader.instrumentation?.allLoadedClasses
+        val regex = Pattern.compile(PatternUtil.convertToRegex(classPattern))
+        val matcher = regex.matcher("")
 
-        if (classes != null) {
-            val regex = Pattern.compile(PatternUtil.convertToRegex(classPattern))
-            val matcher = regex.matcher("")
+        if (enable) {
+            val classes = AgentLoader.instrumentation?.allLoadedClasses ?: return emptyList()
+
             val matchingClasses = mutableListOf<String>()
-
             for (clazz in classes) {
                 val className = clazz.name
                 matcher.reset(className)
@@ -202,8 +202,26 @@ object TracerConfig {
 
             return matchingClasses
         }
+        else {
+            val matchingClasses = mutableListOf<String>()
 
-        return emptyList()
+            lock.withLock {
+                for ((classJvmName, _) in classConfigs) {
+                    val className = classJvmName.replace('/', '.')
+                    matcher.reset(className)
+
+                    if (matcher.matches()) {
+                        matchingClasses.add(className)
+                    }
+                }
+
+                for (className in matchingClasses) {
+                    setTrace(enable, className, "*", flags, parameters)
+                }
+            }
+
+            return matchingClasses
+        }
     }
 
     /** Remove all tracing and return the affected class names. */
