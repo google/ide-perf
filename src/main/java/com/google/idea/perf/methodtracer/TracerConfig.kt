@@ -152,19 +152,29 @@ object TracerConfig {
             classConfig.commands?.add(Pair(methodRegex, TracepointProperties(flags, parameterBits)))
 
             // If the class config is loaded, set tracepoint properties.
-            for ((signature, methodId) in classConfig.methodIds) {
-                if (methodId != null) {
-                    val methodName = signature.substringBefore('(')
+            for (entry in classConfig.methodIds) {
+                val signature = entry.key
+                val index = signature.indexOf('(')
+                val methodName = signature.substring(0, index)
+                val methodDesc = signature.substring(index)
+                val methodId = if (entry.value != null) entry.value!! else {
+                    val tracepoint = createTracepoint(
+                        classJvmName, methodName, methodDesc,
+                        TracepointProperties(flags, parameterBits)
+                    )
+                    val newId = tracepoints.append(tracepoint)
+                    entry.setValue(newId)
+                    newId
+                }
 
-                    if (methodRegex.matcher(methodName).matches()) {
-                        val tracepoint = getTracepoint(methodId)
-                        tracepoint.parameters.set(parameterBits)
-                        if (enable) {
-                            tracepoint.setFlags(flags)
-                        }
-                        else {
-                            tracepoint.unsetFlags(TracepointFlags.TRACE_ALL)
-                        }
+                if (methodRegex.matcher(methodName).matches()) {
+                    val tracepoint = getTracepoint(methodId)
+                    tracepoint.parameters.set(parameterBits)
+                    if (enable) {
+                        tracepoint.setFlags(flags)
+                    }
+                    else {
+                        tracepoint.unsetFlags(TracepointFlags.TRACE_ALL)
                     }
                 }
             }
@@ -252,10 +262,10 @@ object TracerConfig {
 
                 for ((pattern, properties) in commands) {
                     for (signature in methodSignatures) {
-                        if (pattern.matcher(signature).matches()) {
-                            val index = signature.indexOf('(')
-                            val methodName = signature.substring(0, index)
-                            val methodDesc = signature.substring(index)
+                        val index = signature.indexOf('(')
+                        val methodName = signature.substring(0, index)
+                        val methodDesc = signature.substring(index)
+                        if (pattern.matcher(methodName).matches()) {
                             putMethodId(classJvmName, methodName, methodDesc, properties)
                         }
                     }
