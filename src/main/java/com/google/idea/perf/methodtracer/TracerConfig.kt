@@ -59,7 +59,10 @@ object TracerConfig {
          */
         var commands: MutableList<Pair<Pattern, TracepointProperties>>? = mutableListOf()
 
-        /** Map from method signature to method ID. */
+        /**
+         * Map from method signature to method ID. A null value indicates that the method is not
+         * associated with an initialized tracepoint.
+         */
         val methodIds = mutableMapOf<String, Int?>()
     }
 
@@ -153,18 +156,18 @@ object TracerConfig {
 
             // If the class config is loaded, set tracepoint properties.
             for (entry in classConfig.methodIds) {
-                val signature = entry.key
+                var (signature, methodId) = entry
                 val index = signature.indexOf('(')
                 val methodName = signature.substring(0, index)
                 val methodDesc = signature.substring(index)
-                val methodId = if (entry.value != null) entry.value!! else {
+
+                if (methodId == null) {
                     val tracepoint = createTracepoint(
                         classJvmName, methodName, methodDesc,
                         TracepointProperties(flags, parameterBits)
                     )
-                    val newId = tracepoints.append(tracepoint)
-                    entry.setValue(newId)
-                    newId
+                    methodId = tracepoints.append(tracepoint)
+                    entry.setValue(methodId)
                 }
 
                 if (methodRegex.matcher(methodName).matches()) {
@@ -246,7 +249,7 @@ object TracerConfig {
     fun shouldInstrumentClass(classJvmName: String): Boolean {
         lock.withLock {
             val classConfig = classConfigs[classJvmName] ?: return false
-            return classConfig.commands?.isNotEmpty() ?: true || classConfig.methodIds.isNotEmpty()
+            return (classConfig.commands?.isNotEmpty() ?: true) || classConfig.methodIds.isNotEmpty()
         }
     }
 
