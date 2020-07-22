@@ -46,7 +46,14 @@ private val LOG = Logger.getInstance(VirtualFileTracer::class.java)
 
 /** Records and manages VirtualFile statistics. */
 object VirtualFileTracer {
+    private var hooksInstalled = false
+
     fun startVfsTracing() {
+        if (hooksInstalled) {
+            VirtualFileTracerImpl.isEnabled = true
+            return
+        }
+
         val instrumentation = AgentLoader.instrumentation
         if (instrumentation == null) {
             LOG.error("Failed to get instrumentation instance.")
@@ -57,10 +64,12 @@ object VirtualFileTracer {
         val compositeElementClass = classes.firstOrNull { it.name == COMPOSITE_ELEMENT_CLASS }
         if (compositeElementClass == null) {
             LOG.error("Failed to get $compositeElementClass class.")
+            return
         }
         val stubIndexImplClass = classes.firstOrNull { it.name == STUB_INDEX_IMPL_CLASS }
         if (stubIndexImplClass == null) {
             LOG.error("Failed to get $stubIndexImplClass class.")
+            return
         }
 
         VirtualFileTracerImpl.isEnabled = true
@@ -70,6 +79,8 @@ object VirtualFileTracer {
         instrumentation.addTransformer(transformer, true)
         instrumentation.retransformClasses(compositeElementClass)
         instrumentation.retransformClasses(stubIndexImplClass)
+
+        hooksInstalled = true
     }
 
     fun stopVfsTracing() {

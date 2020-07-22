@@ -32,8 +32,7 @@ class VfsTracerController(
         parentDisposable.attachChild(this)
     }
 
-    override fun onControllerInitialize() {
-    }
+    override fun onControllerInitialize() {}
 
     override fun updateModel(): Boolean {
         collectedStats = VirtualFileTracer.collectAndReset()

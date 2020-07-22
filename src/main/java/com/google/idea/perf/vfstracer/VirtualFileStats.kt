@@ -18,12 +18,14 @@ package com.google.idea.perf.vfstracer
 
 import java.util.*
 
+/** A file containing VirtualFile statistics. */
 data class VirtualFileStats(
     val fileName: String,
     val stubIndexAccesses: Int,
     val psiElementWraps: Int
 )
 
+/** Extracts all files from a [VirtualFileTree] and creates flattened list of [VirtualFileStats]. */
 fun VirtualFileTree.flattenedList(): List<VirtualFileStats> {
     fun flattenImpl(
         tree: VirtualFileTree,

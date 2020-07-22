@@ -26,7 +26,7 @@ import javax.swing.tree.TreePath
 
 private const val COLUMN_COUNT = 2
 private const val STUB_INDEX_ACCESSES = 0
-private const val PSI_WRAPS = 1
+private const val PSI_ELEMENT_WRAPS = 1
 
 private operator fun VirtualFileTree.get(index: Int): VirtualFileTree =
     children.values.toTypedArray()[index]
@@ -54,7 +54,7 @@ class VfsStatTreeTableModel: TreeTableModel {
                 forEachListener { it.treeStructureChanged(event) }
             }
 
-            override fun onTreeChange(
+            override fun onTreeModify(
                 path: VirtualFileTreePath,
                 parent: MutableVirtualFileTree,
                 child: MutableVirtualFileTree,
@@ -97,12 +97,12 @@ class VfsStatTreeTableModel: TreeTableModel {
 
     override fun getColumnName(column: Int): String = when (column) {
         STUB_INDEX_ACCESSES -> "stub index accesses"
-        PSI_WRAPS -> "psi wraps"
+        PSI_ELEMENT_WRAPS -> "psi wraps"
         else -> error(column)
     }
 
     override fun getColumnClass(column: Int): Class<*> = when (column) {
-        STUB_INDEX_ACCESSES, PSI_WRAPS -> java.lang.Integer::class.java
+        STUB_INDEX_ACCESSES, PSI_ELEMENT_WRAPS -> java.lang.Integer::class.java
         else -> error(column)
     }
 
@@ -110,7 +110,7 @@ class VfsStatTreeTableModel: TreeTableModel {
         node as VirtualFileTree
         return when (column) {
             STUB_INDEX_ACCESSES -> node.stubIndexAccesses
-            PSI_WRAPS -> node.psiElementWraps
+            PSI_ELEMENT_WRAPS -> node.psiElementWraps
             else -> error(column)
         }
     }

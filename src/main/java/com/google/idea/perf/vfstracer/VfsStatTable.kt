@@ -32,7 +32,7 @@ private const val COL_COUNT = 3
 // Table columns.
 private const val FILE_NAME = 0
 private const val STUB_INDEX_ACCESSES = 1
-private const val PSI_WRAPS = 2
+private const val PSI_ELEMENT_WRAPS = 2
 
 class VfsStatTableModel: AbstractTableModel() {
     private var data: List<VirtualFileStats>? = null
@@ -47,13 +47,13 @@ class VfsStatTableModel: AbstractTableModel() {
     override fun getColumnName(column: Int): String = when (column) {
         FILE_NAME -> "file name"
         STUB_INDEX_ACCESSES -> "stub index accesses"
-        PSI_WRAPS -> "psi wraps"
+        PSI_ELEMENT_WRAPS -> "psi wraps"
         else -> error(column)
     }
 
     override fun getColumnClass(columnIndex: Int): Class<*> = when (columnIndex) {
         FILE_NAME -> java.lang.String::class.java
-        STUB_INDEX_ACCESSES, PSI_WRAPS -> java.lang.Integer::class.java
+        STUB_INDEX_ACCESSES, PSI_ELEMENT_WRAPS -> java.lang.Integer::class.java
         else -> error(columnIndex)
     }
 
@@ -64,7 +64,7 @@ class VfsStatTableModel: AbstractTableModel() {
         return when (columnIndex) {
             FILE_NAME -> stats.fileName
             STUB_INDEX_ACCESSES -> stats.stubIndexAccesses
-            PSI_WRAPS -> stats.psiElementWraps
+            PSI_ELEMENT_WRAPS -> stats.psiElementWraps
             else -> error(columnIndex)
         }
     }
@@ -87,13 +87,13 @@ class VfsStatTable(private val model: VfsStatTableModel): JBTable(model) {
             tableColumn.minWidth = 100
             tableColumn.preferredWidth = when (col) {
                 FILE_NAME -> Int.MAX_VALUE
-                STUB_INDEX_ACCESSES, PSI_WRAPS -> 100
+                STUB_INDEX_ACCESSES, PSI_ELEMENT_WRAPS -> 100
                 else -> tableColumn.preferredWidth
             }
 
             // Locale-aware and unit-aware rendering for numbers.
             when (col) {
-                STUB_INDEX_ACCESSES, PSI_WRAPS -> {
+                STUB_INDEX_ACCESSES, PSI_ELEMENT_WRAPS -> {
                     tableColumn.cellRenderer = object: DefaultTableCellRenderer() {
                         init {
                             horizontalAlignment = SwingConstants.RIGHT
@@ -117,7 +117,7 @@ class VfsStatTable(private val model: VfsStatTableModel): JBTable(model) {
                 sortKeys = listOf(SortKey(col, order))
             }
         }
-        rowSorter.toggleSortOrder(PSI_WRAPS)
+        rowSorter.toggleSortOrder(STUB_INDEX_ACCESSES)
     }
 
     override fun createDefaultTableHeader(): JTableHeader {

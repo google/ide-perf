@@ -75,7 +75,7 @@ private class ChangeLog: TreePatchEventListener {
         logger.appendln("inserted $pathString $stubIndexAccesses $psiElementWraps")
     }
 
-    override fun onTreeChange(
+    override fun onTreeModify(
         path: VirtualFileTreePath,
         parent: MutableVirtualFileTree,
         child: MutableVirtualFileTree,
@@ -117,7 +117,7 @@ class VirtualFileTreeTest {
         assertPath(4, 3, tree, "com", "example")
         assertPath(0, 1, tree, "com", "example", "Main.java")
         assertPath(4, 2, tree, "com", "example", "util")
-        assertPath(2, 1, tree, "com", "example", "util", "B.java")
+        assertPath(2, 1, tree, "com", "example", "util", "A.java")
         assertPath(2, 1, tree, "com", "example", "util", "B.java")
         assertPath(300, 0, tree, "java")
         assertPath(300, 0, tree, "java", "lang")
@@ -180,7 +180,7 @@ class VirtualFileTreeTest {
         assertPath(4, 3, accumulatedTree, "com", "example")
         assertPath(0, 1, accumulatedTree, "com", "example", "Main.java")
         assertPath(4, 2, accumulatedTree, "com", "example", "util")
-        assertPath(2, 1, accumulatedTree, "com", "example", "util", "B.java")
+        assertPath(2, 1, accumulatedTree, "com", "example", "util", "A.java")
         assertPath(2, 1, accumulatedTree, "com", "example", "util", "B.java")
         assertPath(300, 0, accumulatedTree, "java")
         assertPath(300, 0, accumulatedTree, "java", "lang")
@@ -193,7 +193,7 @@ class VirtualFileTreeTest {
         assertPath(4, 3, accumulatedTree, "com", "example")
         assertPath(0, 1, accumulatedTree, "com", "example", "Main.java")
         assertPath(4, 2, accumulatedTree, "com", "example", "util")
-        assertPath(2, 1, accumulatedTree, "com", "example", "util", "B.java")
+        assertPath(2, 1, accumulatedTree, "com", "example", "util", "A.java")
         assertPath(2, 1, accumulatedTree, "com", "example", "util", "B.java")
         assertPath(300, 0, accumulatedTree, "java")
         assertPath(300, 0, accumulatedTree, "java", "lang")
