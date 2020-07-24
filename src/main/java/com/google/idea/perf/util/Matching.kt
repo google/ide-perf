@@ -28,6 +28,7 @@ class MatchResult(val source: String, val formattedSource: String) {
 class FuzzySearcher {
     private val impl = FuzzySearcherImpl()
 
+    /** Searches on a list of strings based on an approximate pattern. */
     fun search(
         sources: Collection<String>,
         pattern: String,
@@ -42,18 +43,6 @@ class FuzzySearcher {
 
         return results.map { getMatchResult(it) }
     }
-}
-
-private val globalSearcher = FuzzySearcher()
-
-/** Searches on a list of strings based on an approximate pattern. */
-fun fuzzySearch(
-    sources: Collection<String>,
-    pattern: String,
-    maxResults: Int,
-    cancellationCheck: () -> Unit
-): List<MatchResult> {
-    return globalSearcher.search(sources, pattern, maxResults, cancellationCheck)
 }
 
 /**

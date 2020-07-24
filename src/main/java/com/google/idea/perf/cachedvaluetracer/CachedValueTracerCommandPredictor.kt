@@ -17,12 +17,14 @@
 package com.google.idea.perf.cachedvaluetracer
 
 import com.google.idea.perf.CommandPredictor
-import com.google.idea.perf.util.fuzzySearch
+import com.google.idea.perf.util.FuzzySearcher
 import com.intellij.openapi.progress.ProgressManager
 
 class CachedValueTracerCommandPredictor: CommandPredictor {
     @Volatile
     private var classNames = emptyList<String>()
+
+    private val searcher = FuzzySearcher()
 
     fun setClasses(classes: Collection<Class<*>>) {
         classNames = classes.mapNotNull { it.canonicalName }
@@ -51,7 +53,7 @@ class CachedValueTracerCommandPredictor: CommandPredictor {
     }
 
     private fun predictToken(choices: Collection<String>, token: String): List<String> {
-        return fuzzySearch(choices, token, -1) { ProgressManager.checkCanceled() }
+        return searcher.search(choices, token, -1) { ProgressManager.checkCanceled() }
             .map { it.source }
     }
 
