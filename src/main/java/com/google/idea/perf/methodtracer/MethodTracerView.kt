@@ -19,9 +19,6 @@ package com.google.idea.perf.methodtracer
 import com.google.idea.perf.TracerView
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
@@ -59,19 +56,27 @@ class MethodTracerAction: DumbAwareAction() {
             currentTracer = newTracer
             newTracer.disposable.attach { currentTracer = null }
             newTracer.show()
+
+            val view = newTracer.view!!
+            view.initEvents(view.controller)
         }
     }
 }
 
 /** The dialog window that pops up via the "Trace" action. */
 class MethodTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
+    var view: MethodTracerView? = null; private set
+
     init {
         title = "Tracer"
         isModal = false
         init()
     }
 
-    override fun createCenterPanel(): JComponent = MethodTracerView(disposable)
+    override fun createCenterPanel(): JComponent {
+        view = MethodTracerView(disposable)
+        return view!!
+    }
     override fun createContentPaneBorder(): Border? = null // No border.
     override fun getDimensionServiceKey(): String = "com.google.idea.perf.methodtracer.Tracer"
     override fun createActions(): Array<Action> = emptyArray()
@@ -79,7 +84,7 @@ class MethodTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, 
 
 /** The content filling the tracer dialog window. */
 class MethodTracerView(parentDisposable: Disposable): TracerView() {
-    private val controller = MethodTracerController(this, parentDisposable)
+    val controller = MethodTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel
@@ -94,23 +99,9 @@ class MethodTracerView(parentDisposable: Disposable): TracerView() {
         // Command line.
         commandLine = TextFieldWithCompletion(
             ProjectManager.getInstance().defaultProject,
-            controller.autocomplete,
-            "",
-            false,
-            true,
-            true
+            controller.autocomplete, "", true, true, true
         ).apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-            addDocumentListener(object: DocumentListener {
-                override fun beforeDocumentChange(event: DocumentEvent) {
-                    if (event.newFragment.contains('\n')) {
-                        controller.handleRawCommandFromEdt(text)
-                        ApplicationManager.getApplication().invokeLater {
-                            this@apply.text = ""
-                        }
-                    }
-                }
-            })
         }
         add(commandLine)
 
