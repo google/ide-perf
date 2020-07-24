@@ -329,4 +329,9 @@ object TracerConfig {
             parameters = properties.parameters
         )
     }
+
+    fun getTracedClassNames(): List<String> {
+        val classNames = lock.withLock { classConfigs.keys.toList() }
+        return classNames.map { it.replace('/', '.') }
+    }
 }
