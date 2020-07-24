@@ -32,12 +32,13 @@ private fun assertMatch(expectMatch: Boolean, source: String, pattern: String) {
 }
 
 private fun assertSearch(
+    searcher: FuzzySearcher,
     patterns: List<String>,
     expectedMatches: List<String>,
     items: List<String>
 ) {
     for (pattern in patterns) {
-        val matches = fuzzySearch(items, pattern, -1) {}.map { it.source }
+        val matches = searcher.search(items, pattern, -1) {}.map { it.source }
         assertTrue(matches.containsAll(expectedMatches))
     }
 }
@@ -109,8 +110,11 @@ class MatchingTest {
 
     @Test
     fun testFuzzySearch() {
+        val searcher = FuzzySearcher()
+
         // Package search
         assertSearch(
+            searcher,
             listOf(
                 "com.google.idea.perf.",
                 "com.google.idea.perf",
@@ -124,6 +128,7 @@ class MatchingTest {
         )
 
         assertSearch(
+            searcher,
             listOf("java.lang.", "java.lang", "java.", "java"),
             javaLangClasses,
             allSampleClasses
@@ -131,6 +136,7 @@ class MatchingTest {
 
         // Class search
         assertSearch(
+            searcher,
             listOf("Tracer"),
             listOf(
                 "com.google.idea.perf.methodtracer.TracerConfig",
@@ -141,6 +147,7 @@ class MatchingTest {
         )
 
         assertSearch(
+            searcher,
             listOf(
                 "java.lang.String",
                 "String",
