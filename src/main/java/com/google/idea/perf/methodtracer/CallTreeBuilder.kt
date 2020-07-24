@@ -37,6 +37,7 @@ class CallTreeBuilder(
         val now = clock.sample()
         root.startWallTime = now
         root.continuedWallTime = now
+        root.tracepointFlags = TracepointFlags.TRACE_WALL_TIME
     }
 
     interface Clock {
@@ -146,9 +147,12 @@ class CallTreeBuilder(
             val nodeArgs = node.argSet
             val elapsedTime = now - node.continuedWallTime
             val elapsedTimeFromStart = now - node.startWallTime
-            node.stats.wallTime += elapsedTime
-            node.stats.maxWallTime = maxOf(node.stats.maxWallTime, elapsedTimeFromStart)
-            node.continuedWallTime = now
+
+            if ((node.tracepointFlags and TracepointFlags.TRACE_WALL_TIME) != 0) {
+                node.stats.wallTime += elapsedTime
+                node.stats.maxWallTime = maxOf(node.stats.maxWallTime, elapsedTimeFromStart)
+                node.continuedWallTime = now
+            }
 
             if (nodeArgs != null) {
                 val stats = node.argSetStats.getOrPut(nodeArgs) { Tree.MutableStats() }

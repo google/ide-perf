@@ -43,13 +43,9 @@ object TracerConfig {
     private val classConfigs = mutableMapOf<String, ClassConfig>() // Keyed by 'JVM' class name.
 
     private class TracepointProperties(
-        val flags: Int = TracepointFlags.TRACE_ALL,
+        val flags: Int = 0,
         val parameters: Int = 0
-    ) {
-        companion object {
-            val DEFAULT = TracepointProperties()
-        }
-    }
+    )
 
     /** Specifies which methods to instrument for a given class. */
     private class ClassConfig {
@@ -112,7 +108,7 @@ object TracerConfig {
                 val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
                 classConfig.methodIds.getOrPut(methodSignature) {
                     val tracepoint = createTracepoint(
-                        classJvmName, method.name, methodDesc, TracepointProperties.DEFAULT
+                        classJvmName, method.name, methodDesc, TracepointProperties()
                     )
                     tracepoints.append(tracepoint)
                 }

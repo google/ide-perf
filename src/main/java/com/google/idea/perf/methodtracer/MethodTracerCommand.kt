@@ -34,6 +34,10 @@ sealed class MethodTracerCommand {
         val target: TraceTarget?
     ): MethodTracerCommand()
 
+    /**
+     * Checks for syntax errors. If no error exists, then all fields within this structure are
+     * non-null values.
+     */
     val errors: List<String>
         get() = when (this) {
             Unknown -> listOf("Unknown command")
