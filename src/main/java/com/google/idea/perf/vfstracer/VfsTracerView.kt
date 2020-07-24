@@ -19,9 +19,6 @@ package com.google.idea.perf.vfstracer
 import com.google.idea.perf.TracerView
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
@@ -29,7 +26,6 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTabbedPane
-import com.intellij.ui.components.JBTreeTable
 import com.intellij.util.textCompletion.DefaultTextCompletionValueDescriptor
 import com.intellij.util.textCompletion.TextFieldWithCompletion
 import com.intellij.util.textCompletion.ValuesCompletionProvider
@@ -57,25 +53,33 @@ class VfsTracerAction: DumbAwareAction() {
             currentTracer = newTracer
             newTracer.disposable.attach { currentTracer = null }
             newTracer.show()
+
+            val view = newTracer.view!!
+            view.initEvents(view.controller)
         }
     }
 }
 
 class VfsTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
+    var view: VfsTracerView? = null; private set
+
     init {
         title = "VFS Tracer"
         isModal = false
         init()
     }
 
-    override fun createCenterPanel(): JComponent? = VfsTracerView(disposable)
+    override fun createCenterPanel(): JComponent {
+        view = VfsTracerView(disposable)
+        return view!!
+    }
     override fun createContentPaneBorder(): Border? = null
     override fun getDimensionServiceKey(): String = "com.google.idea.perf.vfstracer.VfsTracer"
     override fun createActions(): Array<Action> = emptyArray()
 }
 
 class VfsTracerView(parentDisposable: Disposable): TracerView() {
-    private val controller = VfsTracerController(this, parentDisposable)
+    val controller = VfsTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel
@@ -94,22 +98,9 @@ class VfsTracerView(parentDisposable: Disposable): TracerView() {
                 DefaultTextCompletionValueDescriptor.StringValueDescriptor(),
                 listOf("start", "stop", "clear", "reset")
             ),
-            "",
-            false,
-            true,
-            true
+            "", true, true, true
         ).apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-            addDocumentListener(object: DocumentListener {
-                override fun beforeDocumentChange(event: DocumentEvent) {
-                    if (event.newFragment.contains('\n')) {
-                        controller.handleRawCommandFromEdt(text)
-                        ApplicationManager.getApplication().invokeLater {
-                            this@apply.text = ""
-                        }
-                    }
-                }
-            })
         }
         add(commandLine)
 

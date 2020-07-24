@@ -16,11 +16,14 @@
 
 package com.google.idea.perf
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.util.PopupUtil
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.util.textCompletion.TextFieldWithCompletion
+import java.awt.event.KeyEvent
+import java.awt.event.KeyListener
 import javax.swing.JProgressBar
 
 /** The content for filling the tracer dialog window. */
@@ -31,5 +34,23 @@ abstract class TracerView: JBPanel<TracerView>() {
 
     fun showCommandBalloon(message: String, type: MessageType) {
         PopupUtil.showBalloonForComponent(commandLine, message, type, true, null)
+    }
+
+    fun initEvents(controller: TracerController) {
+        val textComponent = commandLine.editor!!.contentComponent
+        textComponent.addKeyListener(object: KeyListener {
+            override fun keyTyped(e: KeyEvent) {}
+
+            override fun keyPressed(e: KeyEvent) {
+                if (e.keyCode == KeyEvent.VK_ENTER) {
+                    controller.handleRawCommandFromEdt(commandLine.text)
+                    ApplicationManager.getApplication().invokeLater {
+                        commandLine.text = ""
+                    }
+                }
+            }
+
+            override fun keyReleased(e: KeyEvent) {}
+        })
     }
 }
