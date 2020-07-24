@@ -97,7 +97,7 @@ class VfsStatTreeTableModel: TreeTableModel {
 
     override fun getColumnName(column: Int): String = when (column) {
         STUB_INDEX_ACCESSES -> "stub index accesses"
-        PSI_ELEMENT_WRAPS -> "psi wraps"
+        PSI_ELEMENT_WRAPS -> "psi parses"
         else -> error(column)
     }
 
@@ -107,7 +107,7 @@ class VfsStatTreeTableModel: TreeTableModel {
     }
 
     override fun getValueAt(node: Any?, column: Int): Any {
-        node as VirtualFileTree
+        check(node is VirtualFileTree)
         return when (column) {
             STUB_INDEX_ACCESSES -> node.stubIndexAccesses
             PSI_ELEMENT_WRAPS -> node.psiElementWraps
@@ -122,17 +122,17 @@ class VfsStatTreeTableModel: TreeTableModel {
     override fun getRoot(): Any = tree
 
     override fun getChild(parent: Any?, index: Int): Any {
-        parent as VirtualFileTree
+        check(parent is VirtualFileTree)
         return parent[index]
     }
 
     override fun getChildCount(parent: Any?): Int {
-        parent as VirtualFileTree
+        check(parent is VirtualFileTree)
         return parent.children.size
     }
 
     override fun isLeaf(node: Any?): Boolean {
-        node as VirtualFileTree
+        check(node is VirtualFileTree)
         return node.isFile
     }
 
@@ -142,8 +142,8 @@ class VfsStatTreeTableModel: TreeTableModel {
         if (parent == null || child == null) {
             return -1
         }
-        parent as VirtualFileTree
-        child as VirtualFileTree
+        check(parent is VirtualFileTree)
+        check(child is VirtualFileTree)
         return parent.indexOf(child)
     }
 

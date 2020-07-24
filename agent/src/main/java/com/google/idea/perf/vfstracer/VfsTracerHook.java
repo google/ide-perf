@@ -16,8 +16,6 @@
 
 package com.google.idea.perf.vfstracer;
 
-import java.util.Collection;
-
 public interface VfsTracerHook {
     void onPsiElementCreate(Object psiElement);
 

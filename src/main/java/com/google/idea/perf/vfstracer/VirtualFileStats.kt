@@ -41,7 +41,7 @@ fun VirtualFileTree.flattenedList(): List<VirtualFileStats> {
         }
         else {
             list.add(VirtualFileStats(
-                pathBuilder.toTypedArray().joinToString("/"),
+                pathBuilder.joinToString("/"),
                 tree.stubIndexAccesses,
                 tree.psiElementWraps
             ))

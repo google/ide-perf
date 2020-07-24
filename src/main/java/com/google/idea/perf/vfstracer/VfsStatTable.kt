@@ -47,7 +47,7 @@ class VfsStatTableModel: AbstractTableModel() {
     override fun getColumnName(column: Int): String = when (column) {
         FILE_NAME -> "file name"
         STUB_INDEX_ACCESSES -> "stub index accesses"
-        PSI_ELEMENT_WRAPS -> "psi wraps"
+        PSI_ELEMENT_WRAPS -> "psi parses"
         else -> error(column)
     }
 
