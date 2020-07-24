@@ -48,28 +48,29 @@ private val LOG = Logger.getInstance(VirtualFileTracer::class.java)
 object VirtualFileTracer {
     private var hooksInstalled = false
 
-    fun startVfsTracing() {
+    /** Starts VFS tracing and returns an error log. */
+    fun startVfsTracing(): List<String> {
         if (hooksInstalled) {
             VirtualFileTracerImpl.isEnabled = true
-            return
+            return emptyList()
         }
 
         val instrumentation = AgentLoader.instrumentation
-        if (instrumentation == null) {
-            LOG.error("Failed to get instrumentation instance.")
-            return
-        }
+            ?: return listOf("Failed to get instrumentation instance.")
 
+        val errorLog = mutableListOf<String>()
         val classes = instrumentation.allLoadedClasses
         val compositeElementClass = classes.firstOrNull { it.name == COMPOSITE_ELEMENT_CLASS }
-        if (compositeElementClass == null) {
-            LOG.error("Failed to get $compositeElementClass class.")
-            return
-        }
         val stubIndexImplClass = classes.firstOrNull { it.name == STUB_INDEX_IMPL_CLASS }
+
+        if (compositeElementClass == null) {
+            errorLog.add("Failed to get $COMPOSITE_ELEMENT_CLASS class object.")
+        }
         if (stubIndexImplClass == null) {
-            LOG.error("Failed to get $stubIndexImplClass class.")
-            return
+            errorLog.add("Failed to get $STUB_INDEX_IMPL_CLASS class object.")
+        }
+        if (errorLog.isNotEmpty()) {
+            return errorLog
         }
 
         VirtualFileTracerImpl.isEnabled = true
@@ -79,8 +80,13 @@ object VirtualFileTracer {
         instrumentation.addTransformer(transformer, true)
         instrumentation.retransformClasses(compositeElementClass)
         instrumentation.retransformClasses(stubIndexImplClass)
+        instrumentation.removeTransformer(transformer)
+        if (transformer.errorLog.isNotEmpty()) {
+            return transformer.errorLog
+        }
 
         hooksInstalled = true
+        return emptyList()
     }
 
     fun stopVfsTracing() {
@@ -158,6 +164,9 @@ private class TracerClassFileTransformer: ClassFileTransformer {
         const val ASM_API = ASM8
     }
 
+    val errorLog: List<String> get() = errorLogger
+    private val errorLogger = mutableListOf<String>()
+
     override fun transform(
         loader: ClassLoader?,
         className: String,
@@ -178,9 +187,10 @@ private class TracerClassFileTransformer: ClassFileTransformer {
         }
     }
 
-    private fun tryTransformCompositeElement(classBytes: ByteArray): ByteArray {
+    private fun tryTransformCompositeElement(classBytes: ByteArray): ByteArray? {
         val reader = ClassReader(classBytes)
         val writer = ClassWriter(reader, COMPUTE_MAXS or COMPUTE_FRAMES)
+        var methodFound = false
 
         val classVisitor = object: ClassVisitor(ASM_API, writer) {
             override fun visitMethod(
@@ -190,10 +200,11 @@ private class TracerClassFileTransformer: ClassFileTransformer {
                 signature: String?,
                 exceptions: Array<out String>?
             ): MethodVisitor {
-                if (name != "createPsiNoLock") {
+                if (name != "createPsiNoLock" || descriptor != "()Lcom/intellij/psi/PsiElement;") {
                     return super.visitMethod(access, name, descriptor, signature, exceptions)
                 }
 
+                methodFound = true
                 val methodWriter = cv.visitMethod(access, name, descriptor, signature, exceptions)
 
                 return object: AdviceAdapter(ASM_API, methodWriter, access, name, descriptor) {
@@ -212,12 +223,21 @@ private class TracerClassFileTransformer: ClassFileTransformer {
         }
 
         reader.accept(classVisitor, SKIP_FRAMES)
+        if (!methodFound) {
+            errorLogger.add("""
+                Detected a breaking change.
+                Cannot find $COMPOSITE_ELEMENT_CLASS::createPsiNoLock.
+            """.trimIndent().replace('\n', ' '))
+            return null
+        }
+
         return writer.toByteArray()
     }
 
-    private fun tryTransformStubIndex(classBytes: ByteArray): ByteArray {
+    private fun tryTransformStubIndex(classBytes: ByteArray): ByteArray? {
         val reader = ClassReader(classBytes)
         val writer = ClassWriter(reader, COMPUTE_MAXS or COMPUTE_FRAMES)
+        var methodFound = false
 
         val classVisitor = object: ClassVisitor(ASM_API, writer) {
             override fun visitMethod(
@@ -231,6 +251,7 @@ private class TracerClassFileTransformer: ClassFileTransformer {
                     return super.visitMethod(access, name, descriptor, signature, exceptions)
                 }
 
+                methodFound = true
                 val methodWriter = cv.visitMethod(access, name, descriptor, signature, exceptions)
 
                 return object: AdviceAdapter(ASM_API, methodWriter, access, name, descriptor) {
@@ -250,6 +271,14 @@ private class TracerClassFileTransformer: ClassFileTransformer {
         }
 
         reader.accept(classVisitor, SKIP_FRAMES)
+        if (!methodFound) {
+            errorLogger.add("""
+                Detected a breaking change.
+                Cannot find $STUB_INDEX_IMPL_CLASS::createPsiNoLock.
+            """.trimIndent().replace('\n', ' '))
+            return null
+        }
+
         return writer.toByteArray()
     }
 }

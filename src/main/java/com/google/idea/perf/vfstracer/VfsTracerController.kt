@@ -20,6 +20,7 @@ import com.google.idea.perf.TracerController
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.rd.attachChild
+import com.intellij.openapi.ui.MessageType
 
 class VfsTracerController(
     private val view: VfsTracerView,
@@ -55,7 +56,14 @@ class VfsTracerController(
 
     private fun handleCommand(command: String) {
         when (command) {
-            "start" -> VirtualFileTracer.startVfsTracing()
+            "start" -> {
+                val errors = VirtualFileTracer.startVfsTracing()
+                if (errors.isNotEmpty()) {
+                    val errorString = errors.joinToString("\n\n")
+                    LOG.error(errorString)
+                    view.showCommandBalloon(errorString, MessageType.ERROR)
+                }
+            }
             "stop" -> VirtualFileTracer.stopVfsTracing()
             "clear" -> {
                 accumulatedStats.clear()
