@@ -35,7 +35,7 @@ public final class VfsTracerTrampoline {
         return hook.onStubIndexProcessorCreate(processor);
     }
 
-    private static class VfsTracerHookStub implements VfsTracerHook {
+    private static final class VfsTracerHookStub implements VfsTracerHook {
         @Override
         public void onPsiElementCreate(Object psiElement) {}
 

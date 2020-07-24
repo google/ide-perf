@@ -16,8 +16,6 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.Argument
-import com.google.idea.perf.agent.Trampoline
 import com.intellij.openapi.diagnostic.Logger
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassReader.SKIP_FRAMES
@@ -48,9 +46,9 @@ class TracerMethodTransformer: ClassFileTransformer {
         private val LOG = Logger.getInstance(TracerMethodTransformer::class.java)
         private const val ASM_API = ASM8
 
-        private val TRAMPOLINE_CLASS_NAME = Type.getType(Trampoline::class.java).internalName
-        private val TRAMPOLINE_ENTER_METHOD = Method.getMethod(Trampoline::enter.javaMethod)
-        private val TRAMPOLINE_LEAVE_METHOD = Method.getMethod(Trampoline::leave.javaMethod)
+        private val TRAMPOLINE_CLASS_NAME = Type.getType(MethodTracerTrampoline::class.java).internalName
+        private val TRAMPOLINE_ENTER_METHOD = Method.getMethod(MethodTracerTrampoline::enter.javaMethod)
+        private val TRAMPOLINE_LEAVE_METHOD = Method.getMethod(MethodTracerTrampoline::leave.javaMethod)
 
         private val ARGUMENT_NAME = Type.getType(Argument::class.java).internalName
         private val ARGUMENT_CONSTRUCTOR = Method.getMethod(Argument::class.constructors.first().javaConstructor)

@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.MethodListener
+import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.util.ConcurrentAppendOnlyList
 import com.intellij.util.PatternUtil
 import org.objectweb.asm.Type
@@ -280,7 +280,7 @@ object TracerConfig {
     }
 
     /**
-     * Returns the method ID to be used for [MethodListener] events,
+     * Returns the method ID to be used for [MethodTracerHook] events,
      * or null if the given method should not be instrumented.
      */
     fun getMethodId(classJvmName: String, methodName: String, methodDesc: String): Int? {
