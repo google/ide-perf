@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.agent;
+package com.google.idea.perf.methodtracer;
 
 /**
  * We cannot emit bytecode which calls directly into the tracer, because the tracer is loaded
@@ -23,13 +23,27 @@ package com.google.idea.perf.agent;
  *
  * So, we install a layer of indirection between these two worlds.
  */
-public class Trampoline {
-    public static MethodListener methodListener; // Set by the tracer.
+public final class MethodTracerTrampoline {
+    private static MethodTracerHook hook = new MethodTracerHookStub();
+
+    public static void installHook(MethodTracerHook newHook) {
+        hook = newHook;
+    }
 
     // These methods are called from instrumented bytecode.
     public static void enter(int methodId, Argument[] args) {
-        methodListener.enter(methodId, args);
+        hook.enter(methodId, args);
     }
 
-    public static void leave(int methodId) { methodListener.leave(methodId); }
+    public static void leave(int methodId) {
+        hook.leave(methodId);
+    }
+
+    private static final class MethodTracerHookStub implements MethodTracerHook {
+        @Override
+        public void enter(int methodId, Argument[] args) {}
+
+        @Override
+        public void leave(int methodId) {}
+    }
 }

@@ -16,8 +16,6 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.Argument
-
 // Things to improve:
 // - Think about the behavior we want for recursive calls.
 // - Keep track of CPU time too by using ManagementFactory.getThreadMXBean().

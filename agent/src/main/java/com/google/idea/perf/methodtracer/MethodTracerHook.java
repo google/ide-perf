@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.agent;
+package com.google.idea.perf.methodtracer;
 
 /** Handler for method entry/exit events coming from instrumented bytecode. */
-public interface MethodListener {
+public interface MethodTracerHook {
     void enter(int methodId, Argument[] args);
     void leave(int methodId);
 }

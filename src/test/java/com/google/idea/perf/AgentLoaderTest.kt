@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.methodtracer
+package com.google.idea.perf
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import org.junit.Test

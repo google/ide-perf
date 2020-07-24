@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.agent;
+package com.google.idea.perf.methodtracer;
 
 import java.util.Objects;
 

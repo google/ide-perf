@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.vfstracer
 
-import com.google.idea.perf.methodtracer.AgentLoader
+import com.google.idea.perf.AgentLoader
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.psi.PsiElement
 import com.intellij.util.Processor

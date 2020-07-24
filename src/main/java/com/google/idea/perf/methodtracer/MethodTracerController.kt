@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
+import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.CommandCompletionProvider
 import com.google.idea.perf.TracerController
 import com.intellij.openapi.Disposable
@@ -58,8 +59,8 @@ class MethodTracerController(
         const val AUTOCOMPLETE_RELOAD_INTERVAL = 120L
     }
 
+    private var instrumentationInitialized = false
     private var callTree = MutableCallTree(Tracepoint.ROOT)
-
     private val predictor = MethodTracerCommandPredictor()
     val autocomplete = CommandCompletionProvider(predictor)
 
@@ -244,6 +245,12 @@ class MethodTracerController(
     private fun retransformClasses(classes: Collection<Class<*>>) {
         if (classes.isEmpty()) return
         val instrumentation = AgentLoader.instrumentation ?: return
+        if (!instrumentationInitialized) {
+            MethodTracerTrampoline.installHook(TracerMethodListener())
+            instrumentation.addTransformer(TracerMethodTransformer(), true)
+            instrumentationInitialized = true
+        }
+
         LOG.info("Retransforming ${classes.size} classes")
         runWithProgress { progress ->
             progress.isIndeterminate = classes.size <= 5

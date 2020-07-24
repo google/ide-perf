@@ -16,7 +16,6 @@
 
 package com.google.idea.perf.methodtracer
 
-import com.google.idea.perf.agent.Argument
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.methodtracer
+package com.google.idea.perf
 
 import com.google.idea.perf.agent.AgentMain
-import com.google.idea.perf.agent.Argument
-import com.google.idea.perf.agent.MethodListener
-import com.google.idea.perf.agent.Trampoline
 import com.intellij.execution.process.OSProcessUtil
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.notification.Notification
@@ -81,10 +78,6 @@ object AgentLoader {
             return null
         }
 
-        // Install our tracing hooks and transformers.
-        Trampoline.methodListener = TracerMethodListener()
-        instrumentation.addTransformer(TracerMethodTransformer(), true)
-
         return instrumentation
     }
 
@@ -102,31 +95,6 @@ object AgentLoader {
         }
         finally {
             vm.detach()
-        }
-    }
-
-    /** Dispatches method entry/exit events to the [CallTreeManager]. */
-    private class TracerMethodListener: MethodListener {
-
-        override fun enter(methodId: Int, args: Array<Argument>?) {
-            val tracepoint = TracerConfig.getTracepoint(methodId)
-            CallTreeManager.enter(tracepoint, args)
-        }
-
-        override fun leave(methodId: Int) {
-            val tracepoint = TracerConfig.getTracepoint(methodId)
-            CallTreeManager.leave(tracepoint)
-        }
-
-        companion object {
-            init {
-                // Trigger class loading for CallTreeManager early so that it doesn't happen
-                // during tracing. This reduces the chance of invoking an instrumented method
-                // from a tracing hook (causing infinite recursion).
-                CallTreeManager.enter(Tracepoint.ROOT, null)
-                CallTreeManager.leave(Tracepoint.ROOT)
-                CallTreeManager.collectAndReset()
-            }
         }
     }
 }

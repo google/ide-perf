@@ -16,9 +16,9 @@
 
 package com.google.idea.perf.cachedvaluetracer
 
+import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.CommandCompletionProvider
 import com.google.idea.perf.TracerController
-import com.google.idea.perf.methodtracer.AgentLoader
 import com.google.idea.perf.util.fuzzyMatch
 import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.Disposable

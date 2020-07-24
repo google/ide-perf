@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.methodtracer
 
+import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.CommandPredictor
 import com.google.idea.perf.util.fuzzySearch
 import com.intellij.openapi.progress.ProgressManager
