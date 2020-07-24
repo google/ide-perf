@@ -130,6 +130,8 @@ class MethodTracerController(
                 updateUi()
             }
             is MethodTracerCommand.Trace -> {
+                val flags = command.traceOption!!.tracepointFlag
+
                 when (command.target) {
                     is TraceTarget.PsiFinders -> {
                         val defaultProject = ProjectManager.getInstance().defaultProject
@@ -138,12 +140,12 @@ class MethodTracerController(
                         val methods = psiFinders.map {
                             it.javaClass.getMethod(baseMethod.name, *baseMethod.parameterTypes)
                         }
-
-                        traceAndRetransform(command.enable, *methods.toTypedArray())
+                        traceAndRetransform(command.enable, flags, *methods.toTypedArray())
                     }
                     is TraceTarget.Tracer -> {
                         traceAndRetransform(
                             command.enable,
+                            flags,
                             this::dataRefreshLoop.javaMethod!!,
                             this::updateUi.javaMethod!!,
                             this::handleCommand.javaMethod!!
@@ -162,56 +164,47 @@ class MethodTracerController(
                         }
                     }
                     is TraceTarget.ClassPattern -> {
-                        val traceOption = command.traceOption
                         val classPattern = command.target.classPattern
-                        if (traceOption != null) {
-                            val classes = if (command.enable) {
-                                TracerConfig.trace(
-                                    TracePattern.ByClassPattern(classPattern),
-                                    traceOption.tracepointFlag
-                                )
-                            }
-                            else {
-                                TracerConfig.untrace(TracePattern.ByClassPattern(classPattern))
-                            }
-                            retransformClasses(classes.toSet())
+                        val classes = if (command.enable) {
+                            TracerConfig.trace(
+                                TracePattern.ByClassPattern(classPattern),
+                                flags
+                            )
                         }
+                        else {
+                            TracerConfig.untrace(TracePattern.ByClassPattern(classPattern))
+                        }
+                        retransformClasses(classes.toSet())
                     }
                     is TraceTarget.MethodPattern -> {
-                        val traceOption = command.traceOption
                         val className = command.target.className
                         val methodPattern = command.target.methodPattern
-                        if (traceOption != null) {
-                            if (command.enable) {
-                                TracerConfig.trace(
-                                    TracePattern.ByMethodPattern(className, methodPattern),
-                                    traceOption.tracepointFlag
-                                )
-                            }
-                            else {
-                                TracerConfig.untrace(TracePattern.ByMethodPattern(className, methodPattern))
-                            }
-                            retransformClasses(setOf(className))
+                        if (command.enable) {
+                            TracerConfig.trace(
+                                TracePattern.ByMethodPattern(className, methodPattern),
+                                flags
+                            )
                         }
+                        else {
+                            TracerConfig.untrace(TracePattern.ByMethodPattern(className, methodPattern))
+                        }
+                        retransformClasses(setOf(className))
                     }
                     is TraceTarget.Method -> {
-                        val traceOption = command.traceOption
                         val className = command.target.className
-                        val methodName = command.target.methodName
-                        val parameters = command.target.parameterIndexes
-                        if (traceOption != null && methodName != null && parameters != null) {
-                            if (command.enable) {
-                                TracerConfig.trace(
-                                    TracePattern.ByMethodName(className, methodName),
-                                    traceOption.tracepointFlag,
-                                    parameters
-                                )
-                            }
-                            else {
-                                TracerConfig.untrace(TracePattern.ByMethodName(className, methodName))
-                            }
-                            retransformClasses(setOf(className))
+                        val methodName = command.target.methodName!!
+                        val parameters = command.target.parameterIndexes!!
+                        if (command.enable) {
+                            TracerConfig.trace(
+                                TracePattern.ByMethodName(className, methodName),
+                                flags,
+                                parameters
+                            )
                         }
+                        else {
+                            TracerConfig.untrace(TracePattern.ByMethodName(className, methodName))
+                        }
+                        retransformClasses(setOf(className))
                     }
                 }
             }
@@ -222,10 +215,10 @@ class MethodTracerController(
         }
     }
 
-    private fun traceAndRetransform(enable: Boolean, vararg methods: Method) {
+    private fun traceAndRetransform(enable: Boolean, flags: Int, vararg methods: Method) {
         if (methods.isEmpty()) return
         if (enable) {
-            methods.forEach { TracerConfig.trace(TracePattern.Exact(it), TracepointFlags.TRACE_ALL, emptyList()) }
+            methods.forEach { TracerConfig.trace(TracePattern.Exact(it), flags, emptyList()) }
         }
         else {
             methods.forEach { TracerConfig.untrace(TracePattern.Exact(it)) }
