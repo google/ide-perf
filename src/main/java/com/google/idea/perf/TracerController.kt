@@ -59,15 +59,21 @@ abstract class TracerController(
     abstract fun onControllerInitialize()
 
     protected fun dataRefreshLoop() {
-        val startTime = System.nanoTime()
+        try {
+            val startTime = System.nanoTime()
 
-        if (updateModel()) {
-            updateUi()
+            if (updateModel()) {
+                updateUi()
+            }
+
+            val endTime = System.nanoTime()
+            val elapsedNanos = endTime - startTime
+            updateRefreshTimeUi(elapsedNanos)
         }
-
-        val endTime = System.nanoTime()
-        val elapsedNanos = endTime - startTime
-        updateRefreshTimeUi(elapsedNanos)
+        catch (ex: Exception) {
+            LOG.error("Exception was caught while tracing", ex)
+            throw ex
+        }
     }
 
     protected abstract fun updateModel(): Boolean
