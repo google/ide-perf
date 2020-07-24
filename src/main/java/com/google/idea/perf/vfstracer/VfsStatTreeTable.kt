@@ -18,6 +18,7 @@ package com.google.idea.perf.vfstracer
 
 import com.intellij.ui.components.JBTreeTable
 import com.intellij.ui.treeStructure.treetable.TreeTableModel
+import java.util.*
 import javax.swing.JTree
 import javax.swing.event.EventListenerList
 import javax.swing.event.TreeModelEvent
@@ -28,11 +29,17 @@ private const val COLUMN_COUNT = 2
 private const val STUB_INDEX_ACCESSES = 0
 private const val PSI_ELEMENT_WRAPS = 1
 
-private operator fun VirtualFileTree.get(index: Int): VirtualFileTree =
-    children.values.toTypedArray()[index]
+private val childrenCache = WeakHashMap<VirtualFileTree, Array<VirtualFileTree>>()
 
-private fun VirtualFileTree.indexOf(child: VirtualFileTree): Int =
-    children.values.indexOfFirst { it.name == child.name }
+private operator fun VirtualFileTree.get(index: Int): VirtualFileTree {
+    val cachedChildren = childrenCache.getOrPut(this) { children.values.toTypedArray() }
+    return cachedChildren[index]
+}
+
+private fun VirtualFileTree.indexOf(child: VirtualFileTree): Int {
+    val cachedChildren = childrenCache.getOrPut(this) { children.values.toTypedArray() }
+    return cachedChildren.indexOf(child)
+}
 
 class VfsStatTreeTableModel: TreeTableModel {
     private val tree = MutableVirtualFileTree.createRoot()
@@ -49,6 +56,8 @@ class VfsStatTreeTableModel: TreeTableModel {
                 child: MutableVirtualFileTree
             ) {
                 parent.children[child.name] = child
+                childrenCache.remove(parent)
+
                 val treePath = TreePath(path.parts)
                 val event = TreeModelEvent(this, treePath)
                 forEachListener { it.treeStructureChanged(event) }
@@ -62,6 +71,7 @@ class VfsStatTreeTableModel: TreeTableModel {
             ) {
                 child.stubIndexAccesses = newChild.stubIndexAccesses
                 child.psiElementWraps = newChild.psiElementWraps
+                childrenCache.remove(parent)
 
                 val treePath = TreePath(path.parts)
                 val indexes = intArrayOf(parent.indexOf(child))
@@ -79,7 +89,10 @@ class VfsStatTreeTableModel: TreeTableModel {
                 val indexes = intArrayOf(parent.indexOf(child))
                 val children = arrayOf(child)
                 val event = TreeModelEvent(this, treePath, indexes, children)
+
                 parent.children.remove(child.name)
+                childrenCache.remove(parent)
+
                 forEachListener { it.treeNodesRemoved(event) }
             }
 
