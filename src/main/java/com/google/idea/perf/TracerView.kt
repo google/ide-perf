@@ -16,7 +16,7 @@
 
 package com.google.idea.perf
 
-import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.util.PopupUtil
 import com.intellij.ui.components.JBLabel
@@ -28,9 +28,17 @@ import javax.swing.JProgressBar
 
 /** The content for filling the tracer dialog window. */
 abstract class TracerView: JBPanel<TracerView>() {
+    companion object {
+        const val COMMAND_HISTORY_LIMIT = 20
+    }
+
+    abstract val controller: TracerController
     abstract val commandLine: TextFieldWithCompletion
     abstract val progressBar: JProgressBar
     abstract val refreshTimeLabel: JBLabel
+
+    private val commandHistory = ArrayList<String>(COMMAND_HISTORY_LIMIT)
+    private var commandHistoryIndex = -1
 
     fun showCommandBalloon(message: String, type: MessageType) {
         PopupUtil.showBalloonForComponent(commandLine, message, type, true, null)
@@ -44,8 +52,45 @@ abstract class TracerView: JBPanel<TracerView>() {
             override fun keyPressed(e: KeyEvent) {
                 if (e.keyCode == KeyEvent.VK_ENTER) {
                     controller.handleRawCommandFromEdt(commandLine.text)
-                    ApplicationManager.getApplication().invokeLater {
+
+                    if (commandHistoryIndex != -1) {
+                        if (commandHistory.size >= COMMAND_HISTORY_LIMIT) {
+                            commandHistory.removeAt(0)
+                        }
+                        while (commandHistory.lastIndex > commandHistoryIndex) {
+                            commandHistory.removeAt(commandHistory.lastIndex)
+                        }
+                    }
+
+                    if (commandHistory.isEmpty() || commandHistory.last() != commandLine.text) {
+                        commandHistory.add(commandLine.text)
+                        commandHistoryIndex = commandHistory.lastIndex
+                    }
+
+                    getApplication().invokeLater {
                         commandLine.text = ""
+                    }
+                }
+                else if (e.keyCode == KeyEvent.VK_UP) {
+                    getApplication().invokeLater {
+                        if (commandHistoryIndex != -1) {
+                            if (commandHistoryIndex > 0 && commandLine.text.isNotEmpty()) {
+                                commandHistoryIndex--
+                            }
+                            val command = commandHistory[commandHistoryIndex]
+                            commandLine.text = command
+                        }
+                    }
+                }
+                else if (e.keyCode == KeyEvent.VK_UP) {
+                    getApplication().invokeLater {
+                        if (commandHistoryIndex != -1) {
+                            if (commandHistoryIndex < commandHistory.lastIndex) {
+                                commandHistoryIndex++
+                            }
+                            val command = commandHistory[commandHistoryIndex]
+                            commandLine.text = command
+                        }
                     }
                 }
             }

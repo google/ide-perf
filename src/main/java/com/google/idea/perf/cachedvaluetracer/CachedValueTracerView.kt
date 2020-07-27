@@ -77,7 +77,7 @@ class CachedValueTracerDialog: DialogWrapper(null, null, false, IdeModalityType.
 }
 
 class CachedValueTracerView(parentDisposable: Disposable): TracerView() {
-    val controller = CachedValueTracerController(this, parentDisposable)
+    override val controller = CachedValueTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel

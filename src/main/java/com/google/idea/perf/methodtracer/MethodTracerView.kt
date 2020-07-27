@@ -84,7 +84,7 @@ class MethodTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, 
 
 /** The content filling the tracer dialog window. */
 class MethodTracerView(parentDisposable: Disposable): TracerView() {
-    val controller = MethodTracerController(this, parentDisposable)
+    override val controller = MethodTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel

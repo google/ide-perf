@@ -79,7 +79,7 @@ class VfsTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, fal
 }
 
 class VfsTracerView(parentDisposable: Disposable): TracerView() {
-    val controller = VfsTracerController(this, parentDisposable)
+    override val controller = VfsTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel
