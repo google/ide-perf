@@ -39,11 +39,11 @@ object CallTreeManager {
     // Synchronized by monitor lock.
     private val allThreadState = mutableListOf<ThreadState>()
 
-    fun enter(tracepoint: Tracepoint, args: Array<Argument>?) {
+    fun enter(methodCall: MethodCall) {
         val state = threadState.get()
         synchronized(state) {
             doPreventingRecursion(state) {
-                state.callTreeBuilder.push(tracepoint, args)
+                state.callTreeBuilder.push(methodCall)
             }
         }
     }

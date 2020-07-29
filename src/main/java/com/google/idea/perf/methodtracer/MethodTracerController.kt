@@ -60,7 +60,7 @@ class MethodTracerController(
     }
 
     private var instrumentationInitialized = false
-    private var callTree = MutableCallTree(Tracepoint.ROOT)
+    private var callTree = MutableCallTree(MethodCall.ROOT)
     private val predictor = MethodTracerCommandPredictor()
     val autocomplete = CommandCompletionProvider(predictor)
 
@@ -88,12 +88,13 @@ class MethodTracerController(
     override fun updateUi() {
         val allStats = TreeAlgorithms.computeFlatTracepointStats(callTree)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
-        val argStatMap = ArgStatMap.fromCallTree(callTree)
+
+        val visibleArgStats = ArgStatMap.fromCallTree(callTree, false)
 
         // We use invokeAndWait to ensure proper backpressure for the data refresh loop.
         getApplication().invokeAndWait {
             view.listView.setTracepointStats(visibleStats)
-            view.updateTabs(argStatMap)
+            view.updateTabs(visibleArgStats)
         }
     }
 
@@ -126,7 +127,7 @@ class MethodTracerController(
                 updateUi()
             }
             is MethodTracerCommand.Reset -> {
-                callTree = MutableCallTree(Tracepoint.ROOT)
+                callTree = MutableCallTree(MethodCall.ROOT)
                 updateUi()
             }
             is MethodTracerCommand.Trace -> {

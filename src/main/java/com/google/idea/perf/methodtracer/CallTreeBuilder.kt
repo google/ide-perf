@@ -16,6 +16,8 @@
 
 package com.google.idea.perf.methodtracer
 
+import kotlin.collections.LinkedHashMap
+
 // Things to improve:
 // - Think about the behavior we want for recursive calls.
 // - Keep track of CPU time too by using ManagementFactory.getThreadMXBean().
@@ -30,7 +32,7 @@ package com.google.idea.perf.methodtracer
 class CallTreeBuilder(
     private val clock: Clock = SystemClock
 ) {
-    private var root = Tree(Tracepoint.ROOT, parent = null)
+    private var root = Tree(MethodCall.ROOT, parent = null)
     private var currentNode = root
 
     init {
@@ -49,49 +51,34 @@ class CallTreeBuilder(
     }
 
     private class Tree(
-        override val tracepoint: Tracepoint,
+        override val methodCall: MethodCall,
         val parent: Tree?
     ): CallTree {
-        class MutableStats(
-            override var callCount: Long = 0L,
-            override var wallTime: Long = 0L,
-            override var maxWallTime: Long = 0L
-        ): CallTree.Stats {
-            fun copy() = MutableStats(callCount, wallTime, maxWallTime)
-        }
-
-        override val stats = MutableStats()
-        override val argSetStats: MutableMap<ArgSet, MutableStats> = LinkedHashMap()
-        override val children: MutableMap<Tracepoint, Tree> = LinkedHashMap()
+        override var callCount: Long = 0L
+        override var wallTime: Long = 0L
+        override var maxWallTime: Long = 0L
+        override val children: MutableMap<MethodCall, Tree> = LinkedHashMap()
 
         var startWallTime: Long = 0
         var continuedWallTime: Long = 0
         var tracepointFlags: Int = 0
-        var argSet: ArgSet? = null
 
         init {
-            require(parent != null || tracepoint == Tracepoint.ROOT) {
+            require(parent != null || methodCall == MethodCall.ROOT) {
                 "Only the root node can have a null parent"
             }
         }
     }
 
-    fun push(tracepoint: Tracepoint, args: Array<Argument>? = null) {
+    fun push(methodCall: MethodCall) {
         val parent = currentNode
-        val child = parent.children.getOrPut(tracepoint) { Tree(tracepoint, parent) }
-        val flags = tracepoint.flags.get()
-        val argSet = if (args != null) ArgSet(args) else null
+        val child = parent.children.getOrPut(methodCall) { Tree(methodCall, parent) }
+        val flags = methodCall.tracepoint.flags.get()
 
         child.tracepointFlags = flags
-        child.argSet = argSet
 
         if ((flags and TracepointFlags.TRACE_CALL_COUNT) != 0) {
-            child.stats.callCount++
-
-            if (argSet != null) {
-                val stats = child.argSetStats.getOrPut(argSet) { Tree.MutableStats() }
-                stats.callCount++
-            }
+            child.callCount++
         }
 
         if ((flags and TracepointFlags.TRACE_WALL_TIME) != 0) {
@@ -111,12 +98,12 @@ class CallTreeBuilder(
             "The root node should never be popped"
         }
 
-        check(tracepoint == child.tracepoint) {
+        check(tracepoint == child.methodCall.tracepoint) {
             """
             This pop() call does not match the current tracepoint on the stack.
             Did someone call push() without later calling pop()?
             Tracepoint passed to pop(): $tracepoint
-            Current tracepoint on the stack: ${child.tracepoint}
+            Current tracepoint instance on the stack: ${child.methodCall}
             """.trimIndent()
         }
 
@@ -124,18 +111,10 @@ class CallTreeBuilder(
             val now = clock.sample()
             val elapsedTime = now - child.continuedWallTime
             val elapsedTimeFromStart = now - child.startWallTime
-            child.stats.wallTime += elapsedTime
-            child.stats.maxWallTime = maxOf(child.stats.maxWallTime, elapsedTimeFromStart)
-
-            val list = child.argSet
-            if (list != null) {
-                val stats = child.argSetStats.getOrPut(list) { Tree.MutableStats() }
-                stats.wallTime += elapsedTime
-                stats.maxWallTime = maxOf(stats.maxWallTime, elapsedTimeFromStart)
-            }
+            child.wallTime += elapsedTime
+            child.maxWallTime = maxOf(child.maxWallTime, elapsedTimeFromStart)
         }
 
-        child.argSet = null
         currentNode = parent
     }
 
@@ -144,41 +123,29 @@ class CallTreeBuilder(
         val now = clock.sample()
         val stack = generateSequence(currentNode, Tree::parent).toList().asReversed()
         for (node in stack) {
-            val nodeArgs = node.argSet
             val elapsedTime = now - node.continuedWallTime
             val elapsedTimeFromStart = now - node.startWallTime
 
             if ((node.tracepointFlags and TracepointFlags.TRACE_WALL_TIME) != 0) {
-                node.stats.wallTime += elapsedTime
-                node.stats.maxWallTime = maxOf(node.stats.maxWallTime, elapsedTimeFromStart)
+                node.wallTime += elapsedTime
+                node.maxWallTime = maxOf(node.maxWallTime, elapsedTimeFromStart)
                 node.continuedWallTime = now
-            }
-
-            if (nodeArgs != null) {
-                val stats = node.argSetStats.getOrPut(nodeArgs) { Tree.MutableStats() }
-                stats.wallTime += elapsedTime
-                stats.maxWallTime = maxOf(stats.maxWallTime, elapsedTimeFromStart)
-                node.argSet = null
             }
         }
 
         // Reset to a new tree and copy over the current stack.
         val oldRoot = root
-        root = Tree(Tracepoint.ROOT, parent = null)
-        root.argSetStats.putAll(oldRoot.argSetStats.map { (k, v) -> k to v.copy() })
+        root = Tree(MethodCall.ROOT, parent = null)
         root.startWallTime = oldRoot.startWallTime
         root.continuedWallTime = oldRoot.continuedWallTime
         root.tracepointFlags = oldRoot.tracepointFlags
-        root.argSet = oldRoot.argSet
         currentNode = root
         for (node in stack.subList(1, stack.size)) {
-            val copy = Tree(node.tracepoint, parent = currentNode)
+            val copy = Tree(node.methodCall, parent = currentNode)
             copy.startWallTime = node.startWallTime
             copy.continuedWallTime = node.continuedWallTime
             copy.tracepointFlags = node.tracepointFlags
-            copy.argSetStats.putAll(node.argSetStats.map { (k, v) -> k to v.copy() })
-            copy.argSet = node.argSet
-            currentNode.children[node.tracepoint] = copy
+            currentNode.children[node.methodCall] = copy
             currentNode = copy
         }
 
