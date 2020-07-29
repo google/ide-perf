@@ -19,9 +19,9 @@ package com.google.idea.perf.methodtracer
 /** Encapsulates aggregate statistic for a single tracepoint. */
 class TracepointStats(
     val tracepoint: Tracepoint,
-    var callCount: Long = 0,
-    var wallTime: Long = 0,
-    var maxWallTime: Long = 0
+    var callCount: Long = 0L,
+    var wallTime: Long = 0L,
+    var maxWallTime: Long = 0L
 )
 
 object TreeAlgorithms {
@@ -33,24 +33,24 @@ object TreeAlgorithms {
         val allStats = mutableMapOf<Tracepoint, TracepointStats>()
         val ancestors = mutableSetOf<Tracepoint>()
 
-        fun bfs(node: CallTree) {
-            val nonRecursive = node.tracepoint !in ancestors
-            val stats = allStats.getOrPut(node.tracepoint) { TracepointStats(node.tracepoint) }
-            stats.callCount += node.stats.callCount
+        fun dfs(node: CallTree) {
+            val nonRecursive = node.methodCall.tracepoint !in ancestors
+            val stats = allStats.getOrPut(node.methodCall.tracepoint) { TracepointStats(node.methodCall.tracepoint) }
+            stats.callCount += node.callCount
             if (nonRecursive) {
-                stats.wallTime += node.stats.wallTime
-                stats.maxWallTime = stats.maxWallTime.coerceAtLeast(node.stats.maxWallTime)
-                ancestors.add(node.tracepoint)
+                stats.wallTime += node.wallTime
+                stats.maxWallTime = maxOf(stats.maxWallTime, node.maxWallTime)
+                ancestors.add(node.methodCall.tracepoint)
             }
             for (child in node.children.values) {
-                bfs(child)
+                dfs(child)
             }
             if (nonRecursive) {
-                ancestors.remove(node.tracepoint)
+                ancestors.remove(node.methodCall.tracepoint)
             }
         }
 
-        bfs(root)
+        dfs(root)
         assert(ancestors.isEmpty())
 
         return allStats.values.toList()

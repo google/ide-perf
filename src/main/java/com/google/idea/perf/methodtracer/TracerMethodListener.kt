@@ -19,8 +19,8 @@ package com.google.idea.perf.methodtracer
 /** Dispatches method entry/exit events to the [CallTreeManager]. */
 class TracerMethodListener: MethodTracerHook {
     override fun enter(methodId: Int, args: Array<Argument>?) {
-        val tracepoint = TracerConfig.getTracepoint(methodId)
-        CallTreeManager.enter(tracepoint, args)
+        val methodCall = TracerConfig.getMethodCall(methodId, args)
+        CallTreeManager.enter(methodCall)
     }
 
     override fun leave(methodId: Int) {
@@ -33,8 +33,8 @@ class TracerMethodListener: MethodTracerHook {
             // Trigger class loading for CallTreeManager early so that it doesn't happen
             // during tracing. This reduces the chance of invoking an instrumented method
             // from a tracing hook (causing infinite recursion).
-            CallTreeManager.enter(Tracepoint.ROOT, null)
-            CallTreeManager.leave(Tracepoint.ROOT)
+            CallTreeManager.enter(MethodCall.ROOT)
+            CallTreeManager.leave(MethodCall.ROOT.tracepoint)
             CallTreeManager.collectAndReset()
         }
     }

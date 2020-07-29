@@ -17,62 +17,57 @@
 package com.google.idea.perf.methodtracer
 
 class ArgSetStats(
-    val args: ArgSet,
+    val args: String?,
     var callCount: Long = 0L,
     var wallTime: Long = 0L,
     var maxWallTime: Long = 0L
 )
 
-class ArgStatMap private constructor(
+class ArgStatMap(
     val tracepoints: Map<Tracepoint, List<ArgSetStats>>
 ) {
     companion object {
-        //
-        // TODO: Cover this corner case:
-        // f(1), 10 ms
-        //   f(2), 5 ms
-        // f(2), 10 ms
-        //
-        // In this case, argument stats should also have CallTree children.
-        //
         fun fromCallTree(root: CallTree): ArgStatMap {
-            val allStats = mutableMapOf<Tracepoint, MutableMap<ArgSet, ArgSetStats>>()
-            val ancestors = mutableSetOf<Pair<Tracepoint, ArgSet>>()
+            val allStats = mutableMapOf<Tracepoint, MutableMap<String?, ArgSetStats>>()
+            val ancestors = mutableSetOf<MethodCall>()
 
             fun dfs(node: CallTree) {
-                val scopedAncestors = mutableSetOf<Pair<Tracepoint, ArgSet>>()
+                val nonRecursive = node.methodCall !in ancestors
 
-                if (node.argSetStats.isNotEmpty()) {
-                    val argSetStats = allStats.getOrPut(node.tracepoint) { mutableMapOf() }
+                val arguments = node.methodCall.arguments
+                val statsForTracepoint = allStats.getOrPut(node.methodCall.tracepoint) { mutableMapOf() }
+                val stats = statsForTracepoint.getOrPut(arguments) { ArgSetStats(arguments) }
 
-                    for ((args, stats) in node.argSetStats) {
-                        val nonRecursive = node.tracepoint to args !in ancestors
-                        val accumulatedStats = argSetStats.getOrPut(args) { ArgSetStats(args) }
-                        accumulatedStats.callCount += stats.callCount
-
-                        if (nonRecursive) {
-                            accumulatedStats.wallTime += stats.wallTime
-                            accumulatedStats.maxWallTime = maxOf(
-                                accumulatedStats.maxWallTime, stats.maxWallTime
-                            )
-                            scopedAncestors.add(node.tracepoint to args)
-                        }
-                    }
+                stats.callCount += node.callCount
+                if (nonRecursive) {
+                    stats.wallTime += node.wallTime
+                    stats.maxWallTime = maxOf(stats.maxWallTime, node.maxWallTime)
+                    ancestors.add(node.methodCall)
                 }
-
-                ancestors.addAll(scopedAncestors)
 
                 for (child in node.children.values) {
                     dfs(child)
                 }
 
-                ancestors.removeAll(scopedAncestors)
+                if (nonRecursive) {
+                    ancestors.remove(node.methodCall)
+                }
             }
 
             dfs(root)
             assert(ancestors.isEmpty())
 
             return ArgStatMap(allStats.mapValues { it.value.values.toList() })
+        }
+
+        fun fromCallTree(root: CallTree, includeEmptyArguments: Boolean): ArgStatMap {
+            if (!includeEmptyArguments) {
+                return ArgStatMap(
+                    fromCallTree(root).tracepoints
+                        .filter{ (_, stats) -> stats.size > 1 || stats.none { it.args == null } }
+                )
+            }
+            return fromCallTree(root)
         }
     }
 }
