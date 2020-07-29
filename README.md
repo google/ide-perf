@@ -26,7 +26,7 @@ trace com.intellij.openapi.progress.ProgressManager#checkCanceled
 ```
 Or this:
 ```
-trace psi finders
+trace psi-finders
 ```
 The tracer view should show call counts and overhead measurements in real time as you use the IDE.
 
@@ -34,13 +34,11 @@ Commands list
 ---
 
 - `trace com.package.Class#method` - Trace the specified method.
-  - Tip: you can leave out the `trace` prefix, making it easy to directly copy and paste
-    tracing commands via the `Copy Reference` action in IntelliJ.
-- `trace psi finders` - Trace all overrides of `PsiElementFinder.findClass()`.
+- `trace psi-finders` - Trace all overrides of `PsiElementFinder.findClass()`.
 - `trace tracer` - Trace important methods in the tracer itself.
 - `clear` - Zero out current statistics.
 - `reset` - Remove current statistics.
-- `untrace all` - Remove tracing from all methods.
+- `untrace *` - Remove tracing from all methods.
 
 Installing
 ---
