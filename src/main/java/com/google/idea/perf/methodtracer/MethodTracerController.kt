@@ -57,9 +57,9 @@ class MethodTracerController(
 ): TracerController("Method Tracer", view), Disposable {
     companion object {
         const val AUTOCOMPLETE_RELOAD_INTERVAL = 120L
+        private var instrumentationInitialized = false
     }
 
-    private var instrumentationInitialized = false
     private var callTree = MutableCallTree(MethodCall.ROOT)
     private val predictor = MethodTracerCommandPredictor()
     val autocomplete = CommandCompletionProvider(predictor)

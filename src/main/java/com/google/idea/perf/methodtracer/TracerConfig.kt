@@ -45,7 +45,11 @@ object TracerConfig {
     private class TracepointProperties(
         val flags: Int = 0,
         val parameters: Int = 0
-    )
+    ) {
+        companion object {
+            val DISABLED = TracepointProperties()
+        }
+    }
 
     /** Specifies which methods to instrument for a given class. */
     private class ClassConfig {
@@ -108,7 +112,7 @@ object TracerConfig {
                 val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
                 classConfig.methodIds.getOrPut(methodSignature) {
                     val tracepoint = createTracepoint(
-                        classJvmName, method.name, methodDesc, TracepointProperties()
+                        classJvmName, method.name, methodDesc, TracepointProperties.DISABLED
                     )
                     tracepoints.append(tracepoint)
                 }
@@ -160,7 +164,7 @@ object TracerConfig {
                 if (methodId == null) {
                     val tracepoint = createTracepoint(
                         classJvmName, methodName, methodDesc,
-                        TracepointProperties(flags, parameterBits)
+                        TracepointProperties.DISABLED
                     )
                     methodId = tracepoints.append(tracepoint)
                     entry.setValue(methodId)
