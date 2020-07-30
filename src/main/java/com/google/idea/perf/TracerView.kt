@@ -67,30 +67,24 @@ abstract class TracerView: JBPanel<TracerView>() {
                         commandHistoryIndex = commandHistory.lastIndex
                     }
 
-                    getApplication().invokeLater {
-                        commandLine.text = ""
-                    }
+                    commandLine.text = ""
                 }
                 else if (e.keyCode == KeyEvent.VK_UP) {
-                    getApplication().invokeLater {
-                        if (commandHistoryIndex != -1) {
-                            if (commandHistoryIndex > 0 && commandLine.text.isNotEmpty()) {
-                                commandHistoryIndex--
-                            }
-                            val command = commandHistory[commandHistoryIndex]
-                            commandLine.text = command
+                    if (commandHistoryIndex != -1) {
+                        if (commandHistoryIndex > 0 && commandLine.text.isNotEmpty()) {
+                            commandHistoryIndex--
                         }
+                        val command = commandHistory[commandHistoryIndex]
+                        commandLine.text = command
                     }
                 }
-                else if (e.keyCode == KeyEvent.VK_UP) {
-                    getApplication().invokeLater {
-                        if (commandHistoryIndex != -1) {
-                            if (commandHistoryIndex < commandHistory.lastIndex) {
-                                commandHistoryIndex++
-                            }
-                            val command = commandHistory[commandHistoryIndex]
-                            commandLine.text = command
+                else if (e.keyCode == KeyEvent.VK_DOWN) {
+                    if (commandHistoryIndex != -1) {
+                        if (commandHistoryIndex < commandHistory.lastIndex) {
+                            commandHistoryIndex++
                         }
+                        val command = commandHistory[commandHistoryIndex]
+                        commandLine.text = command
                     }
                 }
             }
