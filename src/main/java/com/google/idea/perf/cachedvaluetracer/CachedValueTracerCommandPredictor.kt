@@ -53,7 +53,7 @@ class CachedValueTracerCommandPredictor: CommandPredictor {
     }
 
     private fun predictToken(choices: Collection<String>, token: String): List<String> {
-        return searcher.search(choices, token, -1) { ProgressManager.checkCanceled() }
+        return searcher.search(choices, token, 100) { ProgressManager.checkCanceled() }
             .map { it.source }
     }
 
