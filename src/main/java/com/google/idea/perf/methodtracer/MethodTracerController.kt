@@ -23,8 +23,8 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.rd.attachChild
 import com.intellij.openapi.ui.MessageType
+import com.intellij.openapi.util.Disposer
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.ui.UIUtil
 import java.awt.image.BufferedImage
@@ -66,7 +66,7 @@ class MethodTracerController(
 
     init {
         CallTreeManager.collectAndReset() // Clear trees accumulated while the tracer was closed.
-        parentDisposable.attachChild(this)
+        Disposer.register(parentDisposable, this)
     }
 
     override fun onControllerInitialize() {

@@ -23,8 +23,8 @@ import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.PluginId
+import com.intellij.util.io.isFile
 import com.sun.tools.attach.VirtualMachine
-import java.io.File
 import java.lang.instrument.Instrumentation
 
 // Things to improve:
@@ -86,12 +86,12 @@ object AgentLoader {
         val plugin = PluginManagerCore.getPlugin(PluginId.getId("com.google.ide-perf"))
             ?: error("Failed to find our own plugin")
 
-        val agentJar = File(plugin.path, "agent.jar")
-        check(agentJar.isFile) { "Could not find agent.jar at ${agentJar.path}" }
+        val agentJar = plugin.pluginPath.resolve("agent.jar")
+        check(agentJar.isFile()) { "Could not find agent.jar at $agentJar" }
 
         val vm = VirtualMachine.attach(OSProcessUtil.getApplicationPid())
         try {
-            vm.loadAgent(agentJar.absolutePath)
+            vm.loadAgent(agentJar.toAbsolutePath().toString())
         }
         finally {
             vm.detach()

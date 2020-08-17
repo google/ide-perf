@@ -23,7 +23,7 @@ import com.google.idea.perf.util.fuzzyMatch
 import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
-import com.intellij.openapi.rd.attachChild
+import com.intellij.openapi.util.Disposer
 import com.intellij.psi.util.CachedValueProfiler
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
@@ -44,7 +44,7 @@ class CachedValueTracerController(
     val autocomplete = CommandCompletionProvider(predictor)
 
     init {
-        parentDisposable.attachChild(this)
+        Disposer.register(parentDisposable, this)
         CachedValueProfiler.getInstance().isEnabled = true
     }
 

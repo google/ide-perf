@@ -19,8 +19,8 @@ package com.google.idea.perf.vfstracer
 import com.google.idea.perf.TracerController
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
-import com.intellij.openapi.rd.attachChild
 import com.intellij.openapi.ui.MessageType
+import com.intellij.openapi.util.Disposer
 
 class VfsTracerController(
     private val view: VfsTracerView,
@@ -30,7 +30,7 @@ class VfsTracerController(
     private var collectedStats = VirtualFileTree.EMPTY
 
     init {
-        parentDisposable.attachChild(this)
+        Disposer.register(parentDisposable, this)
     }
 
     override fun onControllerInitialize() {}
