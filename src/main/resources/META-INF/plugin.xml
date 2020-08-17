@@ -51,10 +51,4 @@
                           relative-to-action="Performance.ActivityMonitor" />
         </action>
     </actions>
-
-    <application-components>
-        <component>
-            <implementation-class>com.google.idea.perf.HackForDisablingPluginUnloading</implementation-class>
-        </component>
-    </application-components>
 </idea-plugin>

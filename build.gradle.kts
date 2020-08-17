@@ -70,7 +70,6 @@ configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
 
 tasks.runIde {
     // Disable auto-reload until we make sure it works correctly for this plugin.
-    // TODO: This does not work. See com.google.idea.perf.HackForDisablingPluginUnloading.
     systemProperty("idea.auto.reload.plugins", "false")
 
     // Always enable assertions.
