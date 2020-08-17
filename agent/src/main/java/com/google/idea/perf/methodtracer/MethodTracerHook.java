@@ -18,6 +18,6 @@ package com.google.idea.perf.methodtracer;
 
 /** Handler for method entry/exit events coming from instrumented bytecode. */
 public interface MethodTracerHook {
-    void enter(int methodId, Argument[] args);
+    void enter(int methodId, Object[] args);
     void leave(int methodId);
 }

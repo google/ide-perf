@@ -49,9 +49,6 @@ class TracerMethodTransformer: ClassFileTransformer {
         private val TRAMPOLINE_CLASS_NAME = Type.getType(MethodTracerTrampoline::class.java).internalName
         private val TRAMPOLINE_ENTER_METHOD = Method.getMethod(MethodTracerTrampoline::enter.javaMethod)
         private val TRAMPOLINE_LEAVE_METHOD = Method.getMethod(MethodTracerTrampoline::leave.javaMethod)
-
-        private val ARGUMENT_NAME = Type.getType(Argument::class.java).internalName
-        private val ARGUMENT_CONSTRUCTOR = Method.getMethod(Argument::class.constructors.first().javaConstructor)
     }
 
     override fun transform(
@@ -180,32 +177,17 @@ class TracerMethodTransformer: ClassFileTransformer {
                             return
                         }
 
-                        // Create new Argument[]
+                        // Create new Object[] for the arguments.
                         mv.visitLdcInsn(arraySize)
-                        mv.visitTypeInsn(ANEWARRAY, Type.getInternalName(Argument::class.java))
+                        mv.visitTypeInsn(ANEWARRAY, Type.getInternalName(Any::class.java))
 
                         var storeIndex = arraySize - 1
                         for ((parameterIndex, parameterType) in parameterTypes.withIndex()) {
                             if (parameters and (1 shl parameterIndex) != 0) {
-                                // Pseudocode for:
-                                // boxedArg = loadArg(args[parameterIndex])
-                                // args[storeIndex] = Argument(boxedArg, parameterIndex)
-
+                                // args[storeIndex] = loadArg(parameterIndex)
                                 mv.visitInsn(DUP)
                                 mv.visitLdcInsn(storeIndex)
-
-                                mv.visitTypeInsn(NEW, ARGUMENT_NAME)
-                                mv.visitInsn(DUP)
                                 loadArg(parameterBaseIndex + parameterIndex, parameterType)
-                                mv.visitLdcInsn(parameterIndex)
-                                mv.visitMethodInsn(
-                                    INVOKESPECIAL,
-                                    ARGUMENT_NAME,
-                                    ARGUMENT_CONSTRUCTOR.name,
-                                    ARGUMENT_CONSTRUCTOR.descriptor,
-                                    false
-                                )
-
                                 mv.visitInsn(AASTORE)
                                 storeIndex--
                             }

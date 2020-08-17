@@ -31,7 +31,7 @@ public final class MethodTracerTrampoline {
     }
 
     // These methods are called from instrumented bytecode.
-    public static void enter(int methodId, Argument[] args) {
+    public static void enter(int methodId, Object[] args) {
         hook.enter(methodId, args);
     }
 
@@ -41,7 +41,7 @@ public final class MethodTracerTrampoline {
 
     private static final class MethodTracerHookStub implements MethodTracerHook {
         @Override
-        public void enter(int methodId, Argument[] args) {}
+        public void enter(int methodId, Object[] args) {}
 
         @Override
         public void leave(int methodId) {}
