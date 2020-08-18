@@ -161,13 +161,13 @@ class TracerMethodTransformer: ClassFileTransformer {
                     private fun loadArg(index: Int, parameterType: Type) {
                         when (parameterType) {
                             Type.BYTE_TYPE -> boxPrimitive(index, ILOAD, "Byte", "(B)Ljava/lang/Byte;")
-                            Type.CHAR_TYPE -> boxPrimitive(index, ILOAD, "Character", "(C)Ljava/lang/Character")
-                            Type.DOUBLE_TYPE -> boxPrimitive(index, DLOAD, "Double", "(D)Ljava/lang/Double")
-                            Type.FLOAT_TYPE -> boxPrimitive(index, FLOAD, "Float", "(F)Ljava/lang/Double")
-                            Type.INT_TYPE -> boxPrimitive(index, ILOAD, "Integer", "(I)Ljava/lang/Integer")
-                            Type.LONG_TYPE -> boxPrimitive(index, LLOAD, "Long", "(J)Ljava/lang/Long")
-                            Type.SHORT_TYPE -> boxPrimitive(index, ILOAD, "Short", "(S)Ljava/lang/Short")
-                            Type.BOOLEAN_TYPE -> boxPrimitive(index, ILOAD, "Boolean", "(Z)Ljava/lang/Boolean")
+                            Type.CHAR_TYPE -> boxPrimitive(index, ILOAD, "Character", "(C)Ljava/lang/Character;")
+                            Type.DOUBLE_TYPE -> boxPrimitive(index, DLOAD, "Double", "(D)Ljava/lang/Double;")
+                            Type.FLOAT_TYPE -> boxPrimitive(index, FLOAD, "Float", "(F)Ljava/lang/Float;")
+                            Type.INT_TYPE -> boxPrimitive(index, ILOAD, "Integer", "(I)Ljava/lang/Integer;")
+                            Type.LONG_TYPE -> boxPrimitive(index, LLOAD, "Long", "(J)Ljava/lang/Long;")
+                            Type.SHORT_TYPE -> boxPrimitive(index, ILOAD, "Short", "(S)Ljava/lang/Short;")
+                            Type.BOOLEAN_TYPE -> boxPrimitive(index, ILOAD, "Boolean", "(Z)Ljava/lang/Boolean;")
                             else -> mv.visitVarInsn(ALOAD, index)
                         }
                     }
