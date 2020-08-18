@@ -25,8 +25,10 @@ import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.EmptyRunnable
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.ui.UIUtil
+import org.jetbrains.annotations.TestOnly
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.IOException
@@ -304,5 +306,19 @@ class MethodTracerController(
         else {
             LOG.warn("Cannot reload classes.")
         }
+    }
+
+    @TestOnly
+    fun handleCommandFromTest(cmd: String) {
+        check(!getApplication().isDispatchThread) { "Do not run on EDT; deadlock imminent" }
+        invokeAndWaitIfNeeded { handleRawCommandFromEdt(cmd) }
+        executor.submit(EmptyRunnable.INSTANCE).get() // Await quiescence.
+    }
+
+    @TestOnly
+    fun getCallTreeSnapshot(): CallTree {
+        check(!getApplication().isDispatchThread) { "Do not run on EDT; deadlock imminent" }
+        val getTree = { updateModel(); callTree.copy() }
+        return executor.submit(getTree).get()
     }
 }

@@ -56,4 +56,13 @@ class MutableCallTree(
         maxWallTime = 0L
         children.values.forEach(MutableCallTree::clear)
     }
+
+    fun copy(): MutableCallTree {
+        val copy = MutableCallTree(methodCall)
+        copy.callCount = callCount
+        copy.wallTime = wallTime
+        copy.maxWallTime = maxWallTime
+        children.mapValuesTo(copy.children) { (_, child) -> child.copy() }
+        return copy
+    }
 }
