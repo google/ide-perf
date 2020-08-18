@@ -109,10 +109,8 @@ dependencies {
     testCompileOnly(project(":agent"))
 
     implementation("org.ow2.asm:asm:8.0.1")
-    implementation("org.ow2.asm:asm-commons:8.0.1") {
-        exclude(group = "org.ow2.asm", module = "asm-tree")
-        exclude(group = "org.ow2.asm", module = "asm-analysis")
-    }
+    implementation("org.ow2.asm:asm-util:8.0.1")
+    implementation("org.ow2.asm:asm-commons:8.0.1")
 
     // TODO: Find a way to attach the Kotlin stdlib sources without declaring a 'compileOnly' dependency.
     //  See https://github.com/JetBrains/gradle-intellij-plugin/issues/264.
