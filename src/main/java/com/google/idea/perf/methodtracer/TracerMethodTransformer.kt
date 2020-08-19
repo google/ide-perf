@@ -25,7 +25,7 @@ import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
 import org.objectweb.asm.ClassWriter.COMPUTE_MAXS
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
-import org.objectweb.asm.Opcodes.ACC_STATIC
+import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.ASM8
 import org.objectweb.asm.Type
 import org.objectweb.asm.commons.AdviceAdapter
@@ -108,7 +108,6 @@ class TracerMethodTransformer: ClassFileTransformer {
                 val tracepoint = TracerConfig.getTracepoint(id)
                 val parameters = tracepoint.parameters.get()
                 val parameterTypes = Type.getArgumentTypes(desc)
-                val parameterBaseIndex = if (access and ACC_STATIC == 0) 1 else 0
 
                 if (!tracepoint.isEnabled) {
                     return methodWriter
@@ -189,6 +188,7 @@ class TracerMethodTransformer: ClassFileTransformer {
                         mv.visitLdcInsn(arraySize)
                         mv.visitTypeInsn(ANEWARRAY, Type.getInternalName(Any::class.java))
 
+                        var parameterBaseIndex = if (access and Opcodes.ACC_STATIC == 0) 1 else 0
                         var storeIndex = arraySize - 1
                         for ((parameterIndex, parameterType) in parameterTypes.withIndex()) {
                             if (parameters and (1 shl parameterIndex) != 0) {
@@ -198,6 +198,10 @@ class TracerMethodTransformer: ClassFileTransformer {
                                 loadArg(parameterBaseIndex + parameterIndex, parameterType)
                                 mv.visitInsn(AASTORE)
                                 storeIndex--
+                            }
+                            if (parameterType == Type.LONG_TYPE || parameterType == Type.DOUBLE_TYPE) {
+                                // These parameter types take up an extra stack slot.
+                                ++parameterBaseIndex
                             }
                         }
                     }
