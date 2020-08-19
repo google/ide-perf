@@ -17,11 +17,13 @@
 package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.sample.Sample
+import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import org.junit.Test
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
+import kotlin.system.measureNanoTime
 
 /**
  * This is an integration test for the method tracer.
@@ -166,6 +168,57 @@ class TracerIntegrationTest : BasePlatformTestCase() {
                         Sample.paramDouble(0.0, 8.0) [1]
             """.trimIndent()
         )
+    }
+
+    /**
+     * This tries to compute a rough estimate of tracing overhead.
+     * It is not very scientific, and for example does not utilize the JMH framework.
+     * Still, it should give us some reasonable numbers and let us compare across platforms.
+     */
+    @Test
+    fun testTracingOverhead() {
+        val benchmarkStartMs = System.currentTimeMillis()
+        val n = 1_000_000
+
+        fun estimateNsPerOp(op: () -> Unit): Long {
+            val totalTimeNs = measureNanoTime { repeat(n) { op() } }
+            return totalTimeNs / n
+        }
+
+        val baselineTimeNs = estimateNsPerOp { Sample.a() }
+
+        // Trace all methods.
+        for (method in listOf(Sample::a, Sample::b, Sample::c, Sample::d, Sample::e)) {
+            tracer.handleCommandFromTest("trace ${format(method)}")
+        }
+        val timeNs = estimateNsPerOp { Sample.a() }
+        assertCallTreeStructure(
+            """
+            [root] [0]
+              Sample.a [$n]
+                Sample.b [$n]
+                  Sample.c [${2*n}]
+                    Sample.d [${2*n}]
+                      Sample.d [${2*n}]
+                        Sample.e [${2*n}]
+                Sample.d [$n]
+                  Sample.e [$n]
+            """.trimIndent()
+        )
+
+        val callTree = tracer.getCallTreeSnapshot()
+        val totalCalls = callTree.allNodesInSubtree().sumByLong { it.callCount }
+        val callsPerOp = totalCalls / n
+        check(callsPerOp == 12L)
+
+        val baselineTimeNsPerCall = baselineTimeNs / callsPerOp
+        val timeNsPerCall = timeNs / callsPerOp
+
+        println("==========")
+        println("Single-thread overhead without tracing: $baselineTimeNsPerCall ns per call")
+        println("Single-thread overhead with tracing: $timeNsPerCall ns per call")
+        println("Total time to run benchmark: ${System.currentTimeMillis() - benchmarkStartMs} ms")
+        println("==========")
     }
 
     private fun format(method: KFunction<*>): String {

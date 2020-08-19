@@ -23,6 +23,15 @@ interface CallTree {
     val wallTime: Long
     val maxWallTime: Long
     val children: Map<MethodCall, CallTree>
+
+    fun allNodesInSubtree(): Sequence<CallTree> {
+        return sequence {
+            yield(this@CallTree)
+            for (child in children.values) {
+                yieldAll(child.allNodesInSubtree())
+            }
+        }
+    }
 }
 
 /** A mutable call tree implementation. */
