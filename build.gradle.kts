@@ -88,6 +88,7 @@ tasks.runIde {
 
 tasks.test {
     testLogging.exceptionFormat = FULL
+    testLogging.showStandardStreams = isCI
     enableAgent(atStartup = true) // TODO: Ideally we would also test loading the agent on demand.
 }
 
