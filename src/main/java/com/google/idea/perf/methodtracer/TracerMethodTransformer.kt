@@ -189,7 +189,7 @@ class TracerMethodTransformer: ClassFileTransformer {
                         mv.visitTypeInsn(ANEWARRAY, Type.getInternalName(Any::class.java))
 
                         var parameterBaseIndex = if (access and Opcodes.ACC_STATIC == 0) 1 else 0
-                        var storeIndex = arraySize - 1
+                        var storeIndex = 0
                         for ((parameterIndex, parameterType) in parameterTypes.withIndex()) {
                             if (parameters and (1 shl parameterIndex) != 0) {
                                 // args[storeIndex] = loadArg(parameterIndex)
@@ -197,7 +197,7 @@ class TracerMethodTransformer: ClassFileTransformer {
                                 mv.visitLdcInsn(storeIndex)
                                 loadArg(parameterBaseIndex + parameterIndex, parameterType)
                                 mv.visitInsn(AASTORE)
-                                storeIndex--
+                                ++storeIndex
                             }
                             if (parameterType == Type.LONG_TYPE || parameterType == Type.DOUBLE_TYPE) {
                                 // These parameter types take up an extra stack slot.
