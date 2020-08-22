@@ -20,6 +20,7 @@ import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.CommandCompletionProvider
 import com.google.idea.perf.TracerController
 import com.google.idea.perf.util.fuzzyMatch
+import com.google.idea.perf.util.shouldHideClassFromCompletionResults
 import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
@@ -189,15 +190,9 @@ class CachedValueTracerController(
         "${element.className}#${element.methodName}(${element.lineNumber})"
 
     private fun reloadAutocompleteClasses() {
-        val instrumentation = AgentLoader.instrumentation
-
-        if (instrumentation != null) {
-            predictor.setClasses(instrumentation.allLoadedClasses.filter {
-                it.canonicalName != null
-            }.sortedBy { it.canonicalName })
-        }
-        else {
-            LOG.warn("Cannot reload classes.")
-        }
+        val instrumentation = AgentLoader.instrumentation ?: return
+        val allClasses = instrumentation.allLoadedClasses
+        val visibleClasses = allClasses.filterNot(::shouldHideClassFromCompletionResults)
+        predictor.setClasses(visibleClasses)
     }
 }

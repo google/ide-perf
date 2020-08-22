@@ -27,7 +27,7 @@ class CachedValueTracerCommandPredictor: CommandPredictor {
     private val searcher = FuzzySearcher()
 
     fun setClasses(classes: Collection<Class<*>>) {
-        classNames = classes.mapNotNull { it.canonicalName }
+        classNames = classes.map { it.name }
     }
 
     override fun predict(text: String, offset: Int): List<String> {

@@ -28,7 +28,7 @@ class MethodTracerCommandPredictor: CommandPredictor {
     private val searcher = FuzzySearcher()
 
     fun setClasses(classes: Collection<Class<*>>) {
-        classNames = classes.mapNotNull { it.canonicalName }
+        classNames = classes.map { it.name }
     }
 
     override fun predict(text: String, offset: Int): List<String> {
@@ -80,7 +80,7 @@ class MethodTracerCommandPredictor: CommandPredictor {
 
     private fun predictMethodToken(className: String, token: String): List<String> {
         val clazz = AgentLoader.instrumentation?.allLoadedClasses?.firstOrNull {
-            it.canonicalName == className
+            it.name == className
         }
         val methodNames = clazz?.methods?.map { it.name.substringAfter('$') }
         if (methodNames != null) {
