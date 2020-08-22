@@ -36,3 +36,20 @@ fun formatNum(num: Long, unit: String): String = "${formatNum(num)} $unit"
 fun formatNum(num: Double): String = formatter.format(num)
 fun formatNsInMs(ns: Long): String = formatNum(ns / 1_000_000, "ms")
 fun formatMsInSeconds(ms: Long): String = formatNum(ms / 1_000, "s")
+
+fun shouldHideClassFromCompletionResults(c: Class<*>): Boolean {
+    return try {
+        c.isArray ||
+                c.isAnonymousClass ||
+                c.isLocalClass ||
+                c.isSynthetic ||
+                c.name.startsWith("java.lang.invoke.") ||
+                c.name.startsWith("com.sun.proxy.") ||
+                c.name.startsWith("jdk.internal.reflect.") ||
+                c.name.contains("$$")
+    } catch (e: Throwable) {
+        // We are inspecting arbitrary user classes, so it is possible to hit exceptions
+        // like NoClassDefFoundError when calling methods like isAnonymousClass().
+        false
+    }
+}
