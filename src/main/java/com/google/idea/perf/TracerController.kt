@@ -16,6 +16,7 @@
 
 package com.google.idea.perf
 
+import com.google.idea.perf.util.ExecutorWithExceptionLogging
 import com.google.idea.perf.util.formatNsInMs
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
@@ -25,7 +26,6 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
 import com.intellij.openapi.util.Computable
-import com.intellij.util.concurrency.AppExecutorUtil
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -40,7 +40,7 @@ abstract class TracerController(
 
     // For simplicity we run all tasks on a single-thread executor.
     // Most data structures below are assumed to be accessed only from this executor.
-    protected val executor = AppExecutorUtil.createBoundedScheduledExecutorService(name, 1)
+    protected val executor = ExecutorWithExceptionLogging(name, 1)
     private val dataRefreshLoopStarted = AtomicBoolean()
 
     override fun dispose() {
@@ -59,21 +59,15 @@ abstract class TracerController(
     abstract fun onControllerInitialize()
 
     protected fun dataRefreshLoop() {
-        try {
-            val startTime = System.nanoTime()
+        val startTime = System.nanoTime()
 
-            if (updateModel()) {
-                updateUi()
-            }
+        if (updateModel()) {
+            updateUi()
+        }
 
-            val endTime = System.nanoTime()
-            val elapsedNanos = endTime - startTime
-            updateRefreshTimeUi(elapsedNanos)
-        }
-        catch (ex: Exception) {
-            LOG.error("Exception was caught while tracing", ex)
-            throw ex
-        }
+        val endTime = System.nanoTime()
+        val elapsedNanos = endTime - startTime
+        updateRefreshTimeUi(elapsedNanos)
     }
 
     protected abstract fun updateModel(): Boolean
