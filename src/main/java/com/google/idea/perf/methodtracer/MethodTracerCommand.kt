@@ -215,8 +215,8 @@ private object CloseBracketSymbol: Token()
 
 private fun tokenize(text: CharSequence): List<Token> {
     fun Char.isIdentifierChar() =
-        this in 'A'..'Z' || this in 'a'..'z' || this in '0'..'9' ||
-                this == '.' || this == '-' || this == '_' || this == '$' || this == '*'
+        this in 'A'..'Z' || this in 'a'..'z' || this in '0'..'9' || this == '.' || this == '-' ||
+                this == '_' || this == '$' || this == '*' || this == '<' || this == '>'
 
     val tokens = mutableListOf<Token>()
     var offset = 0
@@ -231,7 +231,7 @@ private fun tokenize(text: CharSequence): List<Token> {
         }
 
         when (text[offset]) {
-            in 'A'..'Z', in 'a'..'z', '.', '-', '_', '$', '*' -> {
+            in 'A'..'Z', in 'a'..'z', '.', '-', '_', '$', '*', '<', '>' -> {
                 val startOffset = offset
                 while (offset < text.length && text[offset].isIdentifierChar()) {
                     offset++

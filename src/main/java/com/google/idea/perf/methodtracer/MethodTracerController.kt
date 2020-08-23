@@ -17,9 +17,7 @@
 package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.AgentLoader
-import com.google.idea.perf.CommandCompletionProvider
 import com.google.idea.perf.TracerController
-import com.google.idea.perf.util.shouldHideClassFromCompletionResults
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
@@ -34,7 +32,6 @@ import java.io.File
 import java.io.IOException
 import java.lang.instrument.UnmodifiableClassException
 import java.lang.reflect.Method
-import java.util.concurrent.TimeUnit.SECONDS
 import javax.imageio.ImageIO
 import kotlin.reflect.jvm.javaMethod
 
@@ -58,24 +55,18 @@ class MethodTracerController(
     parentDisposable: Disposable
 ): TracerController("Method Tracer", view), Disposable {
     companion object {
-        const val AUTOCOMPLETE_RELOAD_INTERVAL = 120L
         private var instrumentationInitialized = false
     }
 
     private var callTree = MutableCallTree(MethodCall.ROOT)
-    private val predictor = MethodTracerCommandPredictor()
-    val autocomplete = CommandCompletionProvider(predictor)
+    val autocomplete = MethodTracerCompletionProvider()
 
     init {
         CallTreeManager.collectAndReset() // Clear trees accumulated while the tracer was closed.
         Disposer.register(parentDisposable, this)
     }
 
-    override fun onControllerInitialize() {
-        executor.scheduleWithFixedDelay(
-            this::reloadAutocompleteClasses, 0L, AUTOCOMPLETE_RELOAD_INTERVAL, SECONDS
-        )
-    }
+    override fun onControllerInitialize() {}
 
     override fun updateModel(): Boolean {
         val treeDeltas = CallTreeManager.collectAndReset()
@@ -293,13 +284,6 @@ class MethodTracerController(
                 LOG.warn("Failed to write png to $path", e)
             }
         }
-    }
-
-    private fun reloadAutocompleteClasses() {
-        val instrumentation = AgentLoader.instrumentation ?: return
-        val allClasses = instrumentation.allLoadedClasses
-        val visibleClasses = allClasses.filterNot(::shouldHideClassFromCompletionResults)
-        predictor.setClasses(visibleClasses)
     }
 
     @TestOnly
