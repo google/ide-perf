@@ -18,12 +18,7 @@ package com.google.idea.perf.util
 
 import com.intellij.util.containers.SLRUMap
 
-class MatchResult(val source: String, val formattedSource: String) {
-    companion object {
-        const val MATCHED_RANGE_OPEN_TOKEN = '{'
-        const val MATCHED_RANGE_CLOSE_TOKEN = '}'
-    }
-}
+class MatchResult(val source: String)
 
 class FuzzySearcher {
     private val impl = FuzzySearcherImpl()
@@ -41,7 +36,7 @@ class FuzzySearcher {
             results = results.take(maxResults)
         }
 
-        return results.map { getMatchResult(it) }
+        return results.map { MatchResult(it.source) }
     }
 }
 
@@ -56,32 +51,7 @@ fun fuzzyMatch(source: String, pattern: String): MatchResult? {
     if (details.matchedChars.size < pattern.length) {
         return null
     }
-    return getMatchResult(details)
-}
-
-private fun getMatchResult(details: MatchDetails): MatchResult {
-    val builder = StringBuilder(details.source.length * 2)
-    var isMatched = false
-    var isPrevMatched = isMatched
-
-    for ((index, char) in details.source.withIndex()) {
-        isMatched = details.matchedChars.contains(index)
-        if (!isPrevMatched && isMatched) {
-            builder.append(MatchResult.MATCHED_RANGE_OPEN_TOKEN)
-        }
-        else if (isPrevMatched && !isMatched) {
-            builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
-        }
-
-        builder.append(char)
-        isPrevMatched = isMatched
-    }
-
-    if (isPrevMatched) {
-        builder.append(MatchResult.MATCHED_RANGE_CLOSE_TOKEN)
-    }
-
-    return MatchResult(details.source, builder.toString())
+    return MatchResult(details.source)
 }
 
 /*
