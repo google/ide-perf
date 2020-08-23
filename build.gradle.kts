@@ -119,6 +119,8 @@ dependencies {
     compileOnly("org.jetbrains.kotlin:kotlin-reflect")
 
     testImplementation("junit:junit:4.12")
+    testImplementation("com.google.truth:truth:1.0.1")
+    testImplementation("com.google.truth.extensions:truth-java8-extension:1.0.1")
 }
 
 fun <T : Task> configureEach(vararg taskProviders: TaskProvider<T>, action: T.() -> Unit) {
