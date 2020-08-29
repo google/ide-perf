@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.util
 
+import com.intellij.openapi.diagnostic.ControlFlowException
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.util.concurrency.AppExecutorUtil
 import java.util.concurrent.Future
@@ -48,14 +49,15 @@ class ExecutorWithExceptionLogging(name: String, maxThreads: Int) {
         return { doWithLogging(task) }
     }
 
-    private inline fun <T> doWithLogging(task: () -> T): T {
+    private fun <T> doWithLogging(task: () -> T): T {
         try {
             return task()
         }
         catch (e: Throwable) {
-            // Log the exception, because ScheduledExecutorService will silently suppresses it!
-            val logger = Logger.getInstance(ExecutorWithExceptionLogging::class.java)
-            logger.error(e)
+            if (e !is ControlFlowException) {
+                // Log the exception, because ScheduledExecutorService will silently suppresses it!
+                Logger.getInstance(ExecutorWithExceptionLogging::class.java).error(e)
+            }
             throw e
         }
     }
