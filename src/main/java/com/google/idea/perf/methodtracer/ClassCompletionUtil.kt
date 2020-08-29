@@ -160,7 +160,7 @@ object ClassCompletionUtil {
             val editor = context.editor
             editor.document.replaceString(context.startOffset, context.tailOffset, fqName)
             EditorModificationUtil.insertStringAtCaret(editor, "#")
-            AutoPopupController.getInstance(context.project).autoPopupMemberLookup(editor, null)
+            AutoPopupController.getInstance(context.project).scheduleAutoPopup(editor)
         }
 
         override fun renderElement(presentation: LookupElementPresentation) {
