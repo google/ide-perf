@@ -177,6 +177,7 @@ object ClassCompletionUtil {
                 c.isAnonymousClass ||
                 c.isLocalClass ||
                 c.isSynthetic ||
+                c.simpleName.isBlank() ||
                 c.fqName.startsWith("java.lang.invoke.") ||
                 c.fqName.startsWith("com.sun.proxy.") ||
                 c.fqName.startsWith("jdk.internal.reflect.") ||
