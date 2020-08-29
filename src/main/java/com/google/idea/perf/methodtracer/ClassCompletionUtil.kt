@@ -18,6 +18,7 @@ package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.AgentLoader
 import com.intellij.codeInsight.AutoPopupController
+import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.InsertionContext
 import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.LookupElement
@@ -52,7 +53,7 @@ import javax.swing.Icon
 object ClassCompletionUtil {
 
     /** Creates auto-completion results for all loaded classes and their packages. */
-    fun addLookupElementsForLoadedClasses(result: MutableList<LookupElement>) {
+    fun addLookupElementsForLoadedClasses(result: CompletionResultSet) {
         val instrumentation = AgentLoader.instrumentation ?: return
         val seenPackages = mutableSetOf<String>()
 
@@ -62,20 +63,20 @@ object ClassCompletionUtil {
 
             // Class name completion: com.example.Class
             if (!shouldHideClassFromCompletionResults(classInfo)) {
-                result.add(createClassLookupElement(classInfo))
+                result.addElement(createClassLookupElement(classInfo))
             }
 
             // Package wildcard completion: com.example.*
             val packageName = classInfo.packageName
             if (packageName.isNotEmpty() && seenPackages.add(packageName)) {
                 val lookup = LookupElementBuilder.create("$packageName.*").withIcon(PACKAGE_ICON)
-                result.add(PrioritizedLookupElement.withPriority(lookup, 1.0))
+                result.addElement(PrioritizedLookupElement.withPriority(lookup, 1.0))
             }
         }
     }
 
     /** Creates auto-completion results for all methods in the given class. */
-    fun addLookupElementsForMethods(className: String, result: MutableList<LookupElement>) {
+    fun addLookupElementsForMethods(className: String, result: CompletionResultSet) {
         val instrumentation = AgentLoader.instrumentation ?: return
         val allClasses = instrumentation.allLoadedClasses
         val clazz = allClasses.firstOrNull { it.name == className } ?: return
@@ -86,12 +87,12 @@ object ClassCompletionUtil {
                 Modifier.isAbstract(method.modifiers) -> ABSTRACT_METHOD_ICON
                 else -> METHOD_ICON
             }
-            result.add(LookupElementBuilder.create(method.name).withIcon(icon))
+            result.addElement(LookupElementBuilder.create(method.name).withIcon(icon))
         }
 
         // Constructors.
         if (clazz.constructors.isNotEmpty()) {
-            result.add(LookupElementBuilder.create(CONSTRUCTOR_NAME).withIcon(METHOD_ICON))
+            result.addElement(LookupElementBuilder.create(CONSTRUCTOR_NAME).withIcon(METHOD_ICON))
         }
     }
 

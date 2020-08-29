@@ -49,13 +49,6 @@ class MethodTracerCompletionProvider : TextCompletionProvider, DumbAware {
         prefix: String,
         result: CompletionResultSet
     ) {
-        result.addAllElements(collectLookupElements(parameters))
-        result.stopHere()
-    }
-
-    private fun collectLookupElements(parameters: CompletionParameters): List<LookupElement> {
-        val result = mutableListOf<LookupElement>()
-
         val textBeforeCaret = parameters.editor.document.text.substring(0, parameters.offset)
         val command = parseMethodTracerCommand(textBeforeCaret)
 
@@ -71,18 +64,19 @@ class MethodTracerCompletionProvider : TextCompletionProvider, DumbAware {
         when (tokenIndex) {
             0 -> {
                 val addSpace = AddSpaceInsertHandler.INSTANCE
-                result.add(createLookup("clear"))
-                result.add(createLookup("reset"))
-                result.add(createLookup("trace").withInsertHandler(addSpace))
-                result.add(createLookup("untrace").withInsertHandler(addSpace))
+                result.addElement(createLookup("clear"))
+                result.addElement(createLookup("reset"))
+                result.addElement(createLookup("trace").withInsertHandler(addSpace))
+                result.addElement(createLookup("untrace").withInsertHandler(addSpace))
             }
             1 -> {
                 if (command is MethodTracerCommand.Trace) {
                     if (command.enable) {
                         ClassCompletionUtil.addLookupElementsForLoadedClasses(result)
                     } else {
-                        val classFqNames = TracerConfig.getTracedClassNames()
-                        classFqNames.mapTo(result, ClassCompletionUtil::createClassLookupElement)
+                        for (fqName in TracerConfig.getTracedClassNames()) {
+                            result.addElement(ClassCompletionUtil.createClassLookupElement(fqName))
+                        }
                     }
                 }
             }
@@ -91,7 +85,8 @@ class MethodTracerCompletionProvider : TextCompletionProvider, DumbAware {
                     val target = command.target
                     if (target is TraceTarget.Method && target.methodName != null) {
                         ClassCompletionUtil.addLookupElementsForMethods(target.className, result)
-                        result.add(ClassCompletionUtil.WildcardLookupElement.withPriority(1.0))
+                        val wildcard = ClassCompletionUtil.WildcardLookupElement.withPriority(1.0)
+                        result.addElement(wildcard)
                     } else {
                         ClassCompletionUtil.addLookupElementsForLoadedClasses(result)
                     }
@@ -99,7 +94,7 @@ class MethodTracerCompletionProvider : TextCompletionProvider, DumbAware {
             }
         }
 
-        return result
+        result.stopHere()
     }
 
     private fun createLookup(string: String): LookupElementBuilder {
