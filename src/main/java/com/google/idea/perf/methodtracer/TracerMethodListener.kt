@@ -19,7 +19,7 @@ package com.google.idea.perf.methodtracer
 /** Dispatches method entry/exit events to the [CallTreeManager]. */
 class TracerMethodListener: MethodTracerHook {
 
-    override fun enter(methodId: Int, args: Array<Any>?) {
+    override fun enter(methodId: Int, args: Array<Any?>?) {
         var tracepoint = TracerConfig.getMethodTracepoint(methodId)
         if (args != null) {
             val argStrings = Array(args.size) { args[it].toString() }

@@ -26,7 +26,7 @@ object Sample {
     fun e() {}
 
     fun paramString(x: String) { paramBool(true) }
-    fun paramBool(x: Boolean) { paramByte(1); paramInt(4) }
+    fun paramBool(x: Boolean) { paramByte(1); paramInt(4); paramNull(null) }
     fun paramByte(x: Byte) { paramChar('2') }
     fun paramChar(x: Char) { paramShort(3); paramShort(3) }
     fun paramShort(x: Short) {}
@@ -34,4 +34,5 @@ object Sample {
     fun paramLong(x: Long) { paramFloat(0.0f, 6.0f) }
     fun paramFloat(ignored: Float, x: Float) { paramDouble(0.0, 7.0); paramDouble(0.0, 8.0) }
     fun paramDouble(ignored: Double, x: Double) { if (x < 7.5) paramDouble(0.0, 8.0) }
+    fun paramNull(any: Any?) {}
 }
