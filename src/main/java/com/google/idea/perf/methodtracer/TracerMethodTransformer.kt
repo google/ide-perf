@@ -105,7 +105,7 @@ class TracerMethodTransformer: ClassFileTransformer {
             ): MethodVisitor? {
                 var methodWriter = cv.visitMethod(access, method, desc, signature, exceptions)
                 val id = TracerConfig.getMethodId(className, method, desc) ?: return methodWriter
-                val tracepoint = TracerConfig.getTracepoint(id)
+                val tracepoint = TracerConfig.getMethodTracepoint(id)
                 val parameters = tracepoint.parameters.get()
                 val parameterTypes = Type.getArgumentTypes(desc)
 
@@ -220,7 +220,6 @@ class TracerMethodTransformer: ClassFileTransformer {
                     }
 
                     private fun invokeLeave() {
-                        mv.visitLdcInsn(id)
                         mv.visitMethodInsn(
                             INVOKESTATIC,
                             TRAMPOLINE_CLASS_NAME,

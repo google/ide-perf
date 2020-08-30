@@ -35,8 +35,8 @@ public final class MethodTracerTrampoline {
         hook.enter(methodId, args);
     }
 
-    public static void leave(int methodId) {
-        hook.leave(methodId);
+    public static void leave() {
+        hook.leave();
     }
 
     private static final class MethodTracerHookStub implements MethodTracerHook {
@@ -44,6 +44,6 @@ public final class MethodTracerTrampoline {
         public void enter(int methodId, Object[] args) {}
 
         @Override
-        public void leave(int methodId) {}
+        public void leave() {}
     }
 }

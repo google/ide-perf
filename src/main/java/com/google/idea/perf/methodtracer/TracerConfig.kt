@@ -119,7 +119,7 @@ object TracerConfig {
             }
 
             if (methodId != null) {
-                val tracepoint = getTracepoint(methodId)
+                val tracepoint = getMethodTracepoint(methodId)
                 tracepoint.parameters.set(parameterBits)
 
                 if (enable) {
@@ -171,7 +171,7 @@ object TracerConfig {
                 }
 
                 if (methodRegex.matcher(methodName).matches()) {
-                    val tracepoint = getTracepoint(methodId)
+                    val tracepoint = getMethodTracepoint(methodId)
                     tracepoint.parameters.set(parameterBits)
                     if (enable) {
                         tracepoint.setFlags(flags)
@@ -300,8 +300,8 @@ object TracerConfig {
             val methodSignature = "$methodName$methodDesc"
             val existingId = classConfig.methodIds[methodSignature]
             if (existingId != null) {
-                getTracepoint(existingId).flags.set(properties.flags)
-                getTracepoint(existingId).parameters.set(properties.parameters)
+                getMethodTracepoint(existingId).flags.set(properties.flags)
+                getMethodTracepoint(existingId).parameters.set(properties.parameters)
                 return existingId
             }
 
@@ -312,10 +312,7 @@ object TracerConfig {
         }
     }
 
-    fun getTracepoint(methodId: Int): Tracepoint = tracepoints.get(methodId)
-
-    fun getMethodCall(methodId: Int, arguments: Array<Any>?) =
-        MethodCall(getTracepoint(methodId), arguments?.joinToString(", "))
+    fun getMethodTracepoint(methodId: Int): Tracepoint = tracepoints.get(methodId)
 
     private fun createTracepoint(
         classJvmName: String,
@@ -323,11 +320,10 @@ object TracerConfig {
         methodDesc: String,
         properties: TracepointProperties
     ): Tracepoint {
-        val classShortName = classJvmName.substringAfterLast('/')
-        val className = classJvmName.replace('/', '.')
-        return Tracepoint(
-            displayName = "$classShortName.$methodName()",
-            description = "$className#$methodName$methodDesc",
+        return MethodTracepoint(
+            classFqName = classJvmName.replace('/', '.'),
+            methodName = methodName,
+            methodDesc = methodDesc,
             flags = properties.flags,
             parameters = properties.parameters
         )

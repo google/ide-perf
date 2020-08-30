@@ -34,19 +34,19 @@ object TreeAlgorithms {
         val ancestors = mutableSetOf<Tracepoint>()
 
         fun dfs(node: CallTree) {
-            val nonRecursive = node.methodCall.tracepoint !in ancestors
-            val stats = allStats.getOrPut(node.methodCall.tracepoint) { TracepointStats(node.methodCall.tracepoint) }
+            val nonRecursive = node.tracepoint !in ancestors
+            val stats = allStats.getOrPut(node.tracepoint) { TracepointStats(node.tracepoint) }
             stats.callCount += node.callCount
             if (nonRecursive) {
                 stats.wallTime += node.wallTime
                 stats.maxWallTime = maxOf(stats.maxWallTime, node.maxWallTime)
-                ancestors.add(node.methodCall.tracepoint)
+                ancestors.add(node.tracepoint)
             }
             for (child in node.children.values) {
                 dfs(child)
             }
             if (nonRecursive) {
-                ancestors.remove(node.methodCall.tracepoint)
+                ancestors.remove(node.tracepoint)
             }
         }
 

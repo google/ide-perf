@@ -25,7 +25,6 @@ import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.textCompletion.TextFieldWithCompletion
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
@@ -89,8 +88,6 @@ class MethodTracerView(parentDisposable: Disposable): TracerView() {
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel
     val listView = TracepointTable(TracepointTableModel())
-    private val tabs: JBTabbedPane
-    private val argSetStatViews = LinkedHashMap<Tracepoint, ArgSetTable>()
 
     init {
         preferredSize = Dimension(500, 500) // Only applies to first open.
@@ -112,13 +109,8 @@ class MethodTracerView(parentDisposable: Disposable): TracerView() {
         }
         add(progressBar)
 
-        // Tabs
-        tabs = JBTabbedPane()
-        tabs.tabLayoutPolicy = JBTabbedPane.SCROLL_TAB_LAYOUT
-        add(tabs)
-
         // Call list.
-        tabs.addTab("All", JBScrollPane(listView))
+        add(JBScrollPane(listView))
 
         // Render time label.
         refreshTimeLabel = JBLabel().apply {
@@ -131,23 +123,5 @@ class MethodTracerView(parentDisposable: Disposable): TracerView() {
 
         // Start trace data collection.
         controller.startDataRefreshLoop()
-    }
-
-    fun updateTabs(argStatMap: ArgStatMap) {
-        for ((tracepoint, stats) in argStatMap.tracepoints) {
-            val table = argSetStatViews.getOrPut(tracepoint) { ArgSetTable(ArgSetTableModel()) }
-            table.setStats(stats)
-
-            if (tabs.indexOfTab(tracepoint.displayName) == -1) {
-                tabs.addTab(tracepoint.displayName, JBScrollPane(table))
-            }
-        }
-
-        for (i in tabs.tabCount - 1 downTo 1) {
-            val title = tabs.getTitleAt(i)
-            if (argStatMap.tracepoints.none { it.key.displayName == title }) {
-                tabs.removeTabAt(i)
-            }
-        }
     }
 }
