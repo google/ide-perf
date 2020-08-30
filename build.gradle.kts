@@ -19,7 +19,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 plugins {
     id("java")
     id("org.jetbrains.intellij").version("0.4.18")
-    id("org.jetbrains.kotlin.jvm").version("1.3.71")
+    id("org.jetbrains.kotlin.jvm").version("1.4.0")
 }
 
 group = "com.google.idea.perf"
@@ -34,8 +34,12 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
+val kotlinStdlibVersion = "1.3.70" // Should match the version bundled with IDEA.
+val kotlinApiVersion = kotlinStdlibVersion.substringBeforeLast('.')
+
 configureEach(tasks.compileKotlin, tasks.compileTestKotlin) {
     kotlinOptions {
+        apiVersion = kotlinApiVersion
         jvmTarget = "11"
         freeCompilerArgs = listOf("-Xjvm-default=enable")
     }
@@ -104,8 +108,6 @@ fun JavaForkOptions.enableAgent(atStartup: Boolean) {
     }
 }
 
-val kotlinVersion = "1.3.70" // Should match the version bundled with IDEA.
-
 dependencies {
     // Using 'compileOnly' because the agent is loaded in the boot classpath.
     compileOnly(project(":agent"))
@@ -118,8 +120,10 @@ dependencies {
     // Add 'compileOnly' dependencies to get sources for certain IDEA dependencies.
     // This is a workaround for https://github.com/JetBrains/gradle-intellij-plugin/issues/264.
     // If you add something here, update the 'checkIdeaDependencyVersions' task as well.
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
-    compileOnly("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinStdlibVersion")
+    compileOnly("org.jetbrains.kotlin:kotlin-reflect:$kotlinStdlibVersion")
+    testCompileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinStdlibVersion")
+    testCompileOnly("org.jetbrains.kotlin:kotlin-reflect:$kotlinStdlibVersion")
 
     testImplementation("junit:junit:4.12")
     testImplementation("com.google.truth:truth:1.0.1")
@@ -154,7 +158,8 @@ val checkIdeaDependencyVersions = tasks.register("checkIdeaDependencyVersions") 
             }
         }
 
-        checkIdeaDependencyVersion("kotlin-stdlib", kotlinVersion)
+        checkIdeaDependencyVersion("kotlin-stdlib", kotlinStdlibVersion)
+        checkIdeaDependencyVersion("kotlin-reflect", kotlinStdlibVersion)
     }
 }
 
