@@ -28,8 +28,8 @@ import kotlin.system.measureNanoTime
 /**
  * This is an integration test for the method tracer.
  *
- * It creates a real instance of [MethodTracerController], issues tracing commands,
- * and validates the state of the call tree. It does not test the UI.
+ * It creates an instance of [MethodTracerController], issues tracing commands for real
+ * classes ([Sample]), and validates the state of the call tree after some method calls.
  */
 class TracerIntegrationTest : BasePlatformTestCase() {
     private lateinit var tracer: MethodTracerController
@@ -145,7 +145,7 @@ class TracerIntegrationTest : BasePlatformTestCase() {
     fun testParameterTracing() {
         val paramMethods1 = listOf(
             Sample::paramString, Sample::paramBool, Sample::paramByte, Sample::paramChar,
-            Sample::paramShort, Sample::paramInt, Sample::paramLong
+            Sample::paramShort, Sample::paramInt, Sample::paramLong, Sample::paramNull
         )
         val paramMethods2 = listOf(Sample::paramFloat, Sample::paramDouble)
         for (method in paramMethods1) tracer.handleCommandFromTest("trace ${format(method)}[0]")
@@ -166,6 +166,7 @@ class TracerIntegrationTest : BasePlatformTestCase() {
                         Sample.paramDouble: 0.0, 7.0 [1]
                           Sample.paramDouble: 0.0, 8.0 [1]
                         Sample.paramDouble: 0.0, 8.0 [1]
+                  Sample.paramNull: null [1]
             """.trimIndent()
         )
     }
