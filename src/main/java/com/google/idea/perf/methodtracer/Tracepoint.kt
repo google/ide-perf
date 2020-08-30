@@ -16,6 +16,8 @@
 
 package com.google.idea.perf.methodtracer
 
+import com.google.idea.perf.methodtracer.TracepointFlags.TRACE_ALL
+import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
 object TracepointFlags {
@@ -26,32 +28,11 @@ object TracepointFlags {
 }
 
 /** Represents a method (usually) for which we are gathering call counts and timing information. */
-class Tracepoint(
-    val displayName: String,
-    val description: String? = null,
-    flags: Int = TracepointFlags.TRACE_ALL,
-    parameters: Int = 0
-) {
+interface Tracepoint {
+    val displayName: String
+    val description: String
     val flags: AtomicInteger
     val parameters: AtomicInteger
-
-    companion object {
-        /** A special tracepoint representing the root of a call tree. */
-        val ROOT = Tracepoint("[root]")
-    }
-
-    init {
-        check((flags and TracepointFlags.MASK.inv()) == 0) {
-            "Invalid tracepoint flags."
-        }
-
-        this.flags = AtomicInteger(flags)
-        this.parameters = AtomicInteger(parameters)
-    }
-
-    fun hasFlags(flags: Int): Boolean {
-        return (this.flags.get() and flags) != 0
-    }
 
     fun setFlags(flags: Int) {
         this.flags.updateAndGet { it or flags }
@@ -62,7 +43,69 @@ class Tracepoint(
     }
 
     val isEnabled: Boolean
-        get() = (this.flags.get() and TracepointFlags.TRACE_ALL) != 0
+        get() = (this.flags.get() and TRACE_ALL) != 0
+
+    companion object {
+        val ROOT = SimpleTracepoint("[root]", "the synthetic root of the call tree")
+    }
+}
+
+/** A basic implementation of [Tracepoint] useful for synthetic tracepoints and tests. */
+class SimpleTracepoint(
+    override val displayName: String,
+    override val description: String = "[no description]"
+) : Tracepoint {
+    override val flags = AtomicInteger(TRACE_ALL)
+    override val parameters = AtomicInteger()
+    override fun toString(): String = displayName
+}
+
+/** A [Tracepoint] representing an individual method. */
+class MethodTracepoint(
+    classFqName: String,
+    methodName: String,
+    methodDesc: String,
+    flags: Int = TRACE_ALL,
+    parameters: Int = 0
+) : Tracepoint {
+    override val flags = AtomicInteger(flags)
+    override val parameters = AtomicInteger(parameters)
+    override val displayName = "${classFqName.substringAfterLast('.')}.$methodName"
+    override val description = "$classFqName.$methodName$methodDesc"
+
+    init {
+        check((flags and TracepointFlags.MASK.inv()) == 0) { "invalid tracepoint flags" }
+    }
+
+    // Note: reference equality is sufficient currently because TracerConfig maintains
+    // a single canonical MethodTracepoint per traced method.
+
+    override fun toString(): String = displayName
+}
+
+/**
+ * A [Tracepoint] representing a method call with a specific set of arguments.
+ * Two instances with the same backing [method] and the same [argStrings] are considered equal.
+ */
+class MethodTracepointWithArgs(
+    private val method: Tracepoint,
+    private val argStrings: Array<String>
+) : Tracepoint by method {
+    override val displayName = "${method.displayName}: ${argStrings.joinToString(", ")}"
+
+    override val description get() = buildString {
+        append(method.description)
+        for (arg in argStrings) {
+            append("\n  arg: $arg")
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other !is MethodTracepointWithArgs) return false
+        return method == other.method && argStrings.contentEquals(other.argStrings)
+    }
+
+    override fun hashCode(): Int = Objects.hash(method, argStrings.contentDeepHashCode())
 
     override fun toString(): String = displayName
 }

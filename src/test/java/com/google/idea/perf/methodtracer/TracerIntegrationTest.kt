@@ -155,17 +155,17 @@ class TracerIntegrationTest : BasePlatformTestCase() {
         assertCallTreeStructure(
             """
             [root] [0]
-              Sample.paramString(hello) [1]
-                Sample.paramBool(true) [1]
-                  Sample.paramByte(1) [1]
-                    Sample.paramChar(2) [1]
-                      Sample.paramShort(3) [2]
-                  Sample.paramInt(4) [1]
-                    Sample.paramLong(5) [1]
-                      Sample.paramFloat(0.0, 6.0) [1]
-                        Sample.paramDouble(0.0, 7.0) [1]
-                          Sample.paramDouble(0.0, 8.0) [1]
-                        Sample.paramDouble(0.0, 8.0) [1]
+              Sample.paramString: hello [1]
+                Sample.paramBool: true [1]
+                  Sample.paramByte: 1 [1]
+                    Sample.paramChar: 2 [1]
+                      Sample.paramShort: 3 [2]
+                  Sample.paramInt: 4 [1]
+                    Sample.paramLong: 5 [1]
+                      Sample.paramFloat: 0.0, 6.0 [1]
+                        Sample.paramDouble: 0.0, 7.0 [1]
+                          Sample.paramDouble: 0.0, 8.0 [1]
+                        Sample.paramDouble: 0.0, 8.0 [1]
             """.trimIndent()
         )
     }
@@ -243,13 +243,12 @@ class TracerIntegrationTest : BasePlatformTestCase() {
         if (indentWidth > 0) sb.appendln()
 
         val indent = " ".repeat(indentWidth)
-        val name = callTree.methodCall.tracepoint.displayName
-        val abbreviatedName = name.substringAfter('\$').substringBefore('(')
-        val args = callTree.methodCall.arguments?.let { "($it)" } ?: ""
+        val name = callTree.tracepoint.displayName
+        val abbreviatedName = name.substringAfter('\$')
         val count = callTree.callCount
-        sb.append("$indent$abbreviatedName$args [$count]")
+        sb.append("$indent$abbreviatedName [$count]")
 
-        val children = callTree.children.values.sortedBy { it.methodCall.tracepoint.displayName }
+        val children = callTree.children.values.sortedBy { it.tracepoint.displayName }
         for (child in children) {
             renderCallTree(child, sb, indentWidth + 2)
         }

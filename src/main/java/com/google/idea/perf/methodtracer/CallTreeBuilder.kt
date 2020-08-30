@@ -16,14 +16,12 @@
 
 package com.google.idea.perf.methodtracer
 
-import kotlin.collections.LinkedHashMap
-
 // Things to improve:
 // - Think about the behavior we want for recursive calls.
 // - Keep track of CPU time too by using ManagementFactory.getThreadMXBean().
 // - Consider cheaper alternatives to LinkedHashMap (e.g., use list if few elements).
 // - Consider caching recent call paths since they are likely to be repeated.
-// - Return an object from push() so that we can have better assertions in pop().
+// - Return an object from push() that the caller passes to pop() so that we can assert stack integrity.
 // - Consider logging errors instead of throwing exceptions.
 // - Consider subtracting buildAndReset() overhead from time measurements.
 // - Reduce allocations by keeping old tree nodes around and using a 'dirty' flag.
@@ -32,7 +30,7 @@ import kotlin.collections.LinkedHashMap
 class CallTreeBuilder(
     private val clock: Clock = SystemClock
 ) {
-    private var root = Tree(MethodCall.ROOT, parent = null)
+    private var root = Tree(Tracepoint.ROOT, parent = null)
     private var currentNode = root
 
     init {
@@ -51,29 +49,29 @@ class CallTreeBuilder(
     }
 
     private class Tree(
-        override val methodCall: MethodCall,
+        override val tracepoint: Tracepoint,
         val parent: Tree?
     ): CallTree {
         override var callCount: Long = 0L
         override var wallTime: Long = 0L
         override var maxWallTime: Long = 0L
-        override val children: MutableMap<MethodCall, Tree> = LinkedHashMap()
+        override val children: MutableMap<Tracepoint, Tree> = LinkedHashMap()
 
         var startWallTime: Long = 0
         var continuedWallTime: Long = 0
         var tracepointFlags: Int = 0
 
         init {
-            require(parent != null || methodCall == MethodCall.ROOT) {
+            require(parent != null || tracepoint == Tracepoint.ROOT) {
                 "Only the root node can have a null parent"
             }
         }
     }
 
-    fun push(methodCall: MethodCall) {
+    fun push(tracepoint: Tracepoint) {
         val parent = currentNode
-        val child = parent.children.getOrPut(methodCall) { Tree(methodCall, parent) }
-        val flags = methodCall.tracepoint.flags.get()
+        val child = parent.children.getOrPut(tracepoint) { Tree(tracepoint, parent) }
+        val flags = tracepoint.flags.get()
 
         child.tracepointFlags = flags
 
@@ -90,21 +88,12 @@ class CallTreeBuilder(
         currentNode = child
     }
 
-    fun pop(tracepoint: Tracepoint) {
+    fun pop() {
         val child = currentNode
         val parent = child.parent
 
         check(parent != null) {
             "The root node should never be popped"
-        }
-
-        check(tracepoint == child.methodCall.tracepoint) {
-            """
-            This pop() call does not match the current tracepoint on the stack.
-            Did someone call push() without later calling pop()?
-            Tracepoint passed to pop(): $tracepoint
-            Current tracepoint instance on the stack: ${child.methodCall}
-            """.trimIndent()
         }
 
         if ((child.tracepointFlags and TracepointFlags.TRACE_WALL_TIME) != 0) {
@@ -135,17 +124,17 @@ class CallTreeBuilder(
 
         // Reset to a new tree and copy over the current stack.
         val oldRoot = root
-        root = Tree(MethodCall.ROOT, parent = null)
+        root = Tree(Tracepoint.ROOT, parent = null)
         root.startWallTime = oldRoot.startWallTime
         root.continuedWallTime = oldRoot.continuedWallTime
         root.tracepointFlags = oldRoot.tracepointFlags
         currentNode = root
         for (node in stack.subList(1, stack.size)) {
-            val copy = Tree(node.methodCall, parent = currentNode)
+            val copy = Tree(node.tracepoint, parent = currentNode)
             copy.startWallTime = node.startWallTime
             copy.continuedWallTime = node.continuedWallTime
             copy.tracepointFlags = node.tracepointFlags
-            currentNode.children[node.methodCall] = copy
+            currentNode.children[node.tracepoint] = copy
             currentNode = copy
         }
 
