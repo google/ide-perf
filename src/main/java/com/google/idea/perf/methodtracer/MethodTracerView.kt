@@ -28,12 +28,18 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.textCompletion.TextFieldWithCompletion
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
+import java.awt.AWTEvent
+import java.awt.Dialog
 import java.awt.Dimension
+import java.awt.KeyboardFocusManager
+import java.awt.event.KeyEvent
 import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JProgressBar
+import javax.swing.KeyStroke
 import javax.swing.border.Border
 
 // Things to improve:
@@ -67,17 +73,36 @@ class MethodTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, 
     var view: MethodTracerView? = null; private set
 
     init {
+        init()
         title = "Tracer"
         isModal = false
-        init()
+        val window = peer.window
+        if (window is Dialog) {
+            // Ensure this dialog can be the parent of other dialogs.
+            UIUtil.markAsPossibleOwner(window)
+        }
     }
 
     override fun createCenterPanel(): JComponent {
         view = MethodTracerView(disposable)
         return view!!
     }
+
+    override fun show() {
+        super.show()
+        // Do not let <Esc> close the tracer (see DialogWrapper.registerKeyboardShortcuts).
+        rootPane.unregisterKeyboardAction(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0))
+    }
+
+    override fun doCancelAction(source: AWTEvent) {
+        if (source is KeyEvent && source.keyCode == KeyEvent.VK_ESCAPE) {
+            return // Do not let <Esc> close the tracer (see DialogWrapperPeerImpl.AnCancelAction).
+        }
+        super.doCancelAction(source)
+    }
+
     override fun createContentPaneBorder(): Border? = null // No border.
-    override fun getDimensionServiceKey(): String = "com.google.idea.perf.methodtracer.Tracer"
+    override fun getDimensionServiceKey(): String = "${javaClass.packageName}.Tracer"
     override fun createActions(): Array<Action> = emptyArray()
 }
 
@@ -99,6 +124,9 @@ class MethodTracerView(parentDisposable: Disposable): TracerView() {
             controller.autocomplete, "", true, true, true
         ).apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+            // Prevent accidental focus loss due to <tab> key.
+            setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptySet())
+            setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, emptySet())
         }
         add(commandLine)
 

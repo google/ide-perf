@@ -17,6 +17,7 @@
 package com.google.idea.perf.util
 
 import java.text.NumberFormat
+import kotlin.math.absoluteValue
 
 // A peculiar omission from the Kotlin standard library.
 inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
@@ -36,6 +37,14 @@ fun formatNum(num: Long, unit: String): String = "${formatNum(num)} $unit"
 fun formatNum(num: Double): String = formatter.format(num)
 fun formatNsInMs(ns: Long): String = formatNum(ns / 1_000_000, "ms")
 fun formatMsInSeconds(ms: Long): String = formatNum(ms / 1_000, "s")
+
+fun formatNsInBestUnit(ns: Long): String {
+    return when (ns.absoluteValue) {
+        in 0 until 10_000 -> formatNum(ns, "ns")
+        in 10_000 until 10_000_000 -> formatNum(ns / 1_000, "μs")
+        else -> formatNum(ns / 1_000_000, "ms")
+    }
+}
 
 fun shouldHideClassFromCompletionResults(c: Class<*>): Boolean {
     return try {

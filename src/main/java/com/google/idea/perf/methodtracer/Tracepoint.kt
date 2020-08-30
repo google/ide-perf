@@ -17,8 +17,10 @@
 package com.google.idea.perf.methodtracer
 
 import com.google.idea.perf.methodtracer.TracepointFlags.TRACE_ALL
+import org.objectweb.asm.Type
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.LazyThreadSafetyMode.PUBLICATION
 
 object TracepointFlags {
     const val TRACE_CALL_COUNT = 0x1
@@ -30,7 +32,7 @@ object TracepointFlags {
 /** Represents a method (usually) for which we are gathering call counts and timing information. */
 interface Tracepoint {
     val displayName: String
-    val description: String
+    val detailedName: String
     val flags: AtomicInteger
     val parameters: AtomicInteger
 
@@ -53,7 +55,7 @@ interface Tracepoint {
 /** A basic implementation of [Tracepoint] useful for synthetic tracepoints and tests. */
 class SimpleTracepoint(
     override val displayName: String,
-    override val description: String = "[no description]"
+    override val detailedName: String = displayName
 ) : Tracepoint {
     override val flags = AtomicInteger(TRACE_ALL)
     override val parameters = AtomicInteger()
@@ -62,16 +64,24 @@ class SimpleTracepoint(
 
 /** A [Tracepoint] representing an individual method. */
 class MethodTracepoint(
-    classFqName: String,
-    methodName: String,
-    methodDesc: String,
+    val classFqName: String,
+    val methodName: String,
+    val methodDesc: String,
     flags: Int = TRACE_ALL,
     parameters: Int = 0
 ) : Tracepoint {
     override val flags = AtomicInteger(flags)
     override val parameters = AtomicInteger(parameters)
     override val displayName = "${classFqName.substringAfterLast('.')}.$methodName"
-    override val description = "$classFqName.$methodName$methodDesc"
+
+    override val detailedName by lazy(PUBLICATION) {
+        buildString {
+            val argTypes = Type.getArgumentTypes(methodDesc)
+            val argString = argTypes.joinToString { it.className.substringAfterLast('.') }
+            appendln("Class: $classFqName")
+            append("Method: $methodName($argString)")
+        }
+    }
 
     init {
         check((flags and TracepointFlags.MASK.inv()) == 0) { "invalid tracepoint flags" }
@@ -93,10 +103,12 @@ class MethodTracepointWithArgs(
 ) : Tracepoint by method {
     override val displayName = "${method.displayName}: ${argStrings.joinToString(", ")}"
 
-    override val description get() = buildString {
-        append(method.description)
-        for (arg in argStrings) {
-            append("\n  arg: $arg")
+    override val detailedName by lazy(PUBLICATION) {
+        buildString {
+            append(method.detailedName)
+            for (arg in argStrings) {
+                append("\nArg: $arg")
+            }
         }
     }
 
