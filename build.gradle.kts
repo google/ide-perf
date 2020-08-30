@@ -86,17 +86,17 @@ tasks.runIde {
     jvmArgs("-Djdk.module.illegalAccess.silent=true")
     jvmArgs("-XX:+UseCompressedOops")
 
-    val loadAgentAtStartup = findProperty("loadAgentAtStartup") == "true"
-    enableAgent(loadAgentAtStartup)
+    enableAgent()
 }
 
 tasks.test {
     testLogging.exceptionFormat = FULL
     testLogging.showStandardStreams = isCI
-    enableAgent(atStartup = true) // TODO: Ideally we would also test loading the agent on demand.
+    enableAgent()
 }
 
-fun JavaForkOptions.enableAgent(atStartup: Boolean) {
+fun JavaForkOptions.enableAgent() {
+    val atStartup = findProperty("loadAgentAtStartup") == "true"
     if (atStartup) {
         // Add the -javaagent startup flag.
         val agentName = tasks.getByPath(":agent:jar").outputs.files.singleFile.name
