@@ -18,7 +18,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("0.4.18")
+    id("org.jetbrains.intellij").version("0.4.22")
     id("org.jetbrains.kotlin.jvm").version("1.4.0")
 }
 
@@ -74,7 +74,7 @@ configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
 
 tasks.runIde {
     // Disable auto-reload until we make sure it works correctly for this plugin.
-    systemProperty("idea.auto.reload.plugins", "false")
+    autoReloadPlugins = false
 
     // Always enable assertions.
     jvmArgs("-ea")
