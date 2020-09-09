@@ -178,8 +178,14 @@ class TracepointTable(private val model: TracepointTableModel): JBTable(model) {
             }
         }
 
-        // Limit sorting directions.
+        // Row sorter.
         rowSorter = object: TableRowSorter<TracepointTableModel>(model) {
+            init {
+                sortsOnUpdates = true
+                toggleSortOrder(WALL_TIME)
+            }
+
+            // Limit sorting directions.
             override fun toggleSortOrder(col: Int) {
                 val alreadySorted = sortKeys.any {
                     it.column == col && it.sortOrder != SortOrder.UNSORTED
@@ -192,7 +198,6 @@ class TracepointTable(private val model: TracepointTableModel): JBTable(model) {
                 sortKeys = listOf(SortKey(col, order))
             }
         }
-        rowSorter.toggleSortOrder(WALL_TIME)
 
         fun showTracepointDetailsForRow(row: Int) {
             val modelRow = rowSorter.convertRowIndexToModel(row)
