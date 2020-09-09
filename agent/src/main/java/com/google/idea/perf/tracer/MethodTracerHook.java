@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.methodtracer;
+package com.google.idea.perf.tracer;
 
 /** Handler for method entry/exit events coming from instrumented bytecode. */
 public interface MethodTracerHook {

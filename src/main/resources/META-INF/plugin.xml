@@ -31,14 +31,14 @@
     <actions>
         <action text="Tracer..."
                 id="com.google.idea.perf.Tracer"
-                class="com.google.idea.perf.methodtracer.MethodTracerAction"
+                class="com.google.idea.perf.tracer.MethodTracerAction"
                 description="Trace IDE code to get overhead measurements and call counts in real time">
             <add-to-group group-id="HelpDiagnosticTools" anchor="after"
                           relative-to-action="Performance.ActivityMonitor"/>
         </action>
         <action text="Cached Value Tracer..."
                 id="com.google.idea.CachedValueTracer"
-                class="com.google.idea.perf.cachedvaluetracer.CachedValueTracerAction"
+                class="com.google.idea.perf.cvtracer.CachedValueTracerAction"
                 description="Trace IDE cached values to get computation measurements and hit/miss ratios in real time">
             <add-to-group group-id="HelpDiagnosticTools" anchor="after"
                           relative-to-action="Performance.ActivityMonitor" />

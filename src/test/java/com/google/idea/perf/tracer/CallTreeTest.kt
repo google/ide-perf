@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.methodtracer
+package com.google.idea.perf.tracer
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.methodtracer
+package com.google.idea.perf.tracer
 
 /** Dispatches method entry/exit events to the [CallTreeManager]. */
 class TracerMethodListener: MethodTracerHook {

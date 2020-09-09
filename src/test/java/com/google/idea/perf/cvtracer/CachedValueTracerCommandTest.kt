@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.cachedvaluetracer
+package com.google.idea.perf.cvtracer
 
 import org.junit.Test
 import kotlin.test.assertEquals

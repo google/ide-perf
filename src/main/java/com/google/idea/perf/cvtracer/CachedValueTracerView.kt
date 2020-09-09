@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.cachedvaluetracer
+package com.google.idea.perf.cvtracer
 
 import com.google.idea.perf.TracerView
 import com.intellij.openapi.Disposable
@@ -72,7 +72,7 @@ class CachedValueTracerDialog: DialogWrapper(null, null, false, IdeModalityType.
     }
     override fun createContentPaneBorder(): Border? = null
     override fun getDimensionServiceKey(): String? =
-        "com.google.idea.perf.cachedvaluetracer.CachedValueTracer"
+        "com.google.idea.perf.cvtracer.CachedValueTracer"
     override fun createActions(): Array<Action> = emptyArray()
 }
 

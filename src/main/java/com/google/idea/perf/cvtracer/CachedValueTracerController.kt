@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.cachedvaluetracer
+package com.google.idea.perf.cvtracer
 
 import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.CommandCompletionProvider

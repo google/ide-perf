@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.methodtracer
+package com.google.idea.perf.tracer
 
 /** A tracer CLI command */
 sealed class MethodTracerCommand {

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.methodtracer
+package com.google.idea.perf.tracer
 
-import com.google.idea.perf.methodtracer.TracepointFlags.TRACE_ALL
+import com.google.idea.perf.tracer.TracepointFlags.TRACE_ALL
 import org.objectweb.asm.Type
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger

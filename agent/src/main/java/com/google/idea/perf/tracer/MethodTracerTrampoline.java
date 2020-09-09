@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.methodtracer;
+package com.google.idea.perf.tracer;
 
 /**
  * We cannot emit bytecode which calls directly into the tracer, because the tracer is loaded

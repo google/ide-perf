@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.methodtracer
+package com.google.idea.perf.tracer
 
 import com.google.common.truth.Truth.assertThat
 import com.intellij.openapi.application.runWriteAction
