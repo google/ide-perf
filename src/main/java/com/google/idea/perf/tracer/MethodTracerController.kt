@@ -79,12 +79,14 @@ class MethodTracerController(
 
     /** Refreshes the UI with the current state of [callTree]. */
     override fun updateUi() {
-        val allStats = TreeAlgorithms.computeFlatTracepointStats(callTree)
+        val treeSnapshot = callTree.copy()
+        val allStats = TreeAlgorithms.computeFlatTracepointStats(treeSnapshot)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
 
         // We use invokeAndWait to ensure proper backpressure for the data refresh loop.
         getApplication().invokeAndWait {
             view.listView.setTracepointStats(visibleStats)
+            view.treeView.setCallTree(treeSnapshot)
         }
     }
 

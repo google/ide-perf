@@ -26,6 +26,7 @@ import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.textCompletion.TextFieldWithCompletion
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
@@ -114,6 +115,7 @@ class MethodTracerView(parentDisposable: Disposable): TracerView() {
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel
     val listView = TracepointTable(TracepointTableModel())
+    val treeView = TracepointTree(TracepointTreeModel())
 
     init {
         preferredSize = Dimension(500, 500) // Only applies to first open.
@@ -139,8 +141,12 @@ class MethodTracerView(parentDisposable: Disposable): TracerView() {
         }
         add(progressBar)
 
-        // Call list.
-        add(JBScrollPane(listView))
+        // Tabs.
+        val tabs = JBTabbedPane().apply {
+            addTab("List", null, JBScrollPane(listView), "Flat list of all tracepoints")
+            addTab("Tree", null, JBScrollPane(treeView), "Call tree")
+        }
+        add(tabs)
 
         // Render time label.
         refreshTimeLabel = JBLabel().apply {

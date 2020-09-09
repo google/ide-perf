@@ -25,10 +25,10 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.table.JBTable
+import com.intellij.ui.treeStructure.treetable.TreeTable
+import com.intellij.ui.treeStructure.treetable.TreeTableModel
 import com.intellij.util.ui.JBEmptyBorder
-import com.intellij.util.ui.JBUI
 import java.awt.Component
-import java.awt.Font
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
@@ -36,19 +36,28 @@ import java.awt.event.MouseEvent
 import javax.swing.Action
 import javax.swing.JComponent
 import javax.swing.JTextArea
+import javax.swing.JTree
 import javax.swing.ListSelectionModel
 import javax.swing.SortOrder
 import javax.swing.SwingConstants
+import javax.swing.UIManager
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.JTableHeader
+import javax.swing.table.TableModel
 import javax.swing.table.TableRowSorter
 import javax.swing.text.DefaultCaret
+import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.DefaultTreeModel
+import javax.swing.tree.TreeSelectionModel
 import kotlin.math.min
 
 // Things to improve:
-// - Update column width if numbers get too large.
-// - Change font color based on how recently a number has changed.
+// * Update column width if numbers get too large.
+// * Change font color based on how recently a number has changed.
+// * Use color to differentiate class names from method names.
+// * Add a row sorter for the tracepoint tree too.
+// * Fix quirks with tree rendering: font color for selected cells, unfocused selection color, etc.
 
 // Table columns.
 private const val TRACEPOINT = 0
@@ -57,19 +66,21 @@ private const val WALL_TIME = 2
 private const val MAX_WALL_TIME = 3
 private const val COL_COUNT = 4
 
+private fun doGetColumnName(col: Int): String = when (col) {
+    TRACEPOINT -> "tracepoint"
+    CALLS -> "calls"
+    WALL_TIME -> "wall time"
+    MAX_WALL_TIME -> "max wall time"
+    else -> error(col)
+}
+
 /** The table model for [TracepointTable]. */
 class TracepointTableModel: AbstractTableModel() {
     var data: List<TracepointStats>? = null
 
     override fun getColumnCount(): Int = COL_COUNT
 
-    override fun getColumnName(col: Int): String = when (col) {
-        TRACEPOINT -> "tracepoint"
-        CALLS -> "calls"
-        WALL_TIME -> "wall time"
-        MAX_WALL_TIME -> "max wall time"
-        else -> error(col)
-    }
+    override fun getColumnName(col: Int): String = doGetColumnName(col)
 
     override fun getColumnClass(col: Int): Class<*> = when (col) {
         TRACEPOINT -> java.lang.String::class.java
@@ -127,104 +138,197 @@ class TracepointTableModel: AbstractTableModel() {
     }
 }
 
+/** Tree model for [TracepointTree]. */
+class TracepointTreeModel : DefaultTreeModel(null), TreeTableModel {
+
+    override fun getColumnCount(): Int = COL_COUNT
+
+    override fun getColumnName(col: Int): String = doGetColumnName(col)
+
+    override fun getColumnClass(col: Int): Class<*> = when (col) {
+        TRACEPOINT -> TreeTableModel::class.java // A quirky requirement of the TreeTable class.
+        CALLS, WALL_TIME, MAX_WALL_TIME -> java.lang.Long::class.java
+        else -> error(col)
+    }
+
+    override fun getValueAt(uiNode: Any, col: Int): Any {
+        check(uiNode is CallNode)
+        val callTree = uiNode.callTree
+        return when (col) {
+            TRACEPOINT -> callTree.tracepoint.displayName
+            CALLS -> callTree.callCount
+            WALL_TIME -> callTree.wallTime
+            MAX_WALL_TIME -> callTree.maxWallTime
+            else -> error(col)
+        }
+    }
+
+    override fun isCellEditable(uiNode: Any, column: Int): Boolean = false
+
+    override fun setValueAt(value: Any?, uiNode: Any, column: Int) {}
+
+    override fun setTree(tree: JTree?) {}
+
+    class CallNode(var callTree: CallTree) : DefaultMutableTreeNode() {
+        init {
+            // Callee nodes.
+            val callees = callTree.children.values
+            for ((i, callee) in callees.withIndex()) {
+                val child = CallNode(callee)
+                insert(child, i)
+            }
+        }
+
+        override fun toString(): String = callTree.tracepoint.displayName
+    }
+
+    fun setCallTree(callTree: CallTree?) {
+        when {
+            callTree == null -> setRoot(null)
+            root == null -> setRoot(CallNode(callTree))
+            root.childCount == 0 && callTree.children.isNotEmpty() -> {
+                // If isRootVisible=false and the initial root has no children, then the root will
+                // remain unexpanded even when children are added later (likely a bug in Swing).
+                // This is the workaround.
+                setRoot(CallNode(callTree))
+            }
+            else -> {
+                updateIncrementally(root as CallNode, callTree)
+                nodeChanged(root)
+            }
+        }
+    }
+
+    /**
+     * Incrementally mutates the current UI tree to match the given call tree.
+     * The main benefit of this is preserving the selection and expansion state of the tree.
+     * For best results we hope that the call tree grows monotonically with stable iteration order.
+     */
+    private fun updateIncrementally(uiNode: CallNode, callTree: CallTree) {
+        uiNode.callTree = callTree
+
+        while (uiNode.childCount > callTree.children.size) {
+            removeNodeFromParent(uiNode.lastChild as CallNode)
+        }
+
+        for ((i, callee) in callTree.children.values.withIndex()) {
+            if (i < uiNode.childCount) {
+                val uiChild = uiNode.getChildAt(i) as CallNode
+                updateIncrementally(uiChild, callee)
+            } else {
+                val newUiChild = CallNode(callee)
+                insertNodeInto(newUiChild, uiNode, i)
+            }
+        }
+    }
+}
+
+/** Configuration common to both [TracepointTable] and [TracepointTree]. */
+private fun JBTable.configureTracepointTable() {
+    font = EditorUtil.getEditorFont()
+    rowHeight = UIManager.getInt("Table.rowHeight") // Ensures consistency between table and tree.
+    setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+    setShowGrid(false)
+
+    // Column rendering.
+    val columnModel = columnModel
+    for (col in 0 until COL_COUNT) {
+        val tableColumn = columnModel.getColumn(col)
+
+        // Hide some less-important columns for now.
+        // Eventually we should give the user the ability to choose which columns are visible.
+        when (col) {
+            MAX_WALL_TIME -> removeColumn(tableColumn)
+        }
+
+        // Column widths.
+        tableColumn.minWidth = 100
+        tableColumn.preferredWidth = when (col) {
+            TRACEPOINT -> Integer.MAX_VALUE
+            CALLS, WALL_TIME, MAX_WALL_TIME -> 100
+            else -> tableColumn.preferredWidth
+        }
+
+        // Locale-aware and unit-aware rendering for numbers.
+        when (col) {
+            CALLS, WALL_TIME, MAX_WALL_TIME -> {
+                tableColumn.cellRenderer = object : DefaultTableCellRenderer() {
+                    init {
+                        horizontalAlignment = SwingConstants.RIGHT
+                    }
+
+                    override fun setValue(value: Any?) {
+                        if (value !is Long) {
+                            return super.setValue(value)
+                        }
+                        val formatted = when (col) {
+                            WALL_TIME -> formatNsInMs(value)
+                            MAX_WALL_TIME -> formatNsInMs(value)
+                            else -> formatNum(value)
+                        }
+                        super.setValue(formatted)
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** Displays a list of tracepoints alongside their call counts and timing measurements. */
 class TracepointTable(private val model: TracepointTableModel): JBTable(model) {
     private val tracepointDetailsManager = TracepointDetailsManager(this)
 
     init {
-        font = EditorUtil.getEditorFont()
-        setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
-        setShowGrid(false)
+        configureTracepointTable()
+        addMouseListener(MyMouseListener())
+        addKeyListener(MyKeyListener())
+        rowSorter = MyTableRowSorter(model)
+    }
 
-        // Column rendering.
-        val columnModel = columnModel
-        for (col in 0 until COL_COUNT) {
-            val tableColumn = columnModel.getColumn(col)
-
-            // Hide some less-important columns for now.
-            // Eventually we should give the user the ability to choose which columns are visible.
-            when (col) {
-                MAX_WALL_TIME -> removeColumn(tableColumn)
-            }
-
-            // Column widths.
-            tableColumn.minWidth = 100
-            tableColumn.preferredWidth = when (col) {
-                TRACEPOINT -> Integer.MAX_VALUE
-                CALLS, WALL_TIME, MAX_WALL_TIME -> 100
-                else -> tableColumn.preferredWidth
-            }
-
-            // Locale-aware and unit-aware rendering for numbers.
-            when (col) {
-                CALLS, WALL_TIME, MAX_WALL_TIME -> {
-                    tableColumn.cellRenderer = object : DefaultTableCellRenderer() {
-                        init {
-                            horizontalAlignment = SwingConstants.RIGHT
-                        }
-
-                        override fun setValue(value: Any?) {
-                            if (value !is Long) {
-                                return super.setValue(value)
-                            }
-                            val formatted = when (col) {
-                                WALL_TIME -> formatNsInMs(value)
-                                MAX_WALL_TIME -> formatNsInMs(value)
-                                else -> formatNum(value)
-                            }
-                            super.setValue(formatted)
-                        }
-                    }
-                }
-            }
+    class MyTableRowSorter(model: TableModel) : TableRowSorter<TableModel>(model) {
+        init {
+            sortsOnUpdates = true
+            toggleSortOrder(WALL_TIME)
         }
 
-        // Row sorter.
-        rowSorter = object: TableRowSorter<TracepointTableModel>(model) {
-            init {
-                sortsOnUpdates = true
-                toggleSortOrder(WALL_TIME)
+        // Limit sorting directions.
+        override fun toggleSortOrder(col: Int) {
+            val alreadySorted = sortKeys.any {
+                it.column == col && it.sortOrder != SortOrder.UNSORTED
             }
-
-            // Limit sorting directions.
-            override fun toggleSortOrder(col: Int) {
-                val alreadySorted = sortKeys.any {
-                    it.column == col && it.sortOrder != SortOrder.UNSORTED
-                }
-                if (alreadySorted) return
-                val order = when (col) {
-                    TRACEPOINT -> SortOrder.ASCENDING
-                    else -> SortOrder.DESCENDING
-                }
-                sortKeys = listOf(SortKey(col, order))
+            if (alreadySorted) return
+            val order = when (col) {
+                TRACEPOINT -> SortOrder.ASCENDING
+                else -> SortOrder.DESCENDING
             }
+            sortKeys = listOf(SortKey(col, order))
         }
+    }
 
-        fun showTracepointDetailsForRow(row: Int) {
-            val modelRow = rowSorter.convertRowIndexToModel(row)
-            val data = model.data?.get(modelRow) ?: return
-            tracepointDetailsManager.showTracepointDetails(data)
+    // Show the tracepoint details popup upon double-click.
+    private inner class MyMouseListener : MouseAdapter() {
+        override fun mouseClicked(e: MouseEvent) {
+            if (e.clickCount < 2) return
+            val row = rowAtPoint(e.point)
+            if (row == -1) return
+            showTracepointDetailsForRow(row)
         }
+    }
 
-        // Show the tracepoint details popup upon double-click.
-        addMouseListener(object : MouseAdapter() {
-            override fun mouseClicked(e: MouseEvent) {
-                if (e.clickCount < 2) return
-                val row = rowAtPoint(e.point)
-                if (row == -1) return
-                showTracepointDetailsForRow(row)
-            }
-        })
+    // Show the tracepoint details popup upon hitting <enter>.
+    private inner class MyKeyListener : KeyAdapter() {
+        override fun keyTyped(e: KeyEvent) {
+            if (e.keyCode != KeyEvent.VK_ENTER) return
+            if (selectionModel.isSelectionEmpty) return
+            val row = selectionModel.leadSelectionIndex
+            showTracepointDetailsForRow(row)
+        }
+    }
 
-        // Show the tracepoint details popup upon hitting <enter>.
-        addKeyListener(object : KeyAdapter() {
-            override fun keyTyped(e: KeyEvent) {
-                if (e.keyCode != KeyEvent.VK_ENTER) return
-                if (selectionModel.isSelectionEmpty) return
-                val row = selectionModel.leadSelectionIndex
-                showTracepointDetailsForRow(row)
-            }
-        })
+    private fun showTracepointDetailsForRow(row: Int) {
+        val modelRow = rowSorter.convertRowIndexToModel(row)
+        val data = model.data?.get(modelRow) ?: return
+        tracepointDetailsManager.showTracepointDetails(data)
     }
 
     override fun createDefaultTableHeader(): JTableHeader {
@@ -240,6 +344,29 @@ class TracepointTable(private val model: TracepointTableModel): JBTable(model) {
     fun setTracepointStats(newStats: List<TracepointStats>) {
         model.setTracepointStats(newStats)
         tracepointDetailsManager.updateTracepointDetails(newStats)
+    }
+}
+
+class TracepointTree(private val model: TracepointTreeModel) : TreeTable(model) {
+    init {
+        configureTracepointTable()
+        tree.font = EditorUtil.getEditorFont()
+        tree.isRootVisible = false
+        tree.selectionModel.selectionMode = TreeSelectionModel.SINGLE_TREE_SELECTION
+    }
+
+    override fun createDefaultTableHeader(): JTableHeader {
+        return object: JBTableHeader() {
+            init {
+                // Override the renderer that JBTableHeader sets.
+                // The default, center-aligned renderer looks better.
+                defaultRenderer = createDefaultRenderer()
+            }
+        }
+    }
+
+    fun setCallTree(callTree: CallTree?) {
+        model.setCallTree(callTree)
     }
 }
 
