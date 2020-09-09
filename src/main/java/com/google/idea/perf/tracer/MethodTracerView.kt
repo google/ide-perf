@@ -19,6 +19,7 @@ package com.google.idea.perf.tracer
 import com.google.idea.perf.TracerView
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
@@ -123,6 +124,7 @@ class MethodTracerView(parentDisposable: Disposable): TracerView() {
             ProjectManager.getInstance().defaultProject,
             controller.autocomplete, "", true, true, true
         ).apply {
+            font = EditorUtil.getEditorFont()
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
             // Prevent accidental focus loss due to <tab> key.
             setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptySet())
@@ -142,7 +144,7 @@ class MethodTracerView(parentDisposable: Disposable): TracerView() {
 
         // Render time label.
         refreshTimeLabel = JBLabel().apply {
-            font = JBUI.Fonts.create(JBFont.MONOSPACED, font.size)
+            font = EditorUtil.getEditorFont()
         }
         add(JPanel().apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)

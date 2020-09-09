@@ -19,6 +19,7 @@ package com.google.idea.perf.tracer
 import com.google.idea.perf.util.formatNsInBestUnit
 import com.google.idea.perf.util.formatNsInMs
 import com.google.idea.perf.util.formatNum
+import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBScrollPane
@@ -131,7 +132,7 @@ class TracepointTable(private val model: TracepointTableModel): JBTable(model) {
     private val tracepointDetailsManager = TracepointDetailsManager(this)
 
     init {
-        font = JBUI.Fonts.create(Font.MONOSPACED, font.size)
+        font = EditorUtil.getEditorFont()
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
         setShowGrid(false)
 
@@ -312,7 +313,7 @@ class TracepointDetailsManager(private val table: TracepointTable) {
 /** A popup showing details for a specific tracepoint. */
 class TracepointDetailsDialog(parent: Component, text: String) : DialogWrapper(parent, false) {
     val textArea = JBTextArea(text).apply {
-        font = JBUI.Fonts.create(Font.SANS_SERIF, font.size)
+        font = EditorUtil.getEditorFont()
         isEditable = false
         border = JBEmptyBorder(5)
         val caret = caret
