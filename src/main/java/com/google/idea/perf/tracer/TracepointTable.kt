@@ -265,7 +265,12 @@ class TracepointDetailsManager(private val table: TracepointTable) {
     fun updateTracepointDetails(allData: List<TracepointStats>) {
         val dialog = currentDialog ?: return
         val tracepoint = currentTracepoint ?: return
-        val data = allData.firstOrNull { it.tracepoint == tracepoint } ?: return
+        val data = allData.firstOrNull { it.tracepoint == tracepoint }
+        if (data == null) {
+            dialog.textArea.text = "${tracepoint.displayName}\n\n(no data)"
+            return
+        }
+
         val detailText = buildDetailString(data)
         val textArea = dialog.textArea
         if (detailText != textArea.text) {
