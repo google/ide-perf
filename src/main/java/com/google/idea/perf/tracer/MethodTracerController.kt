@@ -18,6 +18,7 @@ package com.google.idea.perf.tracer
 
 import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.TracerController
+import com.google.idea.perf.tracer.ui.TracerPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
@@ -51,7 +52,7 @@ import kotlin.reflect.jvm.javaMethod
 // - Cancelable progress indicator for class retransformations.
 
 class MethodTracerController(
-    private val view: MethodTracerView, // Access from EDT only.
+    private val view: TracerPanel, // Access from EDT only.
     parentDisposable: Disposable
 ): TracerController("Method Tracer", view), Disposable {
     companion object {

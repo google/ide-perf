@@ -17,6 +17,7 @@
 package com.google.idea.perf.tracer
 
 import com.google.idea.perf.sample.Sample
+import com.google.idea.perf.tracer.ui.TracerPanel
 import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
@@ -36,7 +37,7 @@ class TracerIntegrationTest : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
-        val tracerView = invokeAndWaitIfNeeded { MethodTracerView(testRootDisposable) }
+        val tracerView = invokeAndWaitIfNeeded { TracerPanel(testRootDisposable) }
         tracer = tracerView.controller
     }
 

@@ -14,108 +14,31 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.tracer
+package com.google.idea.perf.tracer.ui
 
 import com.google.idea.perf.TracerViewBase
+import com.google.idea.perf.tracer.MethodTracerController
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.editor.ex.util.EditorUtil
-import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.rd.attach
-import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.textCompletion.TextFieldWithCompletion
-import com.intellij.util.ui.JBFont
-import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.UIUtil
-import java.awt.AWTEvent
-import java.awt.Dialog
 import java.awt.Dimension
 import java.awt.KeyboardFocusManager
-import java.awt.event.KeyEvent
-import javax.swing.Action
 import javax.swing.BoxLayout
-import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JProgressBar
-import javax.swing.KeyStroke
-import javax.swing.border.Border
 
-// Things to improve:
-// - Add UI indicator for fps or something similar.
-// - DialogWrapper wrapper is still tied to a specific project window.
-
-/** Invoked by the user via the "Trace" action. */
-class MethodTracerAction: DumbAwareAction() {
-    private var currentTracer: MethodTracerDialog? = null
-
-    override fun actionPerformed(e: AnActionEvent) {
-        val tracer = currentTracer
-        if (tracer != null) {
-            check(!tracer.isDisposed)
-            tracer.toFront()
-        }
-        else {
-            val newTracer = MethodTracerDialog()
-            currentTracer = newTracer
-            newTracer.disposable.attach { currentTracer = null }
-            newTracer.show()
-
-            val view = newTracer.view!!
-            view.initEvents(view.controller)
-        }
-    }
-}
-
-/** The dialog window that pops up via the "Trace" action. */
-class MethodTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
-    var view: MethodTracerView? = null; private set
-
-    init {
-        init()
-        title = "Tracer"
-        isModal = false
-        val window = peer.window
-        if (window is Dialog) {
-            // Ensure this dialog can be the parent of other dialogs.
-            UIUtil.markAsPossibleOwner(window)
-        }
-    }
-
-    override fun createCenterPanel(): JComponent {
-        view = MethodTracerView(disposable)
-        return view!!
-    }
-
-    override fun show() {
-        super.show()
-        // Do not let <Esc> close the tracer (see DialogWrapper.registerKeyboardShortcuts).
-        rootPane.unregisterKeyboardAction(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0))
-    }
-
-    override fun doCancelAction(source: AWTEvent) {
-        if (source is KeyEvent && source.keyCode == KeyEvent.VK_ESCAPE) {
-            return // Do not let <Esc> close the tracer (see DialogWrapperPeerImpl.AnCancelAction).
-        }
-        super.doCancelAction(source)
-    }
-
-    override fun createContentPaneBorder(): Border? = null // No border.
-    override fun getDimensionServiceKey(): String = "${javaClass.packageName}.Tracer"
-    override fun createActions(): Array<Action> = emptyArray()
-}
-
-/** The content filling the tracer dialog window. */
-class MethodTracerView(parentDisposable: Disposable): TracerViewBase() {
+/** The top-level panel for the tracer, displayed via the [TracerDialog]. */
+class TracerPanel(parentDisposable: Disposable) : TracerViewBase() {
     override val controller = MethodTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar
     override val refreshTimeLabel: JBLabel
-    val listView = TracepointTable(TracepointTableModel())
-    val treeView = TracepointTree(TracepointTreeModel())
+    val listView = TracerTable(TracerTableModel())
+    val treeView = TracerTree(TracerTreeModel())
 
     init {
         preferredSize = Dimension(500, 500) // Only applies to first open.

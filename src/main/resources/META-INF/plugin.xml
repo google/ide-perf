@@ -31,7 +31,7 @@
     <actions>
         <action text="Tracer..."
                 id="com.google.idea.perf.Tracer"
-                class="com.google.idea.perf.tracer.MethodTracerAction"
+                class="com.google.idea.perf.tracer.ui.TracerAction"
                 description="Trace IDE code to get overhead measurements and call counts in real time">
             <add-to-group group-id="HelpDiagnosticTools" anchor="after"
                           relative-to-action="Performance.ActivityMonitor"/>
