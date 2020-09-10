@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 abstract class TracerController(
     name: String,
-    private val view: TracerView
+    private val view: TracerViewBase
 ): Disposable {
     companion object {
         val LOG = Logger.getInstance(TracerController::class.java)
@@ -88,7 +88,7 @@ abstract class TracerController(
         return ProgressManager.getInstance().runProcess(computable, progress)
     }
 
-    protected class MyProgressIndicator(private val view: TracerView): ProgressIndicatorBase() {
+    protected class MyProgressIndicator(private val view: TracerViewBase): ProgressIndicatorBase() {
         override fun onRunningChange(): Unit = onChange()
 
         override fun onProgressChange(): Unit = onChange()

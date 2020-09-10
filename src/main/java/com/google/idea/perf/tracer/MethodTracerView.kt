@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.tracer
 
-import com.google.idea.perf.TracerView
+import com.google.idea.perf.TracerViewBase
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.editor.ex.util.EditorUtil
@@ -109,7 +109,7 @@ class MethodTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, 
 }
 
 /** The content filling the tracer dialog window. */
-class MethodTracerView(parentDisposable: Disposable): TracerView() {
+class MethodTracerView(parentDisposable: Disposable): TracerViewBase() {
     override val controller = MethodTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar

@@ -27,7 +27,7 @@ import java.awt.event.KeyListener
 import javax.swing.JProgressBar
 
 /** The content for filling the tracer dialog window. */
-abstract class TracerView: JBPanel<TracerView>() {
+abstract class TracerViewBase: JBPanel<TracerViewBase>() {
     companion object {
         const val COMMAND_HISTORY_LIMIT = 20
     }

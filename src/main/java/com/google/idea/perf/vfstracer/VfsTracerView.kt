@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.vfstracer
 
-import com.google.idea.perf.TracerView
+import com.google.idea.perf.TracerViewBase
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
@@ -78,7 +78,7 @@ class VfsTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, fal
     override fun createActions(): Array<Action> = emptyArray()
 }
 
-class VfsTracerView(parentDisposable: Disposable): TracerView() {
+class VfsTracerView(parentDisposable: Disposable): TracerViewBase() {
     override val controller = VfsTracerController(this, parentDisposable)
     override val commandLine: TextFieldWithCompletion
     override val progressBar: JProgressBar
