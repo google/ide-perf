@@ -36,7 +36,7 @@
             <add-to-group group-id="HelpDiagnosticTools" anchor="after"
                           relative-to-action="Performance.ActivityMonitor"/>
         </action>
-        <action text="Cached Value Tracer..."
+        <action text="CachedValue Tracer..."
                 id="com.google.idea.CachedValueTracer"
                 class="com.google.idea.perf.cvtracer.CachedValueTracerAction"
                 description="Trace IDE cached values to get computation measurements and hit/miss ratios in real time">
