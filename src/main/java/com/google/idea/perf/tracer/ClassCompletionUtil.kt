@@ -83,11 +83,10 @@ object ClassCompletionUtil {
 
         // Declared methods.
         for (method in clazz.declaredMethods) {
-            val icon = when {
-                Modifier.isAbstract(method.modifiers) -> ABSTRACT_METHOD_ICON
-                else -> METHOD_ICON
+            if (Modifier.isAbstract(method.modifiers)) {
+                continue // Tracing abstract methods is not yet supported.
             }
-            result.addElement(LookupElementBuilder.create(method.name).withIcon(icon))
+            result.addElement(LookupElementBuilder.create(method.name).withIcon(METHOD_ICON))
         }
 
         // Constructors.
