@@ -1,4 +1,4 @@
-User guide
+User guide for `ide-perf`
 ===
 
 <!-- TODO: Add images? -->
@@ -10,7 +10,7 @@ The tracer window can be opened via `Help -> Diagnostic Tools -> Tracer`.
 The text field at the top of the window is the tracer command line.
 Use the `trace` command to trace specific methods.
 
-##### Examples
+#### Examples
 * `trace com.intellij.openapi.progress.ProgressManager#checkCanceled`
 * `trace com.intellij.openapi.progress.ProgressManager#*`
 * `trace com.intellij.openapi.progress.*`
@@ -23,11 +23,11 @@ in real time as you use the IDE. The `List` view shows aggregate statistics for 
 The `Tree` view shows the full call tree. To see additional details for a tracepoint, double-click
 or press `enter` on a selected row in the `List` view.
 
-##### Caveats
+#### Caveats
 * Only concrete methods can be traced. Tracing abstract methods has no effect.
 * Class name completion only works for classes which have already been loaded by the JVM.
 
-##### Other commands
+#### Other commands
 * `clear` - Zero out current statistics.
 * `reset` - Remove current statistics.
 * `untrace *` - Remove tracing from all methods.
@@ -43,7 +43,7 @@ calls `toString` on the arguments and uses the result to create synthetic tracep
 To trace a parameter, pass its index inside square brackets at the end of a trace command.
 You can trace multiple parameters at once by separating their indices with commas.
 
-##### Examples
+#### Examples
 * `trace com.intellij.psi.impl.JavaPsiFacadeImpl#findClass[0]`
 
 Tip: if you can change the IDE source code, then parameter tracing provides a versatile way to
@@ -69,7 +69,7 @@ slightly more experimental than the main method tracer.
 FAQ
 ---
 
-#### Which methods can be traced?
+### Which methods can be traced?
 
 Essentially all methods can be traced, including methods in the JDK.
 
@@ -77,7 +77,7 @@ Technically there are a few methods which cause `StackOverflowException` if they
 due to their use in the tracer instrumentation hook. This includes a couple `ThreadLocal` methods
 and a few methods in the tracer itself.
 
-#### How high is the tracing overhead?
+### How high is the tracing overhead?
 The tracing overhead is _approximately_ 150 ns per traced method call, assuming sufficient
 JIT optimization. This number varies across platforms; you can run the microbenchmark at
 `TracerIntegrationTest.testTracingOverhead` if you want to estimate tracing overhead for
@@ -94,7 +94,7 @@ tracing involves calling `toString` on arbitrary user objects.
 Note that the tracer UI adds some overhead too on the UI thread. The overhead scales
 with the number of tracepoints displayed in the tracer window.
 
-#### Why does it take a while to trace an entire package?
+### Why does it take a while to trace an entire package?
 
 The JVM take around 100 ms to retransform a loaded class after its bytecode has been
 modified by the tracer. If you are tracing many classes, this can add up.
