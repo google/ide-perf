@@ -82,15 +82,15 @@ class TracerCompletionTest : BasePlatformTestCase() {
 
     @Test
     fun testUntraceCompletion() {
-        val fqName = UniqueClass1729::class.java.name
-        TracerConfig.trace(TracePattern.ByMethodName(fqName, "foo"))
-        TracerConfig.trace(TracePattern.ByMethodName(fqName, "bar"))
+        val className = UniqueClass1729::class.java.name
+        TracerConfigUtil.appendTraceRequest(MethodFqName(className, "foo", "*"), MethodConfig())
+        TracerConfigUtil.appendTraceRequest(MethodFqName(className, "bar", "*"), MethodConfig())
         try {
-            checkInsert("untrace UniqueClass1729", "untrace $fqName#")
+            checkInsert("untrace UniqueClass1729", "untrace $className#")
             assertThat(complete("untrace ")).containsExactly("UniqueClass1729")
         }
         finally {
-            TracerConfig.untraceAll()
+            TracerConfig.clearAllRequests()
         }
     }
 

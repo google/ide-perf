@@ -34,7 +34,6 @@ interface Tracepoint {
     val displayName: String
     val detailedName: String
     val flags: AtomicInteger
-    val parameters: AtomicInteger
 
     fun setFlags(flags: Int) {
         this.flags.updateAndGet { it or flags }
@@ -43,9 +42,6 @@ interface Tracepoint {
     fun unsetFlags(flags: Int) {
         this.flags.updateAndGet { it and flags.inv() }
     }
-
-    val isEnabled: Boolean
-        get() = (this.flags.get() and TRACE_ALL) != 0
 
     companion object {
         val ROOT = SimpleTracepoint("[root]", "the synthetic root of the call tree")
@@ -58,28 +54,23 @@ class SimpleTracepoint(
     override val detailedName: String = displayName
 ) : Tracepoint {
     override val flags = AtomicInteger(TRACE_ALL)
-    override val parameters = AtomicInteger()
     override fun toString(): String = displayName
 }
 
 /** A [Tracepoint] representing an individual method. */
 class MethodTracepoint(
-    val classFqName: String,
-    val methodName: String,
-    val methodDesc: String,
+    private val fqName: MethodFqName,
     flags: Int = TRACE_ALL,
-    parameters: Int = 0
 ) : Tracepoint {
     override val flags = AtomicInteger(flags)
-    override val parameters = AtomicInteger(parameters)
-    override val displayName = "${classFqName.substringAfterLast('.')}.$methodName"
+    override val displayName = "${fqName.clazz.substringAfterLast('.')}.${fqName.method}"
 
     override val detailedName by lazy(PUBLICATION) {
         buildString {
-            val argTypes = Type.getArgumentTypes(methodDesc)
+            val argTypes = Type.getArgumentTypes(fqName.desc)
             val argString = argTypes.joinToString { it.className.substringAfterLast('.') }
-            appendln("Class: $classFqName")
-            append("Method: $methodName($argString)")
+            appendln("Class: ${fqName.clazz}")
+            append("Method: ${fqName.method}($argString)")
         }
     }
 

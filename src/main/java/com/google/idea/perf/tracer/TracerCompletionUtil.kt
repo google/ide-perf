@@ -24,7 +24,6 @@ import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.codeInsight.lookup.LookupElementPresentation
-import com.intellij.debugger.engine.JVMNameUtil.CONSTRUCTOR_NAME
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.editor.EditorModificationUtil
 import com.intellij.openapi.progress.ProgressManager
@@ -89,8 +88,8 @@ object TracerCompletionUtil {
         }
 
         // Constructors.
-        if (clazz.constructors.isNotEmpty()) {
-            result.addElement(LookupElementBuilder.create(CONSTRUCTOR_NAME).withIcon(METHOD_ICON))
+        if (clazz.declaredConstructors.isNotEmpty()) {
+            result.addElement(LookupElementBuilder.create("<init>").withIcon(METHOD_ICON))
         }
     }
 
@@ -111,11 +110,9 @@ object TracerCompletionUtil {
         }
     }
 
-    // Prefer the overload accepting ClassInfo to get better icons.
-    fun createClassLookupElement(fqName: String): LookupElement {
-        val simpleName = fqName.substringAfterLast('.').substringAfterLast('$')
-        val contextString = computeClassContextString(fqName, simpleName)
-        return ClassLookupElement(fqName, simpleName, contextString, CLASS_ICON)
+    fun createClassLookupElement(clazz: Class<*>): LookupElement? {
+        val classInfo = ClassInfo.tryCreate(clazz) ?: return null
+        return createClassLookupElement(classInfo)
     }
 
     private fun createClassLookupElement(c: ClassInfo): LookupElement {

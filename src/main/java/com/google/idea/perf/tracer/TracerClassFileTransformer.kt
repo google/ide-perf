@@ -56,17 +56,18 @@ class TracerClassFileTransformer: ClassFileTransformer {
 
     override fun transform(
         loader: ClassLoader?,
-        className: String,
+        classJvmName: String,
         classBeingRedefined: Class<*>?,
         protectionDomain: ProtectionDomain?,
         classfileBuffer: ByteArray
     ): ByteArray? {
         return try {
+            val className = classJvmName.replace('/', '.')
             if (!TracerConfig.shouldInstrumentClass(className)) return null
             tryTransform(className, classfileBuffer)
         }
         catch (e: Throwable) {
-            LOG.error("Failed to instrument class $className", e)
+            LOG.error("Failed to instrument class $classJvmName", e)
             throw e
         }
     }
@@ -78,23 +79,6 @@ class TracerClassFileTransformer: ClassFileTransformer {
         val reader = ClassReader(classBytes)
         val writer = ClassWriter(reader, COMPUTE_MAXS or COMPUTE_FRAMES)
 
-        val methodSignatures = mutableListOf<String>()
-        val methodSignatureReader = object: ClassVisitor(ASM_API) {
-            override fun visitMethod(
-                access: Int,
-                name: String?,
-                descriptor: String?,
-                signature: String?,
-                exceptions: Array<out String>?
-            ): MethodVisitor? {
-                methodSignatures.add("$name$descriptor")
-                return super.visitMethod(access, name, descriptor, signature, exceptions)
-            }
-        }
-        reader.accept(methodSignatureReader, 0)
-
-        TracerConfig.applyCommands(className, methodSignatures)
-
         val classVisitor = object: ClassVisitor(ASM_API, writer) {
             override fun visitMethod(
                 access: Int,
@@ -104,13 +88,15 @@ class TracerClassFileTransformer: ClassFileTransformer {
                 exceptions: Array<out String>?
             ): MethodVisitor? {
                 var methodWriter = cv.visitMethod(access, method, desc, signature, exceptions)
-                val id = TracerConfig.getMethodId(className, method, desc) ?: return methodWriter
-                val tracepoint = TracerConfig.getMethodTracepoint(id)
-                val parameters = tracepoint.parameters.get()
-                val parameterTypes = Type.getArgumentTypes(desc)
-
-                if (!tracepoint.isEnabled) {
+                val methodFqName = MethodFqName(className, method, desc)
+                val traceData = TracerConfig.getMethodTraceData(methodFqName) ?: return methodWriter
+                if (!traceData.config.enabled) {
                     return methodWriter
+                }
+
+                val parameterTypes = Type.getArgumentTypes(desc)
+                val tracedParams = traceData.config.tracedParams.filter {
+                    it >= 0 && it < parameterTypes.size
                 }
 
                 @Suppress("ConstantConditionIf")
@@ -172,12 +158,7 @@ class TracerClassFileTransformer: ClassFileTransformer {
                     }
 
                     private fun loadArgSet() {
-                        var arraySize = 0
-                        for (parameterIndex in parameterTypes.indices) {
-                            if (parameters and (1 shl parameterIndex) != 0) {
-                                arraySize++
-                            }
-                        }
+                        val arraySize = tracedParams.size
 
                         if (arraySize == 0) {
                             mv.visitInsn(ACONST_NULL)
@@ -191,7 +172,7 @@ class TracerClassFileTransformer: ClassFileTransformer {
                         var parameterBaseIndex = if (access and Opcodes.ACC_STATIC == 0) 1 else 0
                         var storeIndex = 0
                         for ((parameterIndex, parameterType) in parameterTypes.withIndex()) {
-                            if (parameters and (1 shl parameterIndex) != 0) {
+                            if (tracedParams.contains(parameterIndex)) {
                                 // args[storeIndex] = loadArg(parameterIndex)
                                 mv.visitInsn(DUP)
                                 mv.visitLdcInsn(storeIndex)
@@ -207,7 +188,7 @@ class TracerClassFileTransformer: ClassFileTransformer {
                     }
 
                     private fun invokeEnter() {
-                        mv.visitLdcInsn(id)
+                        mv.visitLdcInsn(traceData.methodId)
                         loadArgSet()
 
                         mv.visitMethodInsn(

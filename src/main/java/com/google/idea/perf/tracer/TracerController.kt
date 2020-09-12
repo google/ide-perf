@@ -17,6 +17,7 @@
 package com.google.idea.perf.tracer
 
 import com.google.idea.perf.AgentLoader
+import com.google.idea.perf.tracer.TracepointFlags.TRACE_CALL_COUNT
 import com.google.idea.perf.tracer.ui.TracerPanel
 import com.google.idea.perf.tracer.ui.TracerTable
 import com.google.idea.perf.tracer.ui.TracerTree
@@ -92,8 +93,8 @@ class TracerController(
         }
     }
 
-    private fun handleCommand(cmd: String) {
-        val command = parseMethodTracerCommand(cmd)
+    private fun handleCommand(commandString: String) {
+        val command = parseMethodTracerCommand(commandString)
         val errors = command.errors
 
         if (errors.isNotEmpty()) {
@@ -101,17 +102,22 @@ class TracerController(
             return
         }
 
+        handleCommand(command)
+    }
+
+    private fun handleCommand(command: TracerCommand) {
         when (command) {
             is TracerCommand.Clear -> {
                 CallTreeManager.clearCallTrees()
             }
             is TracerCommand.Reset -> {
-                val classNames = TracerConfig.untraceAll()
-                retransformClasses(classNames.toSet())
+                val oldRequests = TracerConfig.clearAllRequests()
+                val affectedClasses = TracerConfigUtil.getAffectedClasses(oldRequests)
+                retransformClasses(affectedClasses)
                 CallTreeManager.clearCallTrees()
             }
             is TracerCommand.Trace -> {
-                val flags = command.traceOption!!.tracepointFlag
+                val countOnly = command.traceOption!!.tracepointFlag == TRACE_CALL_COUNT
 
                 when (command.target) {
                     is TraceTarget.PsiFinders -> {
@@ -121,13 +127,13 @@ class TracerController(
                         val methods = psiFinders.map {
                             it.javaClass.getMethod(baseMethod.name, *baseMethod.parameterTypes)
                         }
-                        traceAndRetransform(command.enable, flags, *methods.toTypedArray())
+                        val config = MethodConfig(enabled = command.enable, countOnly = countOnly)
+                        traceAndRetransform(config, *methods.toTypedArray())
                     }
                     is TraceTarget.Tracer -> {
+                        val config = MethodConfig(enabled = command.enable, countOnly = countOnly)
                         traceAndRetransform(
-                            command.enable,
-                            flags,
-                            this::handleCommand.javaMethod!!,
+                            config,
                             CallTreeManager::getCallTreeSnapshotAllThreadsMerged.javaMethod!!,
                             CallTreeUtil::computeFlatTracepointStats.javaMethod!!,
                             TracerTable::setTracepointStats.javaMethod!!,
@@ -135,56 +141,42 @@ class TracerController(
                         )
                     }
                     is TraceTarget.All -> {
-                        if (command.enable) {
-                            displayWarning("Tracing all methods is not supported")
-                        }
-                        else {
-                            val classNames = TracerConfig.untraceAll()
-                            retransformClasses(classNames.toSet())
+                        when {
+                            command.enable -> displayWarning("Cannot trace all classes")
+                            else -> handleCommand(TracerCommand.Reset)
                         }
                     }
                     is TraceTarget.ClassPattern -> {
-                        val classPattern = command.target.classPattern
-                        val classes = if (command.enable) {
-                            TracerConfig.trace(
-                                TracePattern.ByClassPattern(classPattern),
-                                flags
-                            )
-                        }
-                        else {
-                            TracerConfig.untrace(TracePattern.ByClassPattern(classPattern))
-                        }
-                        retransformClasses(classes.toSet())
+                        // TODO: Simplify (join with other branches).
+                        val methodPattern = MethodFqName(command.target.classPattern, "*", "*")
+                        val config = MethodConfig(enabled = command.enable, countOnly = countOnly)
+                        val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
+                        val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
+                        retransformClasses(affectedClasses)
                     }
                     is TraceTarget.MethodPattern -> {
-                        val className = command.target.className
-                        val methodPattern = command.target.methodPattern
-                        if (command.enable) {
-                            TracerConfig.trace(
-                                TracePattern.ByMethodPattern(className, methodPattern),
-                                flags
-                            )
-                        }
-                        else {
-                            TracerConfig.untrace(TracePattern.ByMethodPattern(className, methodPattern))
-                        }
-                        retransformClasses(setOf(className))
+                        // TODO: Simplify (join with other branches).
+                        val clazz = command.target.className
+                        val method = command.target.methodPattern
+                        val methodPattern = MethodFqName(clazz, method, "*")
+                        val config = MethodConfig(enabled = command.enable, countOnly = countOnly)
+                        val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
+                        val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
+                        retransformClasses(affectedClasses)
                     }
                     is TraceTarget.Method -> {
-                        val className = command.target.className
-                        val methodName = command.target.methodName!!
-                        val parameters = command.target.parameterIndexes!!
-                        if (command.enable) {
-                            TracerConfig.trace(
-                                TracePattern.ByMethodName(className, methodName),
-                                flags,
-                                parameters
-                            )
-                        }
-                        else {
-                            TracerConfig.untrace(TracePattern.ByMethodName(className, methodName))
-                        }
-                        retransformClasses(setOf(className))
+                        // TODO: Simplify (join with other branches).
+                        val clazz = command.target.className
+                        val method = command.target.methodName!!
+                        val methodPattern = MethodFqName(clazz, method, "*")
+                        val config = MethodConfig(
+                            enabled = command.enable,
+                            countOnly = countOnly,
+                            tracedParams = command.target.parameterIndexes!!
+                        )
+                        val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
+                        val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
+                        retransformClasses(affectedClasses)
                     }
                 }
             }
@@ -194,23 +186,16 @@ class TracerController(
         }
     }
 
-    private fun traceAndRetransform(enable: Boolean, flags: Int, vararg methods: Method) {
+    private fun traceAndRetransform(config: MethodConfig, vararg methods: Method) {
         if (methods.isEmpty()) return
-        if (enable) {
-            methods.forEach { TracerConfig.trace(TracePattern.Exact(it), flags, emptyList()) }
+        val traceRequests = mutableListOf<TraceRequest>()
+        for (method in methods) {
+            val methodFqName = TracerConfigUtil.createMethodFqName(method)
+            val request = TracerConfigUtil.appendTraceRequest(methodFqName, config)
+            traceRequests.add(request)
         }
-        else {
-            methods.forEach { TracerConfig.untrace(TracePattern.Exact(it)) }
-        }
-        val classes = methods.map { it.declaringClass }.toSet()
-        retransformClasses(classes)
-    }
-
-    private fun retransformClasses(classNames: Set<String>) {
-        if (classNames.isEmpty()) return
-        val instrumentation = AgentLoader.instrumentation ?: return
-        val classes = instrumentation.allLoadedClasses.filter { classNames.contains(it.name) }
-        retransformClasses(classes)
+        val affectedClasses = TracerConfigUtil.getAffectedClasses(traceRequests)
+        retransformClasses(affectedClasses)
     }
 
     // This method can be slow.
@@ -218,6 +203,7 @@ class TracerController(
         if (classes.isEmpty()) return
         val instrumentation = AgentLoader.instrumentation ?: return
         if (!instrumentationInitialized) {
+            // TODO: The hook should be installed even if we're not retransforming classes!!
             TracerTrampoline.installHook(TracerHookImpl())
             instrumentation.addTransformer(TracerClassFileTransformer(), true)
             instrumentationInitialized = true

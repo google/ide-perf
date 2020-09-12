@@ -16,321 +16,86 @@
 
 package com.google.idea.perf.tracer
 
-import com.google.idea.perf.AgentLoader
+import com.google.idea.perf.tracer.TracepointFlags.TRACE_ALL
+import com.google.idea.perf.tracer.TracepointFlags.TRACE_CALL_COUNT
+import com.google.idea.perf.tracer.TracerConfig.getMethodTraceData
+import com.google.idea.perf.tracer.TracerConfig.getMethodTracepoint
+import com.google.idea.perf.tracer.TracerConfig.shouldInstrumentClass
 import com.google.idea.perf.util.ConcurrentAppendOnlyList
-import com.intellij.util.PatternUtil
-import org.objectweb.asm.Type
-import java.lang.reflect.Method
 import java.util.concurrent.locks.ReentrantLock
-import java.util.regex.Pattern
 import kotlin.concurrent.withLock
 
-// Things to improve:
-// - Somehow gc or recycle Tracepoints that are no longer used.
-// - Pretty-print method descriptors for better UX.
-
-sealed class TracePattern {
-    data class Exact(val method: Method): TracePattern()
-    data class ByMethodName(val className: String, val methodName: String): TracePattern()
-    data class ByMethodPattern(val className: String, val methodPattern: String): TracePattern()
-    data class ByClassPattern(val classPattern: String): TracePattern()
-}
-
-/** Keeps track of which methods should be traced via bytecode instrumentation. */
+/**
+ * [TracerConfig] essentially keeps track of which methods should be traced.
+ * See also [TracerConfigUtil].
+ *
+ * When the user adds a new trace request, it ends up here. [TracerClassFileTransformer]
+ * finds out about the request by calling [shouldInstrumentClass] and [getMethodTraceData].
+ *
+ * [TracerConfig] also keeps track of an integer method ID for each traced method.
+ * The method ID is injected into the method bytecode and passed to the [TracerHook],
+ * which then uses [getMethodTracepoint] to retrieve the corresponding tracepoint.
+ * It is important for [getMethodTracepoint] to be fast and lock free.
+ *
+ * Note: there may be multiple tracing requests which apply to a given method.
+ * For simplicity, only the most recent applicable trace request is honored.
+ */
 object TracerConfig {
     private val tracepoints = ConcurrentAppendOnlyList<Tracepoint>()
-    private val lock = ReentrantLock() // Protects the data structures below.
-    private val classConfigs = mutableMapOf<String, ClassConfig>() // Keyed by 'JVM' class name.
+    private val lock = ReentrantLock()
+    private val methodIds = mutableMapOf<MethodFqName, Int>()
+    private val traceRequests = mutableListOf<TraceRequest>()
 
-    private class TracepointProperties(
-        val flags: Int = 0,
-        val parameters: Int = 0
-    ) {
-        companion object {
-            val DISABLED = TracepointProperties()
-        }
-    }
-
-    /** Specifies which methods to instrument for a given class. */
-    private class ClassConfig {
-        /**
-         * List of trace commands to execute before the class config is fully loaded with method IDs.
-         * If this field is null, then method IDs within the class config have been fully loaded.
-         */
-        var commands: MutableList<Pair<Pattern, TracepointProperties>>? = mutableListOf()
-
-        /**
-         * Map from method signature to method ID. A null value indicates that the method is not
-         * associated with an initialized tracepoint.
-         */
-        val methodIds = mutableMapOf<String, Int?>()
-    }
-
-    fun trace(
-        pattern: TracePattern,
-        flags: Int = TracepointFlags.TRACE_ALL,
-        parameters: Collection<Int> = emptyList()
-    ): List<String> {
-        return when (pattern) {
-            is TracePattern.Exact -> setTrace(true, pattern.method, flags, parameters)
-            is TracePattern.ByMethodName -> setTrace(true, pattern.className, pattern.methodName, flags, parameters)
-            is TracePattern.ByMethodPattern -> setTrace(true, pattern.className, pattern.methodPattern, flags, parameters)
-            is TracePattern.ByClassPattern -> setTrace(true, pattern.classPattern, flags, parameters)
-        }
-    }
-
-    fun untrace(pattern: TracePattern): List<String> {
-        return when(pattern) {
-            is TracePattern.Exact -> setTrace(false, pattern.method)
-            is TracePattern.ByMethodName -> setTrace(false, pattern.className, pattern.methodName)
-            is TracePattern.ByMethodPattern -> setTrace(false, pattern.className, pattern.methodPattern)
-            is TracePattern.ByClassPattern -> setTrace(false, pattern.classPattern)
-        }
-    }
-
-    private fun setTrace(
-        enable: Boolean,
-        method: Method,
-        flags: Int = 0,
-        parameters: Collection<Int> = emptyList()
-    ): List<String> {
-        val className = method.declaringClass.name
-        val classJvmName = className.replace('.', '/')
-        var parameterBits = 0
-        for (index in parameters) {
-            parameterBits = parameterBits or (1 shl index)
-        }
-
-        val methodDesc = Type.getMethodDescriptor(method)
-        val methodSignature = "${method.name}$methodDesc"
-
+    fun appendTraceRequest(request: TraceRequest) {
         lock.withLock {
-            val methodId = if (flags and TracepointFlags.TRACE_ALL == 0) {
-                getMethodId(classJvmName, method.name, methodDesc)
-            }
-            else {
-                val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
-                classConfig.methodIds.getOrPut(methodSignature) {
-                    val tracepoint = createTracepoint(
-                        classJvmName, method.name, methodDesc, TracepointProperties.DISABLED
-                    )
-                    tracepoints.append(tracepoint)
-                }
-            }
-
-            if (methodId != null) {
-                val tracepoint = getMethodTracepoint(methodId)
-                tracepoint.parameters.set(parameterBits)
-
-                if (enable) {
-                    tracepoint.setFlags(flags)
-                }
-                else {
-                    tracepoint.unsetFlags(flags)
-                }
-            }
-
-            return listOf(className)
+            traceRequests.add(request)
         }
     }
 
-    private fun setTrace(
-        enable: Boolean,
-        className: String,
-        methodPattern: String,
-        flags: Int = 0,
-        parameters: Collection<Int> = emptyList()
-    ): List<String> {
-        val classJvmName = className.replace('.', '/')
-        val methodRegex = Pattern.compile(PatternUtil.convertToRegex(methodPattern))
-        var parameterBits = 0
-        for (index in parameters) {
-            parameterBits = parameterBits or (1 shl index)
-        }
-
+    fun getAllRequests(): List<TraceRequest> {
         lock.withLock {
-            val classConfig = classConfigs.getOrPut(classJvmName) { ClassConfig() }
-
-            // If the class config isn't loaded, enqueue a command.
-            classConfig.commands?.add(Pair(methodRegex, TracepointProperties(flags, parameterBits)))
-
-            // If the class config is loaded, set tracepoint properties.
-            for (entry in classConfig.methodIds) {
-                var (signature, methodId) = entry
-                val index = signature.indexOf('(')
-                val methodName = signature.substring(0, index)
-                val methodDesc = signature.substring(index)
-
-                if (methodId == null) {
-                    val tracepoint = createTracepoint(
-                        classJvmName, methodName, methodDesc,
-                        TracepointProperties.DISABLED
-                    )
-                    methodId = tracepoints.append(tracepoint)
-                    entry.setValue(methodId)
-                }
-
-                if (methodRegex.matcher(methodName).matches()) {
-                    val tracepoint = getMethodTracepoint(methodId)
-                    tracepoint.parameters.set(parameterBits)
-                    if (enable) {
-                        tracepoint.setFlags(flags)
-                    }
-                    else {
-                        tracepoint.unsetFlags(TracepointFlags.TRACE_ALL)
-                    }
-                }
-            }
-
-            return listOf(className)
+            return ArrayList(traceRequests)
         }
     }
 
-    private fun setTrace(
-        enable: Boolean,
-        classPattern: String,
-        flags: Int = 0,
-        parameters: Collection<Int> = emptyList()
-    ): List<String> {
-        val regex = Pattern.compile(PatternUtil.convertToRegex(classPattern))
-        val matcher = regex.matcher("")
-
-        if (enable) {
-            val classes = AgentLoader.instrumentation?.allLoadedClasses ?: return emptyList()
-
-            val matchingClasses = mutableListOf<String>()
-            for (clazz in classes) {
-                val className = clazz.name
-                matcher.reset(className)
-                if (matcher.matches()) {
-                    matchingClasses.add(className)
-                }
-            }
-
-            lock.withLock {
-                for (className in matchingClasses) {
-                    setTrace(enable, className, "*", flags, parameters)
-                }
-            }
-
-            return matchingClasses
-        }
-        else {
-            val matchingClasses = mutableListOf<String>()
-
-            lock.withLock {
-                for ((classJvmName, _) in classConfigs) {
-                    val className = classJvmName.replace('/', '.')
-                    matcher.reset(className)
-
-                    if (matcher.matches()) {
-                        matchingClasses.add(className)
-                    }
-                }
-
-                for (className in matchingClasses) {
-                    setTrace(enable, className, "*", flags, parameters)
-                }
-            }
-
-            return matchingClasses
-        }
-    }
-
-    /** Remove all tracing and return the affected class names. */
-    fun untraceAll(): List<String> {
+    fun clearAllRequests(): List<TraceRequest> {
         lock.withLock {
-            val classNames = classConfigs.keys.map { it.replace('/', '.') }
-            classConfigs.clear()
-            return classNames
-        }
-    }
-
-    fun shouldInstrumentClass(classJvmName: String): Boolean {
-        lock.withLock {
-            val classConfig = classConfigs[classJvmName] ?: return false
-            return (classConfig.commands?.isNotEmpty() ?: true) || classConfig.methodIds.isNotEmpty()
-        }
-    }
-
-    fun applyCommands(classJvmName: String, methodSignatures: Collection<String>) {
-        lock.withLock {
-            val classConfig = classConfigs[classJvmName] ?: return
-            val commands = classConfig.commands
-
-            if (commands != null) {
-                for (signature in methodSignatures) {
-                    classConfig.methodIds.putIfAbsent(signature, null)
-                }
-
-                for ((pattern, properties) in commands) {
-                    for (signature in methodSignatures) {
-                        val index = signature.indexOf('(')
-                        val methodName = signature.substring(0, index)
-                        val methodDesc = signature.substring(index)
-                        if (pattern.matcher(methodName).matches()) {
-                            putMethodId(classJvmName, methodName, methodDesc, properties)
-                        }
-                    }
-                }
-
-                classConfig.commands = null
-            }
-        }
-    }
-
-    /**
-     * Returns the method ID to be used for [TracerHook] events,
-     * or null if the given method should not be instrumented.
-     */
-    fun getMethodId(classJvmName: String, methodName: String, methodDesc: String): Int? {
-        lock.withLock {
-            val classConfig = classConfigs[classJvmName] ?: return null
-            val methodSignature = "$methodName$methodDesc"
-            return classConfig.methodIds[methodSignature]
-        }
-    }
-
-    private fun putMethodId(
-        classJvmName: String, methodName: String, methodDesc: String,
-        properties: TracepointProperties
-    ): Int? {
-        lock.withLock {
-            val classConfig = classConfigs[classJvmName] ?: return null
-            val methodSignature = "$methodName$methodDesc"
-            val existingId = classConfig.methodIds[methodSignature]
-            if (existingId != null) {
-                getMethodTracepoint(existingId).flags.set(properties.flags)
-                getMethodTracepoint(existingId).parameters.set(properties.parameters)
-                return existingId
-            }
-
-            val tracepoint = createTracepoint(classJvmName, methodName, methodDesc, properties)
-            val newId = tracepoints.append(tracepoint)
-            classConfig.methodIds[methodSignature] = newId
-            return newId
+            val copy = ArrayList(traceRequests)
+            traceRequests.clear()
+            return copy
         }
     }
 
     fun getMethodTracepoint(methodId: Int): Tracepoint = tracepoints.get(methodId)
 
-    private fun createTracepoint(
-        classJvmName: String,
-        methodName: String,
-        methodDesc: String,
-        properties: TracepointProperties
-    ): Tracepoint {
-        return MethodTracepoint(
-            classFqName = classJvmName.replace('/', '.'),
-            methodName = methodName,
-            methodDesc = methodDesc,
-            flags = properties.flags,
-            parameters = properties.parameters
-        )
+    /** Returns true if the given class might have methods that need to be traced. */
+    fun shouldInstrumentClass(clazz: String): Boolean {
+        lock.withLock {
+            // Currently O(n) in the number of trace requests---could be optimized if needed.
+            return traceRequests.any { request ->
+                request.config.enabled && request.matcher.mightMatchMethodInClass(clazz)
+            }
+        }
     }
 
-    fun getTracedClassNames(): List<String> {
-        val classNames = lock.withLock { classConfigs.keys.toList() }
-        return classNames.map { it.replace('/', '.') }
+    /** Returns [MethodTraceData] based on the most recent matching [TraceRequest]. */
+    fun getMethodTraceData(m: MethodFqName): MethodTraceData? {
+        lock.withLock {
+            val recentMatch = traceRequests.asReversed().firstOrNull { it.matcher.matches(m) }
+                ?: return null
+
+            val methodId = methodIds.getOrPut(m) {
+                tracepoints.append(MethodTracepoint(m))
+            }
+
+            // Sync tracepoint flags.
+            // TODO: Remove flags from the Tracepoint class and store them in TracerConfig only.
+            val config = recentMatch.config
+            val flags = if (config.countOnly) TRACE_CALL_COUNT else TRACE_ALL
+            val tracepoint = getMethodTracepoint(methodId)
+            tracepoint.flags.set(flags)
+
+            return MethodTraceData(methodId, config)
+        }
     }
 }
