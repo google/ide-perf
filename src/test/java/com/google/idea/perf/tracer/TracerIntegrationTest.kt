@@ -44,6 +44,7 @@ class TracerIntegrationTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             tracer.handleCommandFromTest("untrace *")
+            CallTreeManager.clearAllTrees()
         }
         catch (e: Throwable) {
             addSuppressedException(e)
@@ -208,7 +209,7 @@ class TracerIntegrationTest : BasePlatformTestCase() {
             """.trimIndent()
         )
 
-        val callTree = tracer.getCallTreeSnapshot()
+        val callTree = CallTreeManager.getGlobalTreeSnapshot()
         val totalCalls = callTree.allNodesInSubtree().sumByLong { it.callCount }
         val callsPerOp = totalCalls / n
         check(callsPerOp == 12L)
@@ -230,7 +231,7 @@ class TracerIntegrationTest : BasePlatformTestCase() {
     }
 
     private fun assertCallTreeStructure(expected: String) {
-        val callTree = tracer.getCallTreeSnapshot()
+        val callTree = CallTreeManager.getGlobalTreeSnapshot()
         val callTreeStr = renderCallTree(callTree)
         assertEquals(expected, callTreeStr)
     }

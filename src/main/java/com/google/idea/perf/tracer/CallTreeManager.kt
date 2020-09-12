@@ -16,11 +16,16 @@
 
 package com.google.idea.perf.tracer
 
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
+
 // Things to improve:
 // - GC the state for dead threads.
 
 /** Builds and manages the call trees for active threads. */
 object CallTreeManager {
+    private var globalMergedCallTree = MutableCallTree(Tracepoint.ROOT)
+    private val globalMergedCallTreeLock = ReentrantLock()
 
     // Synchronized by monitor lock.
     private class ThreadState {
@@ -57,10 +62,7 @@ object CallTreeManager {
         }
     }
 
-    /**
-     * Runs [action] unless doing so would cause infinite recursion. This helps prevent a
-     * StackOverflowError when the user has instrumented a callee of [enter] or [leave].
-     */
+    // Helps prevent StackOverflowError if the user has instrumented a callee of enter() or leave().
     private inline fun doPreventingRecursion(state: ThreadState, action: () -> Unit) {
         if (!state.busy) {
             state.busy = true
@@ -73,14 +75,28 @@ object CallTreeManager {
         }
     }
 
-    /** Collect and reset the call trees from all threads. */
-    fun collectAndReset(): List<CallTree> {
+    fun getGlobalTreeSnapshot(): CallTree {
+        globalMergedCallTreeLock.withLock {
+            val localTrees = collectAndResetThreadLocalTrees()
+            localTrees.forEach(globalMergedCallTree::accumulate)
+            return globalMergedCallTree.copy()
+        }
+    }
+
+    fun clearAllTrees() {
+        globalMergedCallTreeLock.withLock {
+            collectAndResetThreadLocalTrees()
+            globalMergedCallTree = MutableCallTree(Tracepoint.ROOT)
+        }
+    }
+
+    private fun collectAndResetThreadLocalTrees(): List<CallTree> {
         val allState = synchronized(allThreadState) { ArrayList(allThreadState) }
-        val oldTrees = ArrayList<CallTree>(allState.size)
+        val trees = ArrayList<CallTree>(allState.size)
         for (state in allState) {
             val tree = synchronized(state) { state.callTreeBuilder.buildAndReset() }
-            oldTrees.add(tree)
+            trees.add(tree)
         }
-        return oldTrees
+        return trees
     }
 }

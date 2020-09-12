@@ -59,13 +59,6 @@ class MutableCallTree(
         }
     }
 
-    fun clear() {
-        callCount = 0L
-        wallTime = 0L
-        maxWallTime = 0L
-        children.values.forEach(MutableCallTree::clear)
-    }
-
     fun copy(): MutableCallTree {
         val copy = MutableCallTree(tracepoint)
         copy.callCount = callCount

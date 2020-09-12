@@ -59,28 +59,21 @@ class MethodTracerController(
         private var instrumentationInitialized = false
     }
 
-    private var callTree = MutableCallTree(Tracepoint.ROOT)
     val autocomplete = MethodTracerCompletionProvider()
 
     init {
-        CallTreeManager.collectAndReset() // Clear trees accumulated while the tracer was closed.
         Disposer.register(parentDisposable, this)
     }
 
     override fun onControllerInitialize() {}
 
     override fun updateModel(): Boolean {
-        val treeDeltas = CallTreeManager.collectAndReset()
-        if (treeDeltas.isNotEmpty()) {
-            treeDeltas.forEach(callTree::accumulate)
-            return true
-        }
-        return false
+        return true
     }
 
-    /** Refreshes the UI with the current state of [callTree]. */
+    /** Refreshes the UI with the current state of the call tree. */
     override fun updateUi() {
-        val treeSnapshot = callTree.copy()
+        val treeSnapshot = CallTreeManager.getGlobalTreeSnapshot()
         val allStats = TreeAlgorithms.computeFlatTracepointStats(treeSnapshot)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
 
@@ -116,11 +109,12 @@ class MethodTracerController(
 
         when (command) {
             is MethodTracerCommand.Clear -> {
-                callTree.clear()
+                CallTreeManager.clearAllTrees()
                 updateUi()
             }
             is MethodTracerCommand.Reset -> {
-                callTree = MutableCallTree(Tracepoint.ROOT)
+                // TODO: Change meaning of 'reset' to be 'untrace *' plus 'clear'.
+                CallTreeManager.clearAllTrees()
                 updateUi()
             }
             is MethodTracerCommand.Trace -> {
@@ -291,12 +285,5 @@ class MethodTracerController(
         check(!getApplication().isDispatchThread) { "Do not run on EDT; deadlock imminent" }
         invokeAndWaitIfNeeded { handleRawCommandFromEdt(cmd) }
         executor.submit {}.get() // Await quiescence.
-    }
-
-    @TestOnly
-    fun getCallTreeSnapshot(): CallTree {
-        check(!getApplication().isDispatchThread) { "Do not run on EDT; deadlock imminent" }
-        val getTree = { updateModel(); callTree.copy() }
-        return executor.submit(getTree).get()
     }
 }
