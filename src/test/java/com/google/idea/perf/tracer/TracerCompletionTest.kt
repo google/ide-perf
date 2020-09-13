@@ -24,7 +24,7 @@ import org.junit.Test
 
 /** Tests [TracerCompletionProvider]. */
 @Suppress("SpellCheckingInspection")
-class TracerCommandCompletionTest : BasePlatformTestCase() {
+class TracerCompletionTest : BasePlatformTestCase() {
 
     // Test data.
     @Suppress("unused")

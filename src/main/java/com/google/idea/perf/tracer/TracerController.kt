@@ -59,12 +59,12 @@ import kotlin.system.measureNanoTime
 // - Show all instrumented methods in the method list view, even if there are no calls yet(?)
 // - Cancelable progress indicator for class retransformations.
 
-class MethodTracerController(
+class TracerController(
     private val view: TracerPanel, // Access from EDT only.
     parentDisposable: Disposable
 ) : Disposable {
     companion object {
-        private val LOG = Logger.getInstance(MethodTracerController::class.java)
+        private val LOG = Logger.getInstance(TracerController::class.java)
         private const val REFRESH_DELAY_MS = 30L
         private var instrumentationInitialized = false
     }
@@ -129,16 +129,16 @@ class MethodTracerController(
         }
 
         when (command) {
-            is MethodTracerCommand.Clear -> {
+            is TracerCommand.Clear -> {
                 CallTreeManager.clearAllTrees()
                 refreshCallTreeData()
             }
-            is MethodTracerCommand.Reset -> {
+            is TracerCommand.Reset -> {
                 // TODO: Change meaning of 'reset' to be 'untrace *' plus 'clear'.
                 CallTreeManager.clearAllTrees()
                 refreshCallTreeData()
             }
-            is MethodTracerCommand.Trace -> {
+            is TracerCommand.Trace -> {
                 val flags = command.traceOption!!.tracepointFlag
 
                 when (command.target) {
@@ -243,8 +243,8 @@ class MethodTracerController(
         if (classes.isEmpty()) return
         val instrumentation = AgentLoader.instrumentation ?: return
         if (!instrumentationInitialized) {
-            MethodTracerTrampoline.installHook(TracerMethodListener())
-            instrumentation.addTransformer(TracerMethodTransformer(), true)
+            TracerTrampoline.installHook(TracerHookImpl())
+            instrumentation.addTransformer(TracerClassFileTransformer(), true)
             instrumentationInitialized = true
         }
 

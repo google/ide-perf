@@ -280,7 +280,7 @@ object TracerConfig {
     }
 
     /**
-     * Returns the method ID to be used for [MethodTracerHook] events,
+     * Returns the method ID to be used for [TracerHook] events,
      * or null if the given method should not be instrumented.
      */
     fun getMethodId(classJvmName: String, methodName: String, methodDesc: String): Int? {

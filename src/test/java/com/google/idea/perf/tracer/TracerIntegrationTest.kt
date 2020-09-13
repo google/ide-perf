@@ -29,11 +29,11 @@ import kotlin.system.measureNanoTime
 /**
  * This is an integration test for the method tracer.
  *
- * It creates an instance of [MethodTracerController], issues tracing commands for real
+ * It creates an instance of [TracerController], issues tracing commands for real
  * classes ([Sample]), and validates the state of the call tree after some method calls.
  */
 class TracerIntegrationTest : BasePlatformTestCase() {
-    private lateinit var tracer: MethodTracerController
+    private lateinit var tracer: TracerController
 
     override fun setUp() {
         super.setUp()

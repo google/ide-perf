@@ -40,15 +40,15 @@ import kotlin.reflect.jvm.javaMethod
 // - Stress-test this transformer by running it on a lot of classes.
 
 /** Inserts calls (within JVM byte code) to the trampoline. */
-class TracerMethodTransformer: ClassFileTransformer {
+class TracerClassFileTransformer: ClassFileTransformer {
 
     companion object {
-        private val LOG = Logger.getInstance(TracerMethodTransformer::class.java)
+        private val LOG = Logger.getInstance(TracerClassFileTransformer::class.java)
         private const val ASM_API = ASM8
 
-        private val TRAMPOLINE_CLASS_NAME = Type.getType(MethodTracerTrampoline::class.java).internalName
-        private val TRAMPOLINE_ENTER_METHOD = Method.getMethod(MethodTracerTrampoline::enter.javaMethod)
-        private val TRAMPOLINE_LEAVE_METHOD = Method.getMethod(MethodTracerTrampoline::leave.javaMethod)
+        private val TRAMPOLINE_CLASS_NAME = Type.getType(TracerTrampoline::class.java).internalName
+        private val TRAMPOLINE_ENTER_METHOD = Method.getMethod(TracerTrampoline::enter.javaMethod)
+        private val TRAMPOLINE_LEAVE_METHOD = Method.getMethod(TracerTrampoline::leave.javaMethod)
 
         // Set to true to enable bytecode verification.
         private const val DEBUG = false

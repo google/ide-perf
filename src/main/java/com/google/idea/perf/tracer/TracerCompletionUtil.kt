@@ -49,7 +49,7 @@ import javax.swing.Icon
 // * Review how we handle two methods having the same name.
 // * Consider ordering completion results via PrioritizedLookupElement.
 
-object ClassCompletionUtil {
+object TracerCompletionUtil {
 
     /** Creates auto-completion results for all loaded classes and their packages. */
     fun addLookupElementsForLoadedClasses(result: CompletionResultSet) {

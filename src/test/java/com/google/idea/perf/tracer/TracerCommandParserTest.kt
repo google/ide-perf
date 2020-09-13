@@ -19,16 +19,16 @@ package com.google.idea.perf.tracer
 import org.junit.Test
 import kotlin.test.assertEquals
 
-private typealias Unknown = MethodTracerCommand.Unknown
-private typealias Clear = MethodTracerCommand.Clear
-private typealias Reset = MethodTracerCommand.Reset
-private typealias Trace = MethodTracerCommand.Trace
+private typealias Unknown = TracerCommand.Unknown
+private typealias Clear = TracerCommand.Clear
+private typealias Reset = TracerCommand.Reset
+private typealias Trace = TracerCommand.Trace
 
-private fun assertCommand(expected: MethodTracerCommand, actual: String) {
+private fun assertCommand(expected: TracerCommand, actual: String) {
     assertEquals(expected, parseMethodTracerCommand(actual))
 }
 
-class MethodTracerCommandTest {
+class TracerCommandParserTest {
     @Test
     fun testCommandParser() {
         // Basic commands.

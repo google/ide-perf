@@ -17,8 +17,8 @@
 package com.google.idea.perf.tracer.ui
 
 import com.google.idea.perf.tracer.CallTree
-import com.google.idea.perf.tracer.MethodTracerCompletionProvider
-import com.google.idea.perf.tracer.MethodTracerController
+import com.google.idea.perf.tracer.TracerCompletionProvider
+import com.google.idea.perf.tracer.TracerController
 import com.google.idea.perf.tracer.TracepointStats
 import com.google.idea.perf.util.formatNsInMs
 import com.intellij.openapi.Disposable
@@ -44,7 +44,7 @@ import javax.swing.JProgressBar
 
 /** The top-level panel for the tracer, displayed via the [TracerDialog]. */
 class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPanel>() {
-    private val controller = MethodTracerController(this, parentDisposable)
+    private val controller = TracerController(this, parentDisposable)
     private val commandLine: TextFieldWithCompletion
     private val progressBar: JProgressBar
     private val tabs: JBTabbedPane
@@ -57,7 +57,7 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
-        val completionProvider = MethodTracerCompletionProvider()
+        val completionProvider = TracerCompletionProvider()
         commandLine = TracerCommandLine(completionProvider, controller::handleRawCommandFromEdt)
         add(commandLine)
 

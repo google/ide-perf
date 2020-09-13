@@ -42,7 +42,7 @@ import com.intellij.util.textCompletion.TextCompletionProvider
  *   "trace Object" => "trace java.lang.Object"
  *   "trace java.lang.Object#toStr" => "trace java.lang.Object#toString"
  */
-class MethodTracerCompletionProvider : TextCompletionProvider, DumbAware {
+class TracerCompletionProvider : TextCompletionProvider, DumbAware {
 
     override fun fillCompletionVariants(
         parameters: CompletionParameters,
@@ -70,25 +70,25 @@ class MethodTracerCompletionProvider : TextCompletionProvider, DumbAware {
                 result.addElement(createLookup("untrace").withInsertHandler(addSpace))
             }
             1 -> {
-                if (command is MethodTracerCommand.Trace) {
+                if (command is TracerCommand.Trace) {
                     if (command.enable) {
-                        ClassCompletionUtil.addLookupElementsForLoadedClasses(result)
+                        TracerCompletionUtil.addLookupElementsForLoadedClasses(result)
                     } else {
                         for (fqName in TracerConfig.getTracedClassNames()) {
-                            result.addElement(ClassCompletionUtil.createClassLookupElement(fqName))
+                            result.addElement(TracerCompletionUtil.createClassLookupElement(fqName))
                         }
                     }
                 }
             }
             2, 3 -> {
-                if (command is MethodTracerCommand.Trace) {
+                if (command is TracerCommand.Trace) {
                     val target = command.target
                     if (target is TraceTarget.Method && target.methodName != null) {
-                        ClassCompletionUtil.addLookupElementsForMethods(target.className, result)
-                        val wildcard = ClassCompletionUtil.WildcardLookupElement.withPriority(1.0)
+                        TracerCompletionUtil.addLookupElementsForMethods(target.className, result)
+                        val wildcard = TracerCompletionUtil.WildcardLookupElement.withPriority(1.0)
                         result.addElement(wildcard)
                     } else {
-                        ClassCompletionUtil.addLookupElementsForLoadedClasses(result)
+                        TracerCompletionUtil.addLookupElementsForLoadedClasses(result)
                     }
                 }
             }

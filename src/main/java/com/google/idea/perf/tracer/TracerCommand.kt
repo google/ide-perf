@@ -17,22 +17,22 @@
 package com.google.idea.perf.tracer
 
 /** A tracer CLI command */
-sealed class MethodTracerCommand {
+sealed class TracerCommand {
     /** Unrecognized command. */
-    object Unknown: MethodTracerCommand()
+    object Unknown: TracerCommand()
 
     /** Zero out all tracepoint data, but keep call tree. */
-    object Clear: MethodTracerCommand()
+    object Clear: TracerCommand()
 
     /** Zero out all tracepoint data and reset the call tree. */
-    object Reset: MethodTracerCommand()
+    object Reset: TracerCommand()
 
     /** Trace or untrace a set of methods. */
     data class Trace(
         val enable: Boolean,
         val traceOption: TraceOption?,
         val target: TraceTarget?
-    ): MethodTracerCommand()
+    ): TracerCommand()
 
     /**
      * Checks for syntax errors. If no error exists, then all fields within this structure are
@@ -105,25 +105,25 @@ sealed class TraceTarget {
         }
 }
 
-fun parseMethodTracerCommand(text: String): MethodTracerCommand {
+fun parseMethodTracerCommand(text: String): TracerCommand {
     val tokens = tokenize(text)
     if (tokens.isEmpty()) {
-        return MethodTracerCommand.Unknown
+        return TracerCommand.Unknown
     }
 
     return when (tokens.first()) {
-        ClearKeyword -> MethodTracerCommand.Clear
-        ResetKeyword -> MethodTracerCommand.Reset
+        ClearKeyword -> TracerCommand.Clear
+        ResetKeyword -> TracerCommand.Reset
         TraceKeyword -> parseTraceCommand(tokens.advance(), true)
         UntraceKeyword -> parseTraceCommand(tokens.advance(), false)
-        else -> MethodTracerCommand.Unknown
+        else -> TracerCommand.Unknown
     }
 }
 
-private fun parseTraceCommand(tokens: List<Token>, enable: Boolean): MethodTracerCommand {
+private fun parseTraceCommand(tokens: List<Token>, enable: Boolean): TracerCommand {
     return when (val option = parseTraceOption(tokens)) {
-        null -> MethodTracerCommand.Trace(enable, TraceOption.ALL, parseTraceTarget(tokens))
-        else -> MethodTracerCommand.Trace(enable, option, parseTraceTarget(tokens.advance()))
+        null -> TracerCommand.Trace(enable, TraceOption.ALL, parseTraceTarget(tokens))
+        else -> TracerCommand.Trace(enable, option, parseTraceTarget(tokens.advance()))
     }
 }
 

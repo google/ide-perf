@@ -17,7 +17,7 @@
 package com.google.idea.perf.tracer;
 
 /** Handler for method entry/exit events coming from instrumented bytecode. */
-public interface MethodTracerHook {
+public interface TracerHook {
     void enter(int methodId, Object[] args);
     void leave();
 }

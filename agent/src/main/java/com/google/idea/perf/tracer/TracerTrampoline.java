@@ -23,7 +23,7 @@ package com.google.idea.perf.tracer;
  *
  * So, we install a layer of indirection between these two worlds.
  */
-public final class MethodTracerTrampoline {
+public final class TracerTrampoline {
     private static TracerHook hook = new TracerHookStub();
 
     public static void installHook(TracerHook newHook) {
