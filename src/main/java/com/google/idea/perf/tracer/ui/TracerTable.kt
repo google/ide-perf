@@ -121,7 +121,7 @@ class TracerTable(private val model: TracerTableModel) : JBTable(model) {
             table.setShowGrid(false)
 
             // Ensure the row heights for TracerTable and TracerTree match each other.
-            table.rowHeight = JBUI.scale(20)
+            table.rowHeight = JBUI.scale(22)
 
             // Column rendering.
             val columnModel = table.columnModel
