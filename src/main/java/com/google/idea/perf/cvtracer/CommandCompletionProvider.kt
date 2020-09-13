@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf
+package com.google.idea.perf.cvtracer
 
 import com.google.idea.perf.util.fuzzyMatch
 import com.intellij.codeInsight.completion.CompletionParameters

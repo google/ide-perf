@@ -16,7 +16,6 @@
 
 package com.google.idea.perf.cvtracer
 
-import com.google.idea.perf.CommandPredictor
 import com.google.idea.perf.util.FuzzySearcher
 import com.intellij.openapi.progress.ProgressManager
 

@@ -17,7 +17,6 @@
 package com.google.idea.perf.cvtracer
 
 import com.google.idea.perf.AgentLoader
-import com.google.idea.perf.CommandCompletionProvider
 import com.google.idea.perf.TracerController
 import com.google.idea.perf.util.fuzzyMatch
 import com.google.idea.perf.util.shouldHideClassFromCompletionResults
