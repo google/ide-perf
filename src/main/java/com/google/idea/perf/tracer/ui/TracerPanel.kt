@@ -17,9 +17,9 @@
 package com.google.idea.perf.tracer.ui
 
 import com.google.idea.perf.tracer.CallTree
+import com.google.idea.perf.tracer.TracepointStats
 import com.google.idea.perf.tracer.TracerCompletionProvider
 import com.google.idea.perf.tracer.TracerController
-import com.google.idea.perf.tracer.TracepointStats
 import com.google.idea.perf.util.formatNsInMs
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
@@ -44,7 +44,7 @@ import javax.swing.JProgressBar
 
 /** The top-level panel for the tracer, displayed via the [TracerDialog]. */
 class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPanel>() {
-    private val controller = TracerController(this, parentDisposable)
+    val controller = TracerController(this, parentDisposable)
     private val commandLine: TextFieldWithCompletion
     private val progressBar: JProgressBar
     private val tabs: JBTabbedPane
