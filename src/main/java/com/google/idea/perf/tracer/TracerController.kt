@@ -297,9 +297,9 @@ class TracerController(
     }
 
     private fun displayWarning(warning: String, e: Throwable? = null) {
+        LOG.warn(warning, e)
         invokeLater {
             view.showCommandLinePopup(warning, MessageType.WARNING)
-            LOG.warn(warning, e)
         }
     }
 
