@@ -39,7 +39,7 @@ class TracerHookImpl : TracerHook {
             // from a tracing hook (causing infinite recursion).
             CallTreeManager.enter(Tracepoint.ROOT)
             CallTreeManager.leave()
-            CallTreeManager.clearAllTrees()
+            CallTreeManager.clearCallTrees()
         }
     }
 }

@@ -89,7 +89,7 @@ class TracerController(
     }
 
     private fun refreshCallTreeData() {
-        val treeSnapshot = CallTreeManager.getGlobalTreeSnapshot()
+        val treeSnapshot = CallTreeManager.getCallTreeSnapshotAllThreadsMerged()
         val allStats = TreeAlgorithms.computeFlatTracepointStats(treeSnapshot)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
 
@@ -130,12 +130,12 @@ class TracerController(
 
         when (command) {
             is TracerCommand.Clear -> {
-                CallTreeManager.clearAllTrees()
+                CallTreeManager.clearCallTrees()
                 refreshCallTreeData()
             }
             is TracerCommand.Reset -> {
                 // TODO: Change meaning of 'reset' to be 'untrace *' plus 'clear'.
-                CallTreeManager.clearAllTrees()
+                CallTreeManager.clearCallTrees()
                 refreshCallTreeData()
             }
             is TracerCommand.Trace -> {

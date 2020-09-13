@@ -23,29 +23,24 @@ package com.google.idea.perf.tracer
 // - Consider caching recent call paths since they are likely to be repeated.
 // - Return an object from push() that the caller passes to pop() so that we can assert stack integrity.
 // - Consider logging errors instead of throwing exceptions.
-// - Consider subtracting buildAndReset() overhead from time measurements.
-// - Reduce allocations by keeping old tree nodes around and using a 'dirty' flag.
 
-/** Builds a call tree for a single thread from a sequence of push() and pop() calls. */
-class CallTreeBuilder(
-    private val clock: Clock = SystemClock
-) {
+/** Builds a call tree for a single thread from a sequence of [push] and [pop] calls. */
+class CallTreeBuilder(clock: Clock = SystemClock) {
+    private val clock = ClockWithOverheadAdjustment(clock)
     private var root = Tree(Tracepoint.ROOT, parent = null)
     private var currentNode = root
-
-    init {
-        val now = clock.sample()
-        root.startWallTime = now
-        root.continuedWallTime = now
-        root.tracepointFlags = TracepointFlags.TRACE_WALL_TIME
-    }
 
     interface Clock {
         fun sample(): Long
     }
 
-    object SystemClock: Clock {
+    private object SystemClock : Clock {
         override fun sample(): Long = System.nanoTime()
+    }
+
+    private class ClockWithOverheadAdjustment(val delegate: Clock) : Clock {
+        var overhead: Long = 0
+        override fun sample(): Long = delegate.sample() - overhead
     }
 
     private class Tree(
@@ -58,7 +53,7 @@ class CallTreeBuilder(
         override val children: MutableMap<Tracepoint, Tree> = LinkedHashMap()
 
         var startWallTime: Long = 0
-        var continuedWallTime: Long = 0
+        var continueWallTime: Long = 0
         var tracepointFlags: Int = 0
 
         init {
@@ -82,7 +77,7 @@ class CallTreeBuilder(
         if ((flags and TracepointFlags.TRACE_WALL_TIME) != 0) {
             val now = clock.sample()
             child.startWallTime = now
-            child.continuedWallTime = now
+            child.continueWallTime = now
         }
 
         currentNode = child
@@ -92,52 +87,48 @@ class CallTreeBuilder(
         val child = currentNode
         val parent = child.parent
 
-        check(parent != null) {
-            "The root node should never be popped"
-        }
+        check(parent != null) { "The root node should never be popped" }
 
         if ((child.tracepointFlags and TracepointFlags.TRACE_WALL_TIME) != 0) {
             val now = clock.sample()
-            val elapsedTime = now - child.continuedWallTime
-            val elapsedTimeFromStart = now - child.startWallTime
-            child.wallTime += elapsedTime
-            child.maxWallTime = maxOf(child.maxWallTime, elapsedTimeFromStart)
+            child.wallTime += now - child.continueWallTime
+            child.maxWallTime = maxOf(child.maxWallTime, now - child.startWallTime)
         }
 
         currentNode = parent
     }
 
-    fun buildAndReset(): CallTree {
+    fun subtractOverhead(overhead: Long) {
+        clock.overhead += overhead
+    }
+
+    // Returns the current call tree. Careful: it is mutable (not copied).
+    fun getUpToDateTree(): CallTree {
+
         // Update timing data for nodes still on the stack.
         val now = clock.sample()
-        val stack = generateSequence(currentNode, Tree::parent).toList().asReversed()
+        val stack = generateSequence(currentNode, Tree::parent)
         for (node in stack) {
-            val elapsedTime = now - node.continuedWallTime
-            val elapsedTimeFromStart = now - node.startWallTime
-
-            if ((node.tracepointFlags and TracepointFlags.TRACE_WALL_TIME) != 0) {
-                node.wallTime += elapsedTime
-                node.maxWallTime = maxOf(node.maxWallTime, elapsedTimeFromStart)
-                node.continuedWallTime = now
+            if (node.tracepoint != Tracepoint.ROOT &&
+                (node.tracepointFlags and TracepointFlags.TRACE_WALL_TIME) != 0
+            ) {
+                node.wallTime += now - node.continueWallTime
+                node.maxWallTime = maxOf(node.maxWallTime, now - node.startWallTime)
+                node.continueWallTime = now
             }
         }
 
-        // Reset to a new tree and copy over the current stack.
-        val oldRoot = root
-        root = Tree(Tracepoint.ROOT, parent = null)
-        root.startWallTime = oldRoot.startWallTime
-        root.continuedWallTime = oldRoot.continuedWallTime
-        root.tracepointFlags = oldRoot.tracepointFlags
-        currentNode = root
-        for (node in stack.subList(1, stack.size)) {
-            val copy = Tree(node.tracepoint, parent = currentNode)
-            copy.startWallTime = node.startWallTime
-            copy.continuedWallTime = node.continuedWallTime
-            copy.tracepointFlags = node.tracepointFlags
-            currentNode.children[node.tracepoint] = copy
-            currentNode = copy
-        }
+        return root
+    }
 
-        return oldRoot
+    // Resets to an empty call tree (but keeps the current call stack).
+    fun clear() {
+        val stack = generateSequence(currentNode, Tree::parent)
+        val pathFromRoot = stack.toList().asReversed()
+        val tracepoints = pathFromRoot.drop(1).map(Tree::tracepoint) // Excludes the root.
+
+        root = Tree(Tracepoint.ROOT, parent = null)
+        currentNode = root
+        tracepoints.forEach(::push)
     }
 }

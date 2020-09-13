@@ -163,24 +163,11 @@ class CallTreeTest {
         builder.pop()
         builder.pop()
 
-        fun StringBuilder.printTree(node: CallTree, indent: String) {
-            with(node) {
-                appendln("$indent$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns")
-            }
-            for (child in node.children.values) {
-                printTree(child, "$indent  ")
-            }
-        }
-
-        fun buildAndCheckTree(expected: String) {
-            val tree = builder.buildAndReset()
-            val treeStr = buildString { printTree(tree, "") }
-            assertEquals(expected, treeStr.trim())
-        }
+        fun buildAndCheckTree(expected: String) = buildAndCheckTree(builder, expected)
 
         buildAndCheckTree(
             """
-            [root]: 0 calls, 15 ns, 15 ns
+            [root]: 0 calls, 0 ns, 0 ns
               simple1: 2 calls, 6 ns, 4 ns
                 simple2: 3 calls, 5 ns, 3 ns
                   simple3: 2 calls, 2 ns, 1 ns
@@ -199,7 +186,7 @@ class CallTreeTest {
         builder.push(simple3); clock.time++
         buildAndCheckTree(
             """
-            [root]: 0 calls, 3 ns, 18 ns
+            [root]: 0 calls, 0 ns, 0 ns
               simple1: 1 calls, 3 ns, 3 ns
                 simple2: 1 calls, 2 ns, 2 ns
                   simple3: 1 calls, 1 ns, 1 ns
@@ -209,10 +196,21 @@ class CallTreeTest {
         clock.time += 10
         buildAndCheckTree(
             """
-            [root]: 0 calls, 10 ns, 28 ns
-              simple1: 0 calls, 10 ns, 13 ns
-                simple2: 0 calls, 10 ns, 12 ns
-                  simple3: 0 calls, 10 ns, 11 ns
+            [root]: 0 calls, 0 ns, 0 ns
+              simple1: 1 calls, 10 ns, 10 ns
+                simple2: 1 calls, 10 ns, 10 ns
+                  simple3: 1 calls, 10 ns, 10 ns
+            """.trimIndent()
+        )
+
+        clock.time += 10
+        builder.subtractOverhead(5)
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 0 ns, 0 ns
+              simple1: 1 calls, 5 ns, 5 ns
+                simple2: 1 calls, 5 ns, 5 ns
+                  simple3: 1 calls, 5 ns, 5 ns
             """.trimIndent()
         )
 
@@ -221,10 +219,10 @@ class CallTreeTest {
         builder.pop()
         buildAndCheckTree(
             """
-            [root]: 0 calls, 2 ns, 30 ns
-              simple1: 0 calls, 2 ns, 15 ns
-                simple2: 0 calls, 1 ns, 13 ns
-                  simple3: 0 calls, 0 ns, 11 ns
+            [root]: 0 calls, 0 ns, 0 ns
+              simple1: 1 calls, 2 ns, 2 ns
+                simple2: 1 calls, 1 ns, 1 ns
+                  simple3: 1 calls, 0 ns, 0 ns
             """.trimIndent()
         )
     }
@@ -235,30 +233,17 @@ class CallTreeTest {
         val builder = CallTreeBuilder(clock)
         val simple = SimpleTracepoint("simple1")
 
-        fun StringBuilder.printTree(node: CallTree, indent: String) {
-            with(node) {
-                appendln("$indent$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns")
-            }
-            for (child in node.children.values) {
-                printTree(child, "$indent  ")
-            }
-        }
-
-        fun buildAndCheckTree(expected: String) {
-            val tree = builder.buildAndReset()
-            val treeStr = buildString { printTree(tree, "") }
-            assertEquals(expected, treeStr.trim())
-        }
-
         // Given an enabled tracepoint, disable tracepoint midway.
         builder.push(simple)
         clock.time++
         simple.unsetFlags(TracepointFlags.TRACE_ALL)
         builder.pop()
 
+        fun buildAndCheckTree(expected: String) = buildAndCheckTree(builder, expected)
+
         buildAndCheckTree(
             """
-            [root]: 0 calls, 1 ns, 1 ns
+            [root]: 0 calls, 0 ns, 0 ns
               simple1: 1 calls, 1 ns, 1 ns
             """.trimIndent()
         )
@@ -271,18 +256,18 @@ class CallTreeTest {
 
         buildAndCheckTree(
             """
-            [root]: 0 calls, 1 ns, 2 ns
+            [root]: 0 calls, 0 ns, 0 ns
               simple1: 0 calls, 0 ns, 0 ns
             """.trimIndent()
         )
 
-        // Given an enabled tracepoint, disable tracepoint and build tree midway.
+        // Given an enabled tracepoint, disable wall time and build tree midway.
         builder.push(simple)
         clock.time++
-        simple.unsetFlags(TracepointFlags.TRACE_ALL)
+        simple.unsetFlags(TracepointFlags.TRACE_WALL_TIME)
         buildAndCheckTree(
             """
-            [root]: 0 calls, 1 ns, 3 ns
+            [root]: 0 calls, 0 ns, 0 ns
               simple1: 1 calls, 1 ns, 1 ns
             """.trimIndent()
         )
@@ -290,8 +275,8 @@ class CallTreeTest {
         clock.time += 10
         buildAndCheckTree(
             """
-            [root]: 0 calls, 10 ns, 13 ns
-              simple1: 0 calls, 10 ns, 11 ns
+            [root]: 0 calls, 0 ns, 0 ns
+              simple1: 1 calls, 0 ns, 0 ns
             """.trimIndent()
         )
 
@@ -299,9 +284,25 @@ class CallTreeTest {
         builder.pop()
         buildAndCheckTree(
             """
-            [root]: 0 calls, 1 ns, 14 ns
-              simple1: 0 calls, 1 ns, 12 ns
+            [root]: 0 calls, 0 ns, 0 ns
+              simple1: 1 calls, 0 ns, 0 ns
             """.trimIndent()
         )
+    }
+
+    private fun StringBuilder.printTree(node: CallTree, indent: String) {
+        with(node) {
+            appendln("$indent$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns")
+        }
+        for (child in node.children.values) {
+            printTree(child, "$indent  ")
+        }
+    }
+
+    private fun buildAndCheckTree(builder: CallTreeBuilder, expected: String) {
+        val tree = builder.getUpToDateTree()
+        val treeStr = buildString { printTree(tree, "") }
+        assertEquals(expected, treeStr.trim())
+        builder.clear()
     }
 }
