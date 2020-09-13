@@ -84,25 +84,29 @@ class TracerTreeModel : DefaultTreeModel(null), TreeTableModel {
         }
     }
 
-    /**
-     * Incrementally mutates the current UI tree to match the given call tree.
-     * The main benefit of this is preserving the selection and expansion state of the tree.
-     * For best results we hope that the call tree grows monotonically with stable iteration order.
-     */
+    // Incrementally mutates the current UI tree to match the given call tree.
+    // The main benefit of this is preserving the selection and expansion state of the tree.
     private fun updateIncrementally(uiNode: CallNode, callTree: CallTree) {
+        val oldCallTree = uiNode.callTree
         uiNode.callTree = callTree
 
-        while (uiNode.childCount > callTree.children.size) {
-            removeNodeFromParent(uiNode.lastChild as CallNode)
-        }
-
-        for ((i, callee) in callTree.children.values.withIndex()) {
-            if (i < uiNode.childCount) {
-                val uiChild = uiNode.getChildAt(i) as CallNode
+        // Updates and deletions.
+        val oldUiChildren = uiNode.children().toList()
+        for (uiChild in oldUiChildren) {
+            check(uiChild is CallNode)
+            val callee = callTree.children[uiChild.callTree.tracepoint]
+            if (callee != null) {
                 updateIncrementally(uiChild, callee)
             } else {
+                uiChild.removeFromParent()
+            }
+        }
+
+        // New insertions.
+        for (callee in callTree.children.values) {
+            if (!oldCallTree.children.containsKey(callee.tracepoint)) {
                 val newUiChild = CallNode(callee)
-                insertNodeInto(newUiChild, uiNode, i)
+                insertNodeInto(newUiChild, uiNode, uiNode.childCount)
             }
         }
     }
