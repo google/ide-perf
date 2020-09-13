@@ -31,8 +31,6 @@ import javax.swing.border.Border
 
 /** The dialog window that pops up via the "Trace" action. It displays the [TracerPanel]. */
 class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
-    var view: TracerPanel? = null; private set
-
     init {
         init()
         title = "Tracer"
@@ -44,10 +42,10 @@ class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false
         }
     }
 
-    override fun createCenterPanel(): JComponent {
-        view = TracerPanel(disposable)
-        return view!!
-    }
+    override fun createCenterPanel(): JComponent = TracerPanel(disposable)
+    override fun createContentPaneBorder(): Border? = null // No border.
+    override fun getDimensionServiceKey(): String = "${javaClass.packageName}.Tracer"
+    override fun createActions(): Array<Action> = emptyArray()
 
     override fun show() {
         super.show()
@@ -61,8 +59,4 @@ class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false
         }
         super.doCancelAction(source)
     }
-
-    override fun createContentPaneBorder(): Border? = null // No border.
-    override fun getDimensionServiceKey(): String = "${javaClass.packageName}.Tracer"
-    override fun createActions(): Array<Action> = emptyArray()
 }

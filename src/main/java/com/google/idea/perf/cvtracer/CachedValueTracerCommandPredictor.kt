@@ -16,18 +16,13 @@
 
 package com.google.idea.perf.cvtracer
 
+import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.util.FuzzySearcher
+import com.google.idea.perf.util.shouldHideClassFromCompletionResults
 import com.intellij.openapi.progress.ProgressManager
 
 class CachedValueTracerCommandPredictor: CommandPredictor {
-    @Volatile
-    private var classNames = emptyList<String>()
-
     private val searcher = FuzzySearcher()
-
-    fun setClasses(classes: Collection<Class<*>>) {
-        classNames = classes.map { it.name }
-    }
 
     override fun predict(text: String, offset: Int): List<String> {
         val tokens = text.trimStart().split(' ', '\t')
@@ -41,7 +36,13 @@ class CachedValueTracerCommandPredictor: CommandPredictor {
                 listOf("clear", "reset", "filter", "clear-filters", "group-by"), token
             )
             1 -> when (command) {
-                is CachedValueTracerCommand.Filter -> predictToken(classNames, token)
+                is CachedValueTracerCommand.Filter -> {
+                    val instrumentation = AgentLoader.instrumentation ?: return emptyList()
+                    val classNames = instrumentation.allLoadedClasses
+                        .filterNot(::shouldHideClassFromCompletionResults)
+                        .map { it.name }
+                    predictToken(classNames, token)
+                }
                 is CachedValueTracerCommand.GroupBy -> predictToken(
                     listOf("class", "stack-trace"), token
                 )

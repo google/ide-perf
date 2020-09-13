@@ -17,13 +17,18 @@
 package com.google.idea.perf.tracer
 
 import com.google.idea.perf.AgentLoader
-import com.google.idea.perf.TracerController
 import com.google.idea.perf.tracer.ui.TracerPanel
+import com.google.idea.perf.util.ExecutorWithExceptionLogging
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
+import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.MessageType
+import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.Disposer
 import com.intellij.psi.PsiElementFinder
 import com.intellij.util.ui.UIUtil
@@ -33,8 +38,11 @@ import java.io.File
 import java.io.IOException
 import java.lang.instrument.UnmodifiableClassException
 import java.lang.reflect.Method
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.imageio.ImageIO
 import kotlin.reflect.jvm.javaMethod
+import kotlin.system.measureNanoTime
 
 // Things to improve:
 // - Audit overall overhead and memory usage.
@@ -54,37 +62,51 @@ import kotlin.reflect.jvm.javaMethod
 class MethodTracerController(
     private val view: TracerPanel, // Access from EDT only.
     parentDisposable: Disposable
-): TracerController("Method Tracer", view), Disposable {
+) : Disposable {
     companion object {
+        private val LOG = Logger.getInstance(MethodTracerController::class.java)
+        private const val REFRESH_DELAY_MS = 30L
         private var instrumentationInitialized = false
     }
 
-    val autocomplete = MethodTracerCompletionProvider()
+    // For simplicity we run all tasks in a single-thread executor.
+    // Most methods are assumed to run only on this executor.
+    private val executor = ExecutorWithExceptionLogging("Tracer", 1)
+    private val dataRefreshLoopStarted = AtomicBoolean()
 
     init {
         Disposer.register(parentDisposable, this)
     }
 
-    override fun onControllerInitialize() {}
-
-    override fun updateModel(): Boolean {
-        return true
+    fun startDataRefreshLoop() {
+        check(dataRefreshLoopStarted.compareAndSet(false, true))
+        val refreshLoop = { updateRefreshTimeUi(measureNanoTime(::refreshCallTreeData)) }
+        executor.scheduleWithFixedDelay(refreshLoop, 0, REFRESH_DELAY_MS, TimeUnit.MILLISECONDS)
     }
 
-    /** Refreshes the UI with the current state of the call tree. */
-    override fun updateUi() {
+    override fun dispose() {
+        executor.shutdownNow()
+    }
+
+    private fun refreshCallTreeData() {
         val treeSnapshot = CallTreeManager.getGlobalTreeSnapshot()
         val allStats = TreeAlgorithms.computeFlatTracepointStats(treeSnapshot)
         val visibleStats = allStats.filter { it.tracepoint != Tracepoint.ROOT }
 
         // We use invokeAndWait to ensure proper backpressure for the data refresh loop.
-        getApplication().invokeAndWait {
-            view.listView.setTracepointStats(visibleStats)
-            view.treeView.setCallTree(treeSnapshot)
+        invokeAndWaitIfNeeded {
+            view.refreshCallTreeData(treeSnapshot, visibleStats)
         }
     }
 
-    override fun handleRawCommandFromEdt(text: String) {
+    private fun updateRefreshTimeUi(refreshTime: Long) {
+        invokeAndWaitIfNeeded {
+            view.setRefreshTime(refreshTime)
+        }
+    }
+
+    fun handleRawCommandFromEdt(text: String) {
+        getApplication().assertIsDispatchThread()
         if (text.isBlank()) return
         val cmd = text.trim()
         if (cmd.startsWith("save")) {
@@ -102,20 +124,19 @@ class MethodTracerController(
         val errors = command.errors
 
         if (errors.isNotEmpty()) {
-            errors.forEach { LOG.warn(it) }
-            view.showCommandBalloon(errors.joinToString("\n"), MessageType.ERROR)
+            displayWarning(errors.joinToString("\n"))
             return
         }
 
         when (command) {
             is MethodTracerCommand.Clear -> {
                 CallTreeManager.clearAllTrees()
-                updateUi()
+                refreshCallTreeData()
             }
             is MethodTracerCommand.Reset -> {
                 // TODO: Change meaning of 'reset' to be 'untrace *' plus 'clear'.
                 CallTreeManager.clearAllTrees()
-                updateUi()
+                refreshCallTreeData()
             }
             is MethodTracerCommand.Trace -> {
                 val flags = command.traceOption!!.tracepointFlag
@@ -134,17 +155,13 @@ class MethodTracerController(
                         traceAndRetransform(
                             command.enable,
                             flags,
-                            this::dataRefreshLoop.javaMethod!!,
-                            this::updateUi.javaMethod!!,
+                            this::refreshCallTreeData.javaMethod!!,
                             this::handleCommand.javaMethod!!
                         )
                     }
                     is TraceTarget.All -> {
                         if (command.enable) {
-                            LOG.warn("Tracing all methods is prohibited.")
-                            view.showCommandBalloon(
-                                "Tracing all methods is prohibited", MessageType.ERROR
-                            )
+                            displayWarning("Tracing all methods is not supported")
                         }
                         else {
                             val classNames = TracerConfig.untraceAll()
@@ -197,8 +214,7 @@ class MethodTracerController(
                 }
             }
             else -> {
-                LOG.warn("Command not implemented.")
-                view.showCommandBalloon("Command not implemented", MessageType.ERROR)
+                displayWarning("Command not implemented")
             }
         }
     }
@@ -245,7 +261,7 @@ class MethodTracerController(
                     instrumentation.retransformClasses(clazz)
                 }
                 catch (e: UnmodifiableClassException) {
-                    LOG.warn("Cannot instrument non-modifiable class: ${clazz.name}")
+                    LOG.info("Cannot instrument non-modifiable class: ${clazz.name}")
                 }
                 catch (e: Throwable) {
                     LOG.error("Failed to retransform class: ${clazz.name}", e)
@@ -260,12 +276,12 @@ class MethodTracerController(
     /** Saves a png of the current view. */
     private fun savePngFromEdt(path: String) {
         if (!path.endsWith(".png")) {
-            LOG.warn("Destination file must be a .png file; instead got $path")
+            displayWarning("Destination file must be a .png file; instead got $path")
             return
         }
         val file = File(path)
         if (!file.isAbsolute) {
-            LOG.warn("Destination file must be specified with an absolute path; instead got $path")
+            displayWarning("Must specify destination file with an absolute path; instead got $path")
             return
         }
         val img = UIUtil.createImage(view, view.width, view.height, BufferedImage.TYPE_INT_RGB)
@@ -275,9 +291,22 @@ class MethodTracerController(
                 ImageIO.write(img, "png", file)
             }
             catch (e: IOException) {
-                LOG.warn("Failed to write png to $path", e)
+                displayWarning("Failed to write png to $path", e)
             }
         }
+    }
+
+    private fun displayWarning(warning: String, e: Throwable? = null) {
+        invokeLater {
+            view.showCommandLinePopup(warning, MessageType.WARNING)
+            LOG.warn(warning, e)
+        }
+    }
+
+    private fun <T> runWithProgress(action: (ProgressIndicator) -> T): T {
+        val indicator = view.createProgressIndicator()
+        val computable = Computable { action(indicator) }
+        return ProgressManager.getInstance().runProcess(computable, indicator)
     }
 
     @TestOnly

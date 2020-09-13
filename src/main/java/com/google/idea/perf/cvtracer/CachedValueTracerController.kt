@@ -16,26 +16,33 @@
 
 package com.google.idea.perf.cvtracer
 
-import com.google.idea.perf.AgentLoader
-import com.google.idea.perf.TracerController
+import com.google.idea.perf.util.ExecutorWithExceptionLogging
+import com.google.idea.perf.util.formatNsInMs
 import com.google.idea.perf.util.fuzzyMatch
-import com.google.idea.perf.util.shouldHideClassFromCompletionResults
 import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.Disposer
 import com.intellij.psi.util.CachedValueProfiler
 import java.util.*
-import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.system.measureNanoTime
 
 class CachedValueTracerController(
     private val view: CachedValueTracerView,
     parentDisposable: Disposable
-): TracerController("Cached Value Tracer", view) {
+) : Disposable {
     companion object {
-        const val AUTOCOMPLETE_RELOAD_INTERVAL = 120L
+        private val LOG = Logger.getInstance(CachedValueTracerController::class.java)
+        private const val REFRESH_DELAY_MS = 30L
     }
 
+    // For simplicity we run all tasks on a single-thread executor.
+    // Most data structures below are assumed to be accessed only from this executor.
+    private val executor = ExecutorWithExceptionLogging("CachedValue Tracer", 1)
+    private val dataRefreshLoopStarted = AtomicBoolean()
     private val currentStats = mutableMapOf<String, MutableCachedValueStats>()
     private val filteredStatKeys = ArrayList<StackTraceElement>()
     private var groupMode = GroupOption.CLASS
@@ -49,21 +56,17 @@ class CachedValueTracerController(
     }
 
     override fun dispose() {
-        super.dispose()
+        executor.shutdownNow()
         CachedValueProfiler.getInstance().isEnabled = false
     }
 
-    override fun onControllerInitialize() {
-        executor.scheduleWithFixedDelay(
-            this::reloadAutocompleteClasses, 0L, AUTOCOMPLETE_RELOAD_INTERVAL, SECONDS
-        )
+    fun startDataRefreshLoop() {
+        check(dataRefreshLoopStarted.compareAndSet(false, true))
+        val refreshLoop = { updateRefreshTimeUi(measureNanoTime(::updateUi)) }
+        executor.scheduleWithFixedDelay(refreshLoop, 0L, REFRESH_DELAY_MS, MILLISECONDS)
     }
 
-    override fun updateModel(): Boolean {
-        return true
-    }
-
-    override fun updateUi() {
+    private fun updateUi() {
         val newStats = getNewStats()
         for (stat in newStats) {
             currentStats[stat.name] = stat
@@ -74,7 +77,14 @@ class CachedValueTracerController(
         }
     }
 
-    override fun handleRawCommandFromEdt(text: String) {
+    private fun updateRefreshTimeUi(refreshTime: Long) {
+        getApplication().invokeAndWait {
+            val timeText = formatNsInMs(refreshTime)
+            view.refreshTimeLabel.text = "Refresh Time: %9s".format(timeText)
+        }
+    }
+
+    fun handleRawCommandFromEdt(text: String) {
         executor.execute { handleCommand(text) }
     }
 
@@ -187,11 +197,4 @@ class CachedValueTracerController(
 
     private fun getStackTraceName(element: StackTraceElement): String =
         "${element.className}#${element.methodName}(${element.lineNumber})"
-
-    private fun reloadAutocompleteClasses() {
-        val instrumentation = AgentLoader.instrumentation ?: return
-        val allClasses = instrumentation.allLoadedClasses
-        val visibleClasses = allClasses.filterNot(::shouldHideClassFromCompletionResults)
-        predictor.setClasses(visibleClasses)
-    }
 }

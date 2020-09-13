@@ -31,20 +31,23 @@ import javax.swing.text.DefaultCaret
  * Manged by [TracepointDetailsManager].
  */
 class TracepointDetailsDialog(parent: Component, text: String) : DialogWrapper(parent, false) {
-    val textArea = JBTextArea(text).apply {
-        font = EditorUtil.getEditorFont()
-        isEditable = false
-        border = JBEmptyBorder(5)
-        val caret = caret
-        if (caret is DefaultCaret) {
-            // Disable caret movement so that changing the text does not affect scroll position.
-            caret.updatePolicy = DefaultCaret.NEVER_UPDATE
-        }
-    }
+    val textArea: JBTextArea
 
     init {
         title = "Tracepoint Details"
         isModal = false
+
+        // Text area.
+        textArea = JBTextArea(text)
+        textArea.font = EditorUtil.getEditorFont()
+        textArea.isEditable = false
+        textArea.border = JBEmptyBorder(5)
+        val caret = textArea.caret
+        if (caret is DefaultCaret) {
+            // Disable caret movement so that changing the text does not affect scroll position.
+            caret.updatePolicy = DefaultCaret.NEVER_UPDATE
+        }
+
         init()
     }
 

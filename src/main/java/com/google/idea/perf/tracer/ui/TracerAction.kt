@@ -35,9 +35,6 @@ class TracerAction : DumbAwareAction() {
             currentTracer = newTracer
             newTracer.disposable.attach { currentTracer = null }
             newTracer.show()
-
-            val view = newTracer.view!!
-            view.initEvents(view.controller)
         }
     }
 }

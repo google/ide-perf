@@ -16,27 +16,27 @@
 
 package com.google.idea.perf.vfstracer
 
-import com.google.idea.perf.TracerViewBase
+import com.google.idea.perf.tracer.ui.TracerCommandLine
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.project.DumbAwareAction
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.ui.MessageType
+import com.intellij.openapi.ui.popup.util.PopupUtil
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.textCompletion.DefaultTextCompletionValueDescriptor
 import com.intellij.util.textCompletion.TextFieldWithCompletion
-import com.intellij.util.textCompletion.ValuesCompletionProvider
-import com.intellij.util.ui.JBFont
-import com.intellij.util.ui.JBUI
+import com.intellij.util.textCompletion.ValuesCompletionProvider.ValuesCompletionProviderDumbAware
 import java.awt.Dimension
 import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
-import javax.swing.JProgressBar
 import javax.swing.border.Border
 
 class VfsTracerAction: DumbAwareAction() {
@@ -53,76 +53,57 @@ class VfsTracerAction: DumbAwareAction() {
             currentTracer = newTracer
             newTracer.disposable.attach { currentTracer = null }
             newTracer.show()
-
-            val view = newTracer.view!!
-            view.initEvents(view.controller)
         }
     }
 }
 
 class VfsTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
-    var view: VfsTracerView? = null; private set
-
     init {
         title = "VFS Tracer"
         isModal = false
         init()
     }
 
-    override fun createCenterPanel(): JComponent {
-        view = VfsTracerView(disposable)
-        return view!!
-    }
+    override fun createCenterPanel(): JComponent = VfsTracerView(disposable)
     override fun createContentPaneBorder(): Border? = null
     override fun getDimensionServiceKey(): String = "com.google.idea.perf.vfstracer.VfsTracer"
     override fun createActions(): Array<Action> = emptyArray()
 }
 
-class VfsTracerView(parentDisposable: Disposable): TracerViewBase() {
-    override val controller = VfsTracerController(this, parentDisposable)
-    override val commandLine: TextFieldWithCompletion
-    override val progressBar: JProgressBar
-    override val refreshTimeLabel: JBLabel
+class VfsTracerView(parentDisposable: Disposable) : JBPanel<VfsTracerView>() {
+    private val controller = VfsTracerController(this, parentDisposable)
+    private val commandLine: TextFieldWithCompletion
+    val refreshTimeLabel: JBLabel
     private val tabs: JBTabbedPane
     val listView = VfsStatTable(VfsStatTableModel())
     val treeView = VfsStatTreeTable(VfsStatTreeTableModel())
+
+    fun showCommandBalloon(message: String, type: MessageType) {
+        PopupUtil.showBalloonForComponent(commandLine, message, type, true, null)
+    }
 
     init {
         preferredSize = Dimension(500, 500)
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
-        commandLine = TextFieldWithCompletion(
-            ProjectManager.getInstance().defaultProject,
-            ValuesCompletionProvider(
-                DefaultTextCompletionValueDescriptor.StringValueDescriptor(),
-                listOf("start", "stop", "clear", "reset")
-            ),
-            "", true, true, true
-        ).apply {
-            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-        }
+        val completionProvider = ValuesCompletionProviderDumbAware(
+            DefaultTextCompletionValueDescriptor.StringValueDescriptor(),
+            listOf("start", "stop", "clear", "reset")
+        )
+        commandLine = TracerCommandLine(completionProvider, controller::handleRawCommandFromEdt)
         add(commandLine)
-
-        // Progress bar.
-        progressBar = JProgressBar().apply {
-            isVisible = false
-            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-        }
-        add(progressBar)
 
         // Tabs.
         tabs = JBTabbedPane()
+        tabs.addTab("List", JBScrollPane(listView))
+        tabs.addTab("Tree", JBScrollPane(treeView))
         tabs.tabLayoutPolicy = JBTabbedPane.SCROLL_TAB_LAYOUT
         add(tabs)
 
-        // List view.
-        tabs.add("List View", JBScrollPane(listView))
-        tabs.add("Tree View", JBScrollPane(treeView))
-
         // Render time label.
         refreshTimeLabel = JBLabel().apply {
-            font = JBUI.Fonts.create(JBFont.MONOSPACED, font.size)
+            font = EditorUtil.getEditorFont()
         }
         add(JPanel().apply {
             maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)

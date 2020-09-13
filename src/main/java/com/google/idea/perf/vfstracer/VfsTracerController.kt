@@ -16,16 +16,30 @@
 
 package com.google.idea.perf.vfstracer
 
-import com.google.idea.perf.TracerController
+import com.google.idea.perf.util.ExecutorWithExceptionLogging
+import com.google.idea.perf.util.formatNsInMs
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.util.Disposer
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.system.measureNanoTime
 
 class VfsTracerController(
-    private val view: VfsTracerView,
+    private val view: VfsTracerView, // Access only on EDT.
     parentDisposable: Disposable
-): TracerController("VFS Tracer", view) {
+) : Disposable {
+    companion object {
+        private val LOG = Logger.getInstance(VfsTracerController::class.java)
+        private const val REFRESH_DELAY_MS = 30L
+    }
+
+    // For simplicity we run all tasks on a single-thread executor.
+    // The data structures below are assumed to be accessed only from this executor.
+    private val executor = ExecutorWithExceptionLogging("VFS Tracer", 1)
+    private val dataRefreshLoopStarted = AtomicBoolean()
     private var accumulatedStats = MutableVirtualFileTree.createRoot()
     private var collectedStats = VirtualFileTree.EMPTY
 
@@ -33,14 +47,22 @@ class VfsTracerController(
         Disposer.register(parentDisposable, this)
     }
 
-    override fun onControllerInitialize() {}
-
-    override fun updateModel(): Boolean {
-        collectedStats = VirtualFileTracer.collectAndReset()
-        return collectedStats.children.isNotEmpty()
+    override fun dispose() {
+        executor.shutdownNow()
     }
 
-    override fun updateUi() {
+    fun startDataRefreshLoop() {
+        check(dataRefreshLoopStarted.compareAndSet(false, true))
+        val refreshLoop = { updateRefreshTimeUi(measureNanoTime(::updateUi)) }
+        executor.scheduleWithFixedDelay(refreshLoop, 0, REFRESH_DELAY_MS, MILLISECONDS)
+    }
+
+    private fun updateUi() {
+        collectedStats = VirtualFileTracer.collectAndReset()
+        if (collectedStats.children.isEmpty()) {
+            return
+        }
+
         accumulatedStats.accumulate(collectedStats)
         val listStats = accumulatedStats.flattenedList()
 
@@ -50,7 +72,14 @@ class VfsTracerController(
         }
     }
 
-    override fun handleRawCommandFromEdt(text: String) {
+    private fun updateRefreshTimeUi(refreshTime: Long) {
+        getApplication().invokeAndWait {
+            val timeText = formatNsInMs(refreshTime)
+            view.refreshTimeLabel.text = "Refresh Time: %9s".format(timeText)
+        }
+    }
+
+    fun handleRawCommandFromEdt(text: String) {
         executor.execute { handleCommand(text.trim()) }
     }
 

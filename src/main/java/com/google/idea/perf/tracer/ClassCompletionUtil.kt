@@ -29,7 +29,6 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.editor.EditorModificationUtil
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.util.PlatformIcons.ABSTRACT_CLASS_ICON
-import com.intellij.util.PlatformIcons.ABSTRACT_METHOD_ICON
 import com.intellij.util.PlatformIcons.ANNOTATION_TYPE_ICON
 import com.intellij.util.PlatformIcons.ANONYMOUS_CLASS_ICON
 import com.intellij.util.PlatformIcons.CLASS_ICON

@@ -16,14 +16,14 @@
 
 package com.google.idea.perf.cvtracer
 
-import com.google.idea.perf.TracerViewBase
+import com.google.idea.perf.tracer.ui.TracerCommandLine
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.textCompletion.TextFieldWithCompletion
 import com.intellij.util.ui.JBFont
@@ -33,7 +33,6 @@ import javax.swing.Action
 import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
-import javax.swing.JProgressBar
 import javax.swing.border.Border
 
 class CachedValueTracerAction: DumbAwareAction() {
@@ -50,37 +49,28 @@ class CachedValueTracerAction: DumbAwareAction() {
             currentTracer = newTracer
             newTracer.disposable.attach { currentTracer = null }
             newTracer.show()
-
-            val view = newTracer.view!!
-            view.initEvents(view.controller)
         }
     }
 }
 
 class CachedValueTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
-    var view: CachedValueTracerView? = null; private set
 
     init {
-        title = "Cached Value Tracer"
+        title = "CachedValue Tracer"
         isModal = false
         init()
     }
 
-    override fun createCenterPanel(): JComponent {
-        view = CachedValueTracerView(disposable)
-        return view!!
-    }
+    override fun createCenterPanel(): JComponent = CachedValueTracerView(disposable)
     override fun createContentPaneBorder(): Border? = null
-    override fun getDimensionServiceKey(): String? =
-        "com.google.idea.perf.cvtracer.CachedValueTracer"
+    override fun getDimensionServiceKey(): String? = "${javaClass.packageName}.CachedValueTracer"
     override fun createActions(): Array<Action> = emptyArray()
 }
 
-class CachedValueTracerView(parentDisposable: Disposable): TracerViewBase() {
-    override val controller = CachedValueTracerController(this, parentDisposable)
-    override val commandLine: TextFieldWithCompletion
-    override val progressBar: JProgressBar
-    override val refreshTimeLabel: JBLabel
+class CachedValueTracerView(parentDisposable: Disposable) : JBPanel<CachedValueTracerView>() {
+    private val controller = CachedValueTracerController(this, parentDisposable)
+    private val commandLine: TextFieldWithCompletion
+    val refreshTimeLabel: JBLabel
     val listView = CachedValueTable(CachedValueTableModel())
 
     init {
@@ -88,20 +78,9 @@ class CachedValueTracerView(parentDisposable: Disposable): TracerViewBase() {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
-        commandLine = TextFieldWithCompletion(
-            ProjectManager.getInstance().defaultProject,
-            controller.autocomplete, "", true, true, true
-        ).apply {
-            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-        }
+        val completionProvider = controller.autocomplete
+        commandLine = TracerCommandLine(completionProvider, controller::handleRawCommandFromEdt)
         add(commandLine)
-
-        // Progress bar.
-        progressBar = JProgressBar().apply {
-            isVisible = false
-            maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-        }
-        add(progressBar)
 
         // List view.
         add(JBScrollPane(listView))
