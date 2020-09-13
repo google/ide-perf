@@ -22,7 +22,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.textCompletion.TextCompletionUtil
 import org.junit.Test
 
-/** Tests [MethodTracerCompletionProvider]. */
+/** Tests [TracerCompletionProvider]. */
 @Suppress("SpellCheckingInspection")
 class TracerCommandCompletionTest : BasePlatformTestCase() {
 
@@ -37,7 +37,7 @@ class TracerCommandCompletionTest : BasePlatformTestCase() {
         super.setUp()
         UniqueClass1729() // Triggers class loading.
         val psiFile = myFixture.configureByText("test.txt", "")
-        TextCompletionUtil.installProvider(psiFile, MethodTracerCompletionProvider(), true)
+        TextCompletionUtil.installProvider(psiFile, TracerCompletionProvider(), true)
     }
 
     @Test
