@@ -96,7 +96,7 @@ with the number of tracepoints displayed in the tracer window.
 
 ### Why does it take a while to trace an entire package?
 
-The JVM take around 100 ms to retransform a loaded class after its bytecode has been
+The JVM takes around 100 ms to retransform a loaded class after its bytecode has been
 modified by the tracer. If you are tracing many classes, this can add up.
 
 One workaround is to trace the package _before_ most of its classes are loaded. For example, you
