@@ -6,7 +6,7 @@ This is a plugin for IntelliJ-based IDEs that gives real-time insight into the p
 of the IDE itself. The plugin is under active development and should be considered experimental.
 This is not an officially supported Google product.
 
-So far the plugin has the ability to trace methods on demand and get call counts and timing
+So far the plugin has the ability to trace methods on demand and get call counts and time
 measurements in real time as the IDE is being used. Since the tracer is tightly integrated with
 IntelliJ, it can easily do things like "trace all extensions that implement the PsiElementFinder
 extension point". Click [here](http://services.google.com/fh/files/misc/trace-psi-finders.png)
@@ -15,44 +15,36 @@ to see what that looks like. The overhead of the tracer is low, so high-traffic 
 
 Getting started
 ---
-To run a development instance of IntelliJ with this plugin installed, run
+`ide-perf` is not yet released on the plugin repository, so you will need to build and install
+it manually. You can expect `ide-perf` to be compatible with the latest stable version of IntelliJ.
+
+To build the plugin, make sure you have `JAVA_HOME` pointing to JDK 11 or higher, then run
+
 ```bash
-./gradlew runIde
+./gradlew assemble
 ```
-Then open the tracer via `Help -> Diagnostic Tools -> Tracer`. In the window that pops up
-you can try typing in a command like this:
+
+Next add these JVM flags to the IDE that you would like to trace.
+
+* `-Djdk.attach.allowAttachSelf=true`
+
+  This flag ensures that the tracer can instrument IDE bytecode.
+  It is already set by default if you are using a recent version of IntelliJ.
+
+* `-Dplugin.path=/path/to/ide-perf/build/idea-sandbox/plugins/ide-perf`
+
+  This flag loads the `ide-perf` plugin.
+  Be sure to adjust the `/path/to/ide-perf` part based on where you cloned this repository.
+  Alternatively, if you do not want to add this flag, you can run `Install Plugin from Disk`
+  in the IDE and choose the zip file under `build/distributions`.
+
+Next launch the IDE and open the tracer via `Help -> Diagnostic Tools -> Tracer`. In the window
+that pops up you can try typing in a command like this:
 ```
 trace com.intellij.openapi.progress.ProgressManager#checkCanceled
 ```
-Or this:
-```
-trace psi-finders
-```
-The tracer view should show call counts and overhead measurements in real time as you use the IDE.
 
-Commands list
----
-
-- `trace com.package.Class#method` - Trace the specified method.
-- `trace psi-finders` - Trace all overrides of `PsiElementFinder.findClass()`.
-- `trace tracer` - Trace important methods in the tracer itself.
-- `clear` - Zero out current statistics.
-- `reset` - Remove current statistics.
-- `untrace *` - Remove tracing from all methods.
-
-Installing
----
-To use the plugin in a production IDE, run `./gradlew assemble` and look for a zip file
-in the `build/distributions` directory. You can install the plugin from that zip file via
-the `Install Plugin from Disk` action in IntelliJ. In order for the bytecode instrumentation agent
-to load correctly, you will need to do at least **one** of the following:
-
-- Add `-Djdk.attach.allowAttachSelf=true` to your VM options. This is already done by default
-  in recent versions of IntelliJ, but you should make sure you don't have custom VM options
-  overriding the defaults.
-
-- Alternatively, add a VM option of the form `-javaagent:/path/to/this-plugin/agent.jar`
-  to attach the instrumentation agent at startup.
+See [user-guide.md](docs/user-guide.md) for the full guide on using `ide-perf`.
 
 Contributing
 ---
