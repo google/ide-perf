@@ -98,7 +98,7 @@ class TracerTreeModel : DefaultTreeModel(null), TreeTableModel {
             if (callee != null) {
                 updateIncrementally(uiChild, callee)
             } else {
-                uiChild.removeFromParent()
+                removeNodeFromParent(uiChild)
             }
         }
 
