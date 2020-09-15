@@ -23,10 +23,12 @@ import com.google.idea.perf.util.formatNum
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
-import java.awt.event.KeyAdapter
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import javax.swing.KeyStroke
 import javax.swing.ListSelectionModel
 import javax.swing.SortOrder
 import javax.swing.SwingConstants
@@ -46,9 +48,10 @@ class TracerTable(private val model: TracerTableModel) : JBTable(model) {
 
     init {
         configureTracerTableOrTree(this)
-        addMouseListener(MyMouseListener())
-        addKeyListener(MyKeyListener())
         rowSorter = MyTableRowSorter(model)
+        addMouseListener(MyMouseListener())
+        val enterKey = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0)
+        registerKeyboardAction(MyEnterKeyListener(), enterKey, WHEN_FOCUSED)
     }
 
     // Show the tracepoint details popup upon double-click.
@@ -62,9 +65,8 @@ class TracerTable(private val model: TracerTableModel) : JBTable(model) {
     }
 
     // Show the tracepoint details popup upon hitting <enter>.
-    private inner class MyKeyListener : KeyAdapter() {
-        override fun keyTyped(e: KeyEvent) {
-            if (e.keyCode != KeyEvent.VK_ENTER) return
+    private inner class MyEnterKeyListener : ActionListener {
+        override fun actionPerformed(e: ActionEvent) {
             if (selectionModel.isSelectionEmpty) return
             val row = selectionModel.leadSelectionIndex
             showTracepointDetailsForRow(row)
