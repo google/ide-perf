@@ -27,10 +27,9 @@ import kotlin.system.measureNanoTime
 /** Builds and manages the call trees for active threads. */
 object CallTreeManager {
 
-    // Guarded by thread-local lock (low contention).
     private class ThreadState {
-        val lock = ReentrantLock()
         var busy = false // See doPreventingRecursion().
+        val lock = ReentrantLock() // Guards the thread-local CallTreeBuilder (low contention).
         var callTreeBuilder = CallTreeBuilder()
     }
 
@@ -43,8 +42,8 @@ object CallTreeManager {
 
     fun enter(tracepoint: Tracepoint) {
         val state = threadState.get()
-        doWithLockAndAdjustOverhead(state) {
-            doPreventingRecursion(state) {
+        doPreventingRecursion(state) {
+            doWithLockAndAdjustOverhead(state) {
                 state.callTreeBuilder.push(tracepoint)
             }
         }
@@ -52,8 +51,8 @@ object CallTreeManager {
 
     fun leave() {
         val state = threadState.get()
-        doWithLockAndAdjustOverhead(state) {
-            doPreventingRecursion(state) {
+        doPreventingRecursion(state) {
+            doWithLockAndAdjustOverhead(state) {
                 state.callTreeBuilder.pop()
             }
         }
