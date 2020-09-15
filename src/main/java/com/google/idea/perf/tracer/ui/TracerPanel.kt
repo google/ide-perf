@@ -34,9 +34,11 @@ import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.textCompletion.TextFieldWithCompletion
+import com.intellij.util.ui.JBFont
+import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import java.awt.Dimension
 import javax.swing.BoxLayout
-import javax.swing.JPanel
 import javax.swing.JProgressBar
 
 // Things to improve:
@@ -50,7 +52,9 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
     private val tabs: JBTabbedPane
     private val listView: TracerTable
     private val treeView: TracerTree
-    private val refreshTimeLabel: JBLabel
+    private val tracingOverheadLabel: JBLabel
+    private val uiOverheadLabel: JBLabel
+    private var uiOverhead = 0L
 
     init {
         preferredSize = Dimension(500, 500) // Only applies to first open.
@@ -75,13 +79,26 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
         tabs.addTab("Tree", JBScrollPane(treeView))
         add(tabs)
 
-        // Render time label.
-        refreshTimeLabel = JBLabel()
-        refreshTimeLabel.font = EditorUtil.getEditorFont()
-        val refreshTimePanel = JPanel()
-        refreshTimePanel.maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
-        refreshTimePanel.add(refreshTimeLabel)
-        add(refreshTimePanel)
+        // Tracing overhead label.
+        val overheadFont = JBFont
+            .create(EditorUtil.getEditorFont())
+            .deriveFont(UIUtil.getFontSize(UIUtil.FontSize.SMALL))
+        tracingOverheadLabel = JBLabel()
+        tracingOverheadLabel.font = overheadFont
+        updateTracingOverhead(0L)
+
+        // UI overhead label.
+        uiOverheadLabel = JBLabel()
+        uiOverheadLabel.font = overheadFont
+        updateUiOverhead()
+
+        // Bottom panel.
+        val bottomPanel = JBUI.Panels.simplePanel()
+            .addToLeft(tracingOverheadLabel)
+            .addToRight(uiOverheadLabel)
+            .withBorder(JBUI.Borders.empty(0, 8, 8, 10))
+        bottomPanel.withMaximumHeight(bottomPanel.minimumSize.height)
+        add(bottomPanel)
 
         // Start tracepoint data collection.
         controller.startDataRefreshLoop()
@@ -93,10 +110,16 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
         treeView.setCallTree(callTree)
     }
 
-    fun setRefreshTime(refreshTime: Long) {
+    fun setTracingOverhead(tracingOverhead: Long) {
         getApplication().assertIsDispatchThread()
-        val timeText = formatNsInMs(refreshTime)
-        refreshTimeLabel.text = "Refresh Time: %9s".format(timeText)
+        updateTracingOverhead(tracingOverhead)
+    }
+
+    // TODO: Reset UI overhead to 0 after 'clear' command.
+    fun addUiOverhead(delta: Long) {
+        getApplication().assertIsDispatchThread()
+        uiOverhead += delta
+        updateUiOverhead()
     }
 
     fun showCommandLinePopup(message: String, type: MessageType) {
@@ -119,6 +142,20 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
                     progressBar.value = (fraction * 100).toInt().coerceIn(0, 100)
                 }
             }
+        }
+    }
+
+    private fun updateTracingOverhead(tracingOverhead: Long) {
+        val text = "Estimated tracing overhead: ${formatNsInMs(tracingOverhead)}"
+        if (text != tracingOverheadLabel.text) {
+            tracingOverheadLabel.text = text
+        }
+    }
+
+    private fun updateUiOverhead() {
+        val text = "Tracer UI overhead: ${formatNsInMs(uiOverhead)}"
+        if (text != uiOverheadLabel.text) {
+            uiOverheadLabel.text = text
         }
     }
 }
