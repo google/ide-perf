@@ -78,12 +78,12 @@ due to their use in the tracer instrumentation hook. This includes a couple `Thr
 and a few methods in the tracer itself.
 
 ### How high is the tracing overhead?
-The tracing overhead is _approximately_ 150 ns per traced method call, assuming sufficient
+The tracing overhead is _approximately_ 200 ns per traced method call, assuming sufficient
 JIT optimization. This number varies across platforms; you can run the microbenchmark at
 `TracerIntegrationTest.testTracingOverhead` if you want to estimate tracing overhead for
 your local machine. Tracepoint data is stored in thread-local data structures, so you should
 not have to worry about contention between threads. The tracing overhead is unlikely to be
-improved because most of the time is spent calling `System.nanoTime`.
+improved because much of the time is spent calling `System.nanoTime`.
 You may want to read about some
 [performance quirks of `System.nanoTime`](https://shipilev.net/blog/2014/nanotrusting-nanotime/),
 especially if you are running on Windows.
