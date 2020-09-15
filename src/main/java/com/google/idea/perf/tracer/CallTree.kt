@@ -24,13 +24,17 @@ interface CallTree {
     val maxWallTime: Long
     val children: Map<Tracepoint, CallTree>
 
-    fun allNodesInSubtree(): Sequence<CallTree> {
-        return sequence {
-            yield(this@CallTree)
-            for (child in children.values) {
-                yieldAll(child.allNodesInSubtree())
-            }
+    fun forEachNodeInSubtree(action: (CallTree) -> Unit) {
+        action(this)
+        for (child in children.values) {
+            child.forEachNodeInSubtree(action)
         }
+    }
+
+    fun allNodesInSubtree(): Sequence<CallTree> {
+        val nodes = mutableListOf<CallTree>()
+        forEachNodeInSubtree { nodes.add(it) }
+        return nodes.asSequence()
     }
 }
 
