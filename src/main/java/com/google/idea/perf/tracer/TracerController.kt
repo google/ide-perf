@@ -106,7 +106,8 @@ class TracerController(
                 CallTreeManager.clearCallTrees()
             }
             is TracerCommand.Reset -> {
-                // TODO: Change meaning of 'reset' to be 'untrace *' plus 'clear'.
+                val classNames = TracerConfig.untraceAll()
+                retransformClasses(classNames.toSet())
                 CallTreeManager.clearCallTrees()
             }
             is TracerCommand.Trace -> {

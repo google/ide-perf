@@ -43,8 +43,7 @@ class TracerIntegrationTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            tracer.handleCommandFromTest("untrace *")
-            CallTreeManager.clearCallTrees()
+            tracer.handleCommandFromTest("reset")
         }
         catch (e: Throwable) {
             addSuppressedException(e)
@@ -78,8 +77,8 @@ class TracerIntegrationTest : BasePlatformTestCase() {
             """.trimIndent()
         )
 
-        // Reset.
-        tracer.handleCommandFromTest("reset")
+        // Clear.
+        tracer.handleCommandFromTest("clear")
         assertCallTreeStructure("[root] [0]")
 
         // Untrace a few methods.
