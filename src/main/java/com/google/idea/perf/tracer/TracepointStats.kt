@@ -53,6 +53,7 @@ object TreeAlgorithms {
         dfs(root)
         assert(ancestors.isEmpty())
 
+        allStats.remove(Tracepoint.ROOT)
         return allStats.values.toList()
     }
 }

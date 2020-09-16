@@ -99,7 +99,6 @@ class CallTreeTest {
             }
 
         val expected = """
-            [root]: 0 calls, 0 ns, 0 ns
             mutualRecursion1: 5 calls, 800 ns, 800 ns
             mutualRecursion2: 10 calls, 400 ns, 200 ns
             selfRecursion: 7 calls, 400 ns, 200 ns
