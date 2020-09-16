@@ -17,10 +17,9 @@
 package com.google.idea.perf.tracer.ui
 
 import com.google.idea.perf.tracer.CallTreeManager
-import com.google.idea.perf.tracer.MethodTracepointWithArgs
+import com.google.idea.perf.tracer.CallTreeUtil
 import com.google.idea.perf.tracer.TracerCompletionProvider
 import com.google.idea.perf.tracer.TracerController
-import com.google.idea.perf.tracer.TreeAlgorithms
 import com.google.idea.perf.util.formatNsInMs
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
@@ -157,19 +156,12 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
 
         // Compute the new call tree.
         val treeSnapshot = CallTreeManager.getCallTreeSnapshotAllThreadsMerged()
-        val stats = TreeAlgorithms.computeFlatTracepointStats(treeSnapshot)
+        val stats = CallTreeUtil.computeFlatTracepointStats(treeSnapshot)
         listView.setTracepointStats(stats)
         treeView.setCallTree(treeSnapshot)
 
         // Estimate tracing overhead.
-        // TODO: Can we provide a more accurate estimate (esp. for param tracing)?
-        var tracingOverhead = 0L
-        treeSnapshot.forEachNodeInSubtree { node ->
-            tracingOverhead += when (node.tracepoint) {
-                is MethodTracepointWithArgs -> 1024 * node.callCount // A complete guess.
-                else -> 256 * node.callCount // See TracerIntegrationTest.testTracingOverhead.
-            }
-        }
+        val tracingOverhead = CallTreeUtil.estimateTracingOverhead(treeSnapshot)
         updateTracingOverhead(tracingOverhead)
 
         // Compute UI overhead.

@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.tracer
 
-/** A call tree, represented recursively. */
+/** A call tree, represented recursively. Also see [CallTreeUtil]. */
 interface CallTree {
     val tracepoint: Tracepoint
     val callCount: Long

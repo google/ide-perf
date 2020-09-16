@@ -24,7 +24,7 @@ class TracepointStats(
     var maxWallTime: Long = 0L
 )
 
-object TreeAlgorithms {
+object CallTreeUtil {
     /**
      * Computes aggregate statistics for each tracepoint,
      * being careful not to double-count the time spent in recursive calls.
@@ -55,5 +55,18 @@ object TreeAlgorithms {
 
         allStats.remove(Tracepoint.ROOT)
         return allStats.values.toList()
+    }
+
+    /** Estimates total tracing overhead based on call counts in the given tree. */
+    fun estimateTracingOverhead(root: CallTree): Long {
+        // TODO: Can we provide a more accurate estimate (esp. for param tracing)?
+        var tracingOverhead = 0L
+        root.forEachNodeInSubtree { node ->
+            tracingOverhead += when (node.tracepoint) {
+                is MethodTracepointWithArgs -> 1024 * node.callCount // A complete guess.
+                else -> 256 * node.callCount // See TracerIntegrationTest.testTracingOverhead.
+            }
+        }
+        return tracingOverhead
     }
 }

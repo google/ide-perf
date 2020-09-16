@@ -128,7 +128,7 @@ class TracerController(
                             flags,
                             this::handleCommand.javaMethod!!,
                             CallTreeManager::getCallTreeSnapshotAllThreadsMerged.javaMethod!!,
-                            TreeAlgorithms::computeFlatTracepointStats.javaMethod!!,
+                            CallTreeUtil::computeFlatTracepointStats.javaMethod!!,
                             TracerTable::setTracepointStats.javaMethod!!,
                             TracerTree::setCallTree.javaMethod!!,
                         )

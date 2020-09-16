@@ -90,7 +90,7 @@ class CallTreeTest {
             ))
         ))
 
-        val allStats = TreeAlgorithms.computeFlatTracepointStats(tree)
+        val allStats = CallTreeUtil.computeFlatTracepointStats(tree)
             .sortedBy { it.tracepoint.displayName }
             .joinToString(separator = "\n") { stats ->
                 with(stats) {
