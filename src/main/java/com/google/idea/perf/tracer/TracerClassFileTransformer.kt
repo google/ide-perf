@@ -18,10 +18,9 @@ package com.google.idea.perf.tracer
 
 import com.intellij.openapi.diagnostic.Logger
 import org.objectweb.asm.ClassReader
-import org.objectweb.asm.ClassReader.SKIP_FRAMES
+import org.objectweb.asm.ClassReader.EXPAND_FRAMES
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
 import org.objectweb.asm.ClassWriter.COMPUTE_MAXS
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
@@ -35,10 +34,6 @@ import java.lang.instrument.ClassFileTransformer
 import java.security.ProtectionDomain
 import kotlin.reflect.jvm.javaMethod
 
-// Things to improve:
-// - Should be possible to do without COMPUTE_FRAMES (but then also remove SKIP_FRAMES.)
-// - Stress-test this transformer by running it on a lot of classes.
-
 /** Inserts calls (within JVM byte code) to the trampoline. */
 class TracerClassFileTransformer: ClassFileTransformer {
 
@@ -46,7 +41,8 @@ class TracerClassFileTransformer: ClassFileTransformer {
         private val LOG = Logger.getInstance(TracerClassFileTransformer::class.java)
         private const val ASM_API = ASM8
 
-        private val TRAMPOLINE_CLASS_NAME = Type.getType(TracerTrampoline::class.java).internalName
+        private val THROWABLE_TYPE = Type.getType(Throwable::class.java).internalName
+        private val TRAMPOLINE_TYPE = Type.getType(TracerTrampoline::class.java).internalName
         private val TRAMPOLINE_ENTER_METHOD = Method.getMethod(TracerTrampoline::enter.javaMethod)
         private val TRAMPOLINE_LEAVE_METHOD = Method.getMethod(TracerTrampoline::leave.javaMethod)
 
@@ -77,7 +73,11 @@ class TracerClassFileTransformer: ClassFileTransformer {
         classBytes: ByteArray
     ): ByteArray? {
         val reader = ClassReader(classBytes)
-        val writer = ClassWriter(reader, COMPUTE_MAXS or COMPUTE_FRAMES)
+
+        // Note: we avoid using COMPUTE_FRAMES because that would force ClassWriter to use
+        // reflection. Reflection triggers class loading (undesirable) and can also fail outright
+        // if it is using the wrong classloader. See ClassWriter.getCommonSuperClass().
+        val writer = ClassWriter(reader, COMPUTE_MAXS)
 
         val classVisitor = object: ClassVisitor(ASM_API, writer) {
             override fun visitMethod(
@@ -109,6 +109,14 @@ class TracerClassFileTransformer: ClassFileTransformer {
                     val methodEnd = Label()
 
                     override fun onMethodEnter() {
+                        // Note: AdviceAdapter has a comment, "For constructors... onMethodEnter()
+                        // is called after each super class constructor call, because the object
+                        // cannot be used before it is properly initialized." In particular, it
+                        // seems we cannot wrap the super class constructor call inside our
+                        // try-finally block because then the JVM complains about seeing
+                        // "uninitialized this" in the stack map. So, we have to live with a
+                        // compromise: traced constructors will exclude the time spent in their
+                        // super class constructor calls. This seems acceptable for now.
                         invokeEnter()
                         mv.visitLabel(methodStart)
                     }
@@ -131,7 +139,11 @@ class TracerClassFileTransformer: ClassFileTransformer {
                         // handler at the beginning of the exception table, thus incorrectly
                         // taking priority over user catch blocks. Fortunately, violating the
                         // ASM requirement seems to work, despite breaking the ASM verifier...
-                        mv.visitTryCatchBlock(methodStart, methodEnd, methodEnd, null)
+                        // For more details see https://gitlab.ow2.org/asm/asm/-/issues/317617.
+                        // The comments there suggest another workaround is to use the tree API,
+                        // so we can explore that route too if needed.
+                        mv.visitTryCatchBlock(methodStart, methodEnd, methodEnd, THROWABLE_TYPE)
+                        mv.visitFrame(Opcodes.F_NEW, 0, emptyArray(), 1, arrayOf(THROWABLE_TYPE))
                         invokeLeave()
                         mv.visitInsn(ATHROW) // Rethrow.
 
@@ -193,7 +205,7 @@ class TracerClassFileTransformer: ClassFileTransformer {
 
                         mv.visitMethodInsn(
                             INVOKESTATIC,
-                            TRAMPOLINE_CLASS_NAME,
+                            TRAMPOLINE_TYPE,
                             TRAMPOLINE_ENTER_METHOD.name,
                             TRAMPOLINE_ENTER_METHOD.descriptor,
                             false
@@ -203,7 +215,7 @@ class TracerClassFileTransformer: ClassFileTransformer {
                     private fun invokeLeave() {
                         mv.visitMethodInsn(
                             INVOKESTATIC,
-                            TRAMPOLINE_CLASS_NAME,
+                            TRAMPOLINE_TYPE,
                             TRAMPOLINE_LEAVE_METHOD.name,
                             TRAMPOLINE_LEAVE_METHOD.descriptor,
                             false
@@ -213,7 +225,10 @@ class TracerClassFileTransformer: ClassFileTransformer {
             }
         }
 
-        reader.accept(classVisitor, SKIP_FRAMES)
+        // We have to use EXPAND_FRAMES because AdviceAdapter requires it.
+        // If performance is insufficient we can look into changing this.
+        reader.accept(classVisitor, EXPAND_FRAMES)
+
         return writer.toByteArray()
     }
 }
