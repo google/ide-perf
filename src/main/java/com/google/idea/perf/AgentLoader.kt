@@ -16,7 +16,12 @@
 
 package com.google.idea.perf
 
+import com.google.idea.perf.AgentLoader.initTracerInstrumentation
+import com.google.idea.perf.AgentLoader.instrumentation
 import com.google.idea.perf.agent.AgentMain
+import com.google.idea.perf.tracer.TracerClassFileTransformer
+import com.google.idea.perf.tracer.TracerHookImpl
+import com.google.idea.perf.tracer.TracerTrampoline
 import com.intellij.execution.process.OSProcessUtil
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.notification.Notification
@@ -26,16 +31,29 @@ import com.intellij.openapi.extensions.PluginId
 import com.intellij.util.io.isFile
 import com.sun.tools.attach.VirtualMachine
 import java.lang.instrument.Instrumentation
+import kotlin.system.measureTimeMillis
 
 // Things to improve:
 // - Fail gracefully upon SOE caused by instrumenting code used by TracerMethodListener.
 
-/** Loads and initializes the instrumentation agent. */
+/**
+ * Loads and initializes the instrumentation agent with [VirtualMachine.loadAgent].
+ *
+ * See [instrumentation] for the global [java.lang.instrument.Instrumentation] instance.
+ * See [initTracerInstrumentation] for installing tracer hooks.
+ *
+ * Note: the agent must be loaded here before any of its classes are referenced, otherwise
+ * [NoClassDefFoundError] is thrown. So, for safety, all direct references to agent
+ * classes should ideally be encapsulated in [AgentLoader].
+ */
 object AgentLoader {
     private val LOG = Logger.getInstance(AgentLoader::class.java)
 
     val instrumentation: Instrumentation? by lazy { tryLoadAgent() }
 
+    val initTracerInstrumentation: Boolean by lazy { tryInitTracerInstrumentation() }
+
+    // Note: this method can take around 200 ms or so.
     private fun tryLoadAgent(): Instrumentation? {
         val agentLoadedAtStartup = try {
             // Until the agent is loaded, we cannot trigger symbol resolution for its
@@ -54,9 +72,11 @@ object AgentLoader {
         }
         else {
             try {
-                tryLoadAgentAfterStartup()
+                val overhead = measureTimeMillis {
+                    tryLoadAgentAfterStartup()
+                }
                 instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
-                LOG.info("Agent was loaded on demand")
+                LOG.info("Agent was loaded on demand in $overhead ms")
             }
             catch (e: Throwable) {
                 val msg = """
@@ -81,7 +101,7 @@ object AgentLoader {
         return instrumentation
     }
 
-    // This method can throw a variety of exceptions.
+    // Note: this method can throw a variety of exceptions.
     private fun tryLoadAgentAfterStartup() {
         val plugin = PluginManagerCore.getPlugin(PluginId.getId("com.google.ide-perf"))
             ?: error("Failed to find our own plugin")
@@ -96,5 +116,12 @@ object AgentLoader {
         finally {
             vm.detach()
         }
+    }
+
+    private fun tryInitTracerInstrumentation(): Boolean {
+        val instrumentation = instrumentation ?: return false
+        TracerTrampoline.installHook(TracerHookImpl())
+        instrumentation.addTransformer(TracerClassFileTransformer(), true)
+        return true
     }
 }

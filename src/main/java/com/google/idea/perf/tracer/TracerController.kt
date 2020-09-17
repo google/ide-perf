@@ -63,7 +63,6 @@ class TracerController(
 ) : Disposable {
     companion object {
         private val LOG = Logger.getInstance(TracerController::class.java)
-        private var instrumentationInitialized = false
     }
 
     // For simplicity we run all tasks in a single-thread executor.
@@ -72,6 +71,13 @@ class TracerController(
 
     init {
         Disposer.register(parentDisposable, this)
+
+        // Install tracer instrumentation hooks.
+        executor.execute {
+            if (!AgentLoader.initTracerInstrumentation) {
+                displayWarning("Failed to install instrumentation agent (see idea.log)")
+            }
+        }
     }
 
     override fun dispose() {
@@ -202,12 +208,6 @@ class TracerController(
     private fun retransformClasses(classes: Collection<Class<*>>) {
         if (classes.isEmpty()) return
         val instrumentation = AgentLoader.instrumentation ?: return
-        if (!instrumentationInitialized) {
-            // TODO: The hook should be installed even if we're not retransforming classes!!
-            TracerTrampoline.installHook(TracerHookImpl())
-            instrumentation.addTransformer(TracerClassFileTransformer(), true)
-            instrumentationInitialized = true
-        }
 
         LOG.info("Retransforming ${classes.size} classes")
         runWithProgress { progress ->
