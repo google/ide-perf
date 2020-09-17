@@ -16,8 +16,6 @@
 
 package com.google.idea.perf.tracer
 
-import com.google.idea.perf.tracer.TracepointFlags.TRACE_ALL
-import com.google.idea.perf.tracer.TracepointFlags.TRACE_CALL_COUNT
 import com.google.idea.perf.tracer.TracerConfig.getMethodTraceData
 import com.google.idea.perf.tracer.TracerConfig.getMethodTracepoint
 import com.google.idea.perf.tracer.TracerConfig.shouldInstrumentClass
@@ -41,7 +39,7 @@ import kotlin.concurrent.withLock
  * For simplicity, only the most recent applicable trace request is honored.
  */
 object TracerConfig {
-    private val tracepoints = ConcurrentAppendOnlyList<Tracepoint>()
+    private val tracepoints = ConcurrentAppendOnlyList<MethodTracepoint>()
     private val lock = ReentrantLock()
     private val methodIds = mutableMapOf<MethodFqName, Int>()
     private val traceRequests = mutableListOf<TraceRequest>()
@@ -66,7 +64,7 @@ object TracerConfig {
         }
     }
 
-    fun getMethodTracepoint(methodId: Int): Tracepoint = tracepoints.get(methodId)
+    fun getMethodTracepoint(methodId: Int): MethodTracepoint = tracepoints.get(methodId)
 
     /** Returns true if the given class might have methods that need to be traced. */
     fun shouldInstrumentClass(clazz: String): Boolean {
@@ -89,11 +87,9 @@ object TracerConfig {
             }
 
             // Sync tracepoint flags.
-            // TODO: Remove flags from the Tracepoint class and store them in TracerConfig only.
             val config = recentMatch.config
-            val flags = if (config.countOnly) TRACE_CALL_COUNT else TRACE_ALL
             val tracepoint = getMethodTracepoint(methodId)
-            tracepoint.flags.set(flags)
+            tracepoint.measureWallTime = !config.countOnly
 
             return MethodTraceData(methodId, config)
         }

@@ -16,6 +16,9 @@
 
 package com.google.idea.perf.tracer
 
+import com.google.idea.perf.tracer.TraceOption.COUNT_AND_WALL_TIME
+import com.google.idea.perf.tracer.TraceOption.COUNT_ONLY
+
 /** A tracer CLI command */
 sealed class TracerCommand {
     /** Unrecognized command. */
@@ -52,19 +55,8 @@ sealed class TracerCommand {
 
 /** Represents what to trace */
 enum class TraceOption {
-    /** Option to trace all aspects of a method's execution. */
-    ALL,
-    /** Option to trace the number of calls to a method. */
-    CALL_COUNT,
-    /** Option to trace the execution time of a method. */
-    WALL_TIME;
-
-    val tracepointFlag: Int
-        get() = when (this) {
-            ALL -> TracepointFlags.TRACE_ALL
-            CALL_COUNT -> TracepointFlags.TRACE_CALL_COUNT
-            WALL_TIME -> TracepointFlags.TRACE_WALL_TIME
-        }
+    COUNT_AND_WALL_TIME,
+    COUNT_ONLY;
 }
 
 /** A set of methods that the tracer will trace. */
@@ -122,16 +114,15 @@ fun parseMethodTracerCommand(text: String): TracerCommand {
 
 private fun parseTraceCommand(tokens: List<Token>, enable: Boolean): TracerCommand {
     return when (val option = parseTraceOption(tokens)) {
-        null -> TracerCommand.Trace(enable, TraceOption.ALL, parseTraceTarget(tokens))
+        null -> TracerCommand.Trace(enable, COUNT_AND_WALL_TIME, parseTraceTarget(tokens))
         else -> TracerCommand.Trace(enable, option, parseTraceTarget(tokens.advance()))
     }
 }
 
 private fun parseTraceOption(tokens: List<Token>): TraceOption? {
     return when (tokens.first()) {
-        AllKeyword -> TraceOption.ALL
-        CountKeyword -> TraceOption.CALL_COUNT
-        WallTimeKeyword -> TraceOption.WALL_TIME
+        CountKeyword -> COUNT_ONLY
+        AllKeyword -> COUNT_AND_WALL_TIME
         else -> null
     }
 }

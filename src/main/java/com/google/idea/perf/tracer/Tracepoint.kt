@@ -16,32 +16,15 @@
 
 package com.google.idea.perf.tracer
 
-import com.google.idea.perf.tracer.TracepointFlags.TRACE_ALL
 import org.objectweb.asm.Type
 import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.LazyThreadSafetyMode.PUBLICATION
-
-object TracepointFlags {
-    const val TRACE_CALL_COUNT = 0x1
-    const val TRACE_WALL_TIME = 0x2
-    const val TRACE_ALL = TRACE_CALL_COUNT or TRACE_WALL_TIME
-    const val MASK = TRACE_ALL
-}
 
 /** Represents a method (usually) for which we are gathering call counts and timing information. */
 interface Tracepoint {
     val displayName: String
     val detailedName: String
-    val flags: AtomicInteger
-
-    fun setFlags(flags: Int) {
-        this.flags.updateAndGet { it or flags }
-    }
-
-    fun unsetFlags(flags: Int) {
-        this.flags.updateAndGet { it and flags.inv() }
-    }
+    val measureWallTime: Boolean
 
     companion object {
         val ROOT = SimpleTracepoint("[root]", "the synthetic root of the call tree")
@@ -51,18 +34,16 @@ interface Tracepoint {
 /** A basic implementation of [Tracepoint] useful for synthetic tracepoints and tests. */
 class SimpleTracepoint(
     override val displayName: String,
-    override val detailedName: String = displayName
+    override val detailedName: String = displayName,
+    override val measureWallTime: Boolean = true,
 ) : Tracepoint {
-    override val flags = AtomicInteger(TRACE_ALL)
     override fun toString(): String = displayName
 }
 
 /** A [Tracepoint] representing an individual method. */
 class MethodTracepoint(
     private val fqName: MethodFqName,
-    flags: Int = TRACE_ALL,
 ) : Tracepoint {
-    override val flags = AtomicInteger(flags)
     override val displayName = "${fqName.clazz.substringAfterLast('.')}.${fqName.method}"
 
     override val detailedName by lazy(PUBLICATION) {
@@ -74,9 +55,8 @@ class MethodTracepoint(
         }
     }
 
-    init {
-        check((flags and TracepointFlags.MASK.inv()) == 0) { "invalid tracepoint flags" }
-    }
+    @Volatile // Value may change over time as new trace requests come in.
+    override var measureWallTime: Boolean = true
 
     // Note: reference equality is sufficient currently because TracerConfig maintains
     // a single canonical MethodTracepoint per traced method.

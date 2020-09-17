@@ -230,44 +230,43 @@ class CallTreeTest {
     fun testConcurrentTracepointModification() {
         val clock = TestClock()
         val builder = CallTreeBuilder(clock)
-        val simple = SimpleTracepoint("simple1")
-
-        // Given an enabled tracepoint, disable tracepoint midway.
-        builder.push(simple)
-        clock.time++
-        simple.unsetFlags(TracepointFlags.TRACE_ALL)
-        builder.pop()
+        val simple = MethodTracepoint(MethodFqName("Class", "simple1", "desc"))
 
         fun buildAndCheckTree(expected: String) = buildAndCheckTree(builder, expected)
 
-        buildAndCheckTree(
-            """
-            [root]: 0 calls, 0 ns, 0 ns
-              simple1: 1 calls, 1 ns, 1 ns
-            """.trimIndent()
-        )
-
-        // Given a disabled tracepoint, enable tracepoint midway.
+        // Disable wall time midway.
         builder.push(simple)
         clock.time++
-        simple.setFlags(TracepointFlags.TRACE_ALL)
+        simple.measureWallTime = false
         builder.pop()
 
         buildAndCheckTree(
             """
             [root]: 0 calls, 0 ns, 0 ns
-              simple1: 0 calls, 0 ns, 0 ns
+              Class.simple1: 1 calls, 1 ns, 1 ns
             """.trimIndent()
         )
 
-        // Given an enabled tracepoint, disable wall time and build tree midway.
+        // Enable wall time midway.
         builder.push(simple)
         clock.time++
-        simple.unsetFlags(TracepointFlags.TRACE_WALL_TIME)
+        simple.measureWallTime = true
+        builder.pop()
+
         buildAndCheckTree(
             """
             [root]: 0 calls, 0 ns, 0 ns
-              simple1: 1 calls, 1 ns, 1 ns
+              Class.simple1: 1 calls, 0 ns, 0 ns
+            """.trimIndent()
+        )
+
+        builder.push(simple)
+        clock.time++
+        simple.measureWallTime = false
+        buildAndCheckTree(
+            """
+            [root]: 0 calls, 0 ns, 0 ns
+              Class.simple1: 1 calls, 1 ns, 1 ns
             """.trimIndent()
         )
 
@@ -275,7 +274,7 @@ class CallTreeTest {
         buildAndCheckTree(
             """
             [root]: 0 calls, 0 ns, 0 ns
-              simple1: 1 calls, 0 ns, 0 ns
+              Class.simple1: 1 calls, 0 ns, 0 ns
             """.trimIndent()
         )
 
@@ -284,7 +283,7 @@ class CallTreeTest {
         buildAndCheckTree(
             """
             [root]: 0 calls, 0 ns, 0 ns
-              simple1: 1 calls, 0 ns, 0 ns
+              Class.simple1: 1 calls, 0 ns, 0 ns
             """.trimIndent()
         )
     }

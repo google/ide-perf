@@ -17,7 +17,6 @@
 package com.google.idea.perf.tracer
 
 import com.google.idea.perf.AgentLoader
-import com.google.idea.perf.tracer.TracepointFlags.TRACE_CALL_COUNT
 import com.google.idea.perf.tracer.ui.TracerPanel
 import com.google.idea.perf.tracer.ui.TracerTable
 import com.google.idea.perf.tracer.ui.TracerTree
@@ -123,7 +122,7 @@ class TracerController(
                 CallTreeManager.clearCallTrees()
             }
             is TracerCommand.Trace -> {
-                val countOnly = command.traceOption!!.tracepointFlag == TRACE_CALL_COUNT
+                val countOnly = command.traceOption == TraceOption.COUNT_ONLY
 
                 when (command.target) {
                     is TraceTarget.PsiFinders -> {

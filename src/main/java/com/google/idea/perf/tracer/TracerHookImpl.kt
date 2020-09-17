@@ -20,11 +20,17 @@ package com.google.idea.perf.tracer
 class TracerHookImpl : TracerHook {
 
     override fun enter(methodId: Int, args: Array<Any?>?) {
-        var tracepoint = TracerConfig.getMethodTracepoint(methodId)
-        if (args != null) {
-            val argStrings = Array(args.size) { args[it].toString() }
-            tracepoint = MethodTracepointWithArgs(tracepoint, argStrings)
-        }
+        val methodTracepoint = TracerConfig.getMethodTracepoint(methodId)
+
+        // Support for parameter tracing.
+        val tracepoint =
+            if (args != null) {
+                val argStrings = Array(args.size) { args[it].toString() }
+                MethodTracepointWithArgs(methodTracepoint, argStrings)
+            } else {
+                methodTracepoint
+            }
+
         CallTreeManager.enter(tracepoint)
     }
 
