@@ -76,7 +76,7 @@ object VirtualFileTracer {
         VirtualFileTracerImpl.isEnabled = true
         VfsTracerTrampoline.installHook(VfsTracerHookImpl())
 
-        val transformer = TracerClassFileTransformer()
+        val transformer = VfsTracerClassFileTransformer()
         instrumentation.addTransformer(transformer, true)
         instrumentation.retransformClasses(compositeElementClass)
         instrumentation.retransformClasses(stubIndexImplClass)
@@ -156,7 +156,7 @@ private class VfsTracerHookImpl: VfsTracerHook {
     }
 }
 
-private class TracerClassFileTransformer: ClassFileTransformer {
+private class VfsTracerClassFileTransformer: ClassFileTransformer {
     companion object {
         val HOOK_CLASS_JVM_NAME: String = Type.getInternalName(VfsTracerTrampoline::class.java)
         val ON_PSI_ELEMENT_CREATE: Method = Method.getMethod(VfsTracerTrampoline::onPsiElementCreate.javaMethod)
