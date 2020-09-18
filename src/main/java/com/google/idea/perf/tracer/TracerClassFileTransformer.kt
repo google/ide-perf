@@ -64,7 +64,7 @@ class TracerClassFileTransformer: ClassFileTransformer {
         }
         catch (e: Throwable) {
             LOG.error("Failed to instrument class $classJvmName", e)
-            throw e
+            return null
         }
     }
 
@@ -87,7 +87,7 @@ class TracerClassFileTransformer: ClassFileTransformer {
                 signature: String?,
                 exceptions: Array<out String>?
             ): MethodVisitor? {
-                var methodWriter = cv.visitMethod(access, method, desc, signature, exceptions)
+                var methodWriter = super.visitMethod(access, method, desc, signature, exceptions)
                 val methodFqName = MethodFqName(className, method, desc)
                 val traceData = TracerConfig.getMethodTraceData(methodFqName) ?: return methodWriter
                 if (!traceData.config.enabled) {
@@ -106,19 +106,18 @@ class TracerClassFileTransformer: ClassFileTransformer {
 
                 return object: AdviceAdapter(ASM_API, methodWriter, access, method, desc) {
                     val methodStart = Label()
-                    val methodEnd = Label()
 
                     override fun onMethodEnter() {
                         // Note: AdviceAdapter has a comment, "For constructors... onMethodEnter()
                         // is called after each super class constructor call, because the object
                         // cannot be used before it is properly initialized." In particular, it
                         // seems we cannot wrap the super class constructor call inside our
-                        // try-finally block because then the JVM complains about seeing
+                        // try-catch block because then the JVM complains about seeing
                         // "uninitialized this" in the stack map. So, we have to live with a
                         // compromise: traced constructors will exclude the time spent in their
                         // super class constructor calls. This seems acceptable for now.
                         invokeEnter()
-                        mv.visitLabel(methodStart)
+                        visitLabel(methodStart)
                     }
 
                     override fun onMethodExit(opcode: Int) {
@@ -128,31 +127,43 @@ class TracerClassFileTransformer: ClassFileTransformer {
                     }
 
                     override fun visitMaxs(maxStack: Int, maxLocals: Int) {
-                        // visitMaxs is the first method called after visiting all instructions.
-                        mv.visitLabel(methodEnd)
-
-                        // We wrap the method in a try-catch block in order to
-                        // invoke the exit hook even when an exception is thrown.
+                        // We wrap the method in a try-catch block in order to invoke
+                        // the exit hook even when an exception is thrown. visitMaxs() is
+                        // the first method called after visiting all instructions,
+                        // so this is where we build the try-catch handler.
                         //
-                        // The ASM library claims to require that visitTryCatchBlock be called
-                        // *before* its arguments are visited, but doing that would place the
-                        // handler at the beginning of the exception table, thus incorrectly
-                        // taking priority over user catch blocks. Fortunately, violating the
-                        // ASM requirement seems to work, despite breaking the ASM verifier...
+                        // Technically, ASM requires that visitTryCatchBlock() is called *before*
+                        // its start label is visited. However, we do not want to call
+                        // visitTryCatchBlock() at the start of the method because that would
+                        // place the handler at the beginning of the exception table, thus
+                        // incorrectly taking priority over preexisting catch blocks.
                         // For more details see https://gitlab.ow2.org/asm/asm/-/issues/317617.
-                        // The comments there suggest another workaround is to use the tree API,
-                        // so we can explore that route too if needed.
-                        mv.visitTryCatchBlock(methodStart, methodEnd, methodEnd, THROWABLE_TYPE)
-                        mv.visitFrame(Opcodes.F_NEW, 0, emptyArray(), 1, arrayOf(THROWABLE_TYPE))
+                        //
+                        // There are a few ways to work around this:
+                        //   1. Use the ASM tree API, which can directly mutate the exception table.
+                        //   2. Replace the method body with a single try-catch block surrounding
+                        //      a call to a synthetic method containing the original body.
+                        //   3. Ignore what ASM says and just visit the labels out of order.
+                        //
+                        // Option 1 brings in more complexity than we want, and option 2 is a bit
+                        // invasive. So we choose option 3 for now, which---despite breaking the ASM
+                        // verifier---seems to work fine. In fact option 3 is what everyone else
+                        // does too, including the author of AdviceAdapter (see the 2007 paper
+                        // "Using the ASM framework to implement common Java bytecode transformation
+                        // patterns" from Eugene Kuleshov).
+                        val methodEnd = Label()
+                        visitTryCatchBlock(methodStart, methodEnd, methodEnd, THROWABLE_TYPE)
+                        visitLabel(methodEnd)
+                        visitFrame(Opcodes.F_NEW, 0, emptyArray(), 1, arrayOf(THROWABLE_TYPE))
                         invokeLeave()
-                        mv.visitInsn(ATHROW) // Rethrow.
+                        visitInsn(ATHROW) // Rethrow.
 
-                        mv.visitMaxs(maxStack, maxLocals)
+                        super.visitMaxs(maxStack, maxLocals)
                     }
 
                     private fun boxPrimitive(index: Int, opcode: Int, owner: String, descriptor: String) {
-                        mv.visitVarInsn(opcode, index)
-                        mv.visitMethodInsn(INVOKESTATIC, "java/lang/$owner", "valueOf", descriptor, false)
+                        visitVarInsn(opcode, index)
+                        visitMethodInsn(INVOKESTATIC, "java/lang/$owner", "valueOf", descriptor, false)
                     }
 
                     private fun loadArg(index: Int, parameterType: Type) {
@@ -165,7 +176,7 @@ class TracerClassFileTransformer: ClassFileTransformer {
                             Type.LONG_TYPE -> boxPrimitive(index, LLOAD, "Long", "(J)Ljava/lang/Long;")
                             Type.SHORT_TYPE -> boxPrimitive(index, ILOAD, "Short", "(S)Ljava/lang/Short;")
                             Type.BOOLEAN_TYPE -> boxPrimitive(index, ILOAD, "Boolean", "(Z)Ljava/lang/Boolean;")
-                            else -> mv.visitVarInsn(ALOAD, index)
+                            else -> visitVarInsn(ALOAD, index)
                         }
                     }
 
@@ -173,23 +184,23 @@ class TracerClassFileTransformer: ClassFileTransformer {
                         val arraySize = tracedParams.size
 
                         if (arraySize == 0) {
-                            mv.visitInsn(ACONST_NULL)
+                            visitInsn(ACONST_NULL)
                             return
                         }
 
                         // Create new Object[] for the arguments.
-                        mv.visitLdcInsn(arraySize)
-                        mv.visitTypeInsn(ANEWARRAY, Type.getInternalName(Any::class.java))
+                        visitLdcInsn(arraySize)
+                        visitTypeInsn(ANEWARRAY, Type.getInternalName(Any::class.java))
 
                         var stackSlotIndex = if (access and Opcodes.ACC_STATIC == 0) 1 else 0
                         var storeIndex = 0
                         for ((parameterIndex, parameterType) in parameterTypes.withIndex()) {
                             if (tracedParams.contains(parameterIndex)) {
                                 // args[storeIndex] = loadArg(parameterIndex)
-                                mv.visitInsn(DUP)
-                                mv.visitLdcInsn(storeIndex)
+                                visitInsn(DUP)
+                                visitLdcInsn(storeIndex)
                                 loadArg(stackSlotIndex, parameterType)
-                                mv.visitInsn(AASTORE)
+                                visitInsn(AASTORE)
                                 ++storeIndex
                             }
                             stackSlotIndex += parameterType.size
@@ -197,10 +208,10 @@ class TracerClassFileTransformer: ClassFileTransformer {
                     }
 
                     private fun invokeEnter() {
-                        mv.visitLdcInsn(traceData.methodId)
+                        visitLdcInsn(traceData.methodId)
                         loadArgSet()
 
-                        mv.visitMethodInsn(
+                        visitMethodInsn(
                             INVOKESTATIC,
                             TRAMPOLINE_TYPE,
                             TRAMPOLINE_ENTER_METHOD.name,
@@ -210,7 +221,7 @@ class TracerClassFileTransformer: ClassFileTransformer {
                     }
 
                     private fun invokeLeave() {
-                        mv.visitMethodInsn(
+                        visitMethodInsn(
                             INVOKESTATIC,
                             TRAMPOLINE_TYPE,
                             TRAMPOLINE_LEAVE_METHOD.name,
