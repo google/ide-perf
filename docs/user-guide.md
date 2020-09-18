@@ -70,11 +70,15 @@ FAQ
 
 ### Which methods can be traced?
 
-Essentially all methods can be traced, including methods in the JDK.
+Nearly all methods can be traced, including methods in the JDK.
 
-Technically there are a few methods which cause `StackOverflowException` if they are traced,
-due to their use in the tracer instrumentation hook. This includes a couple `ThreadLocal` methods
-and a few methods in the tracer itself.
+However:
+
+* You cannot trace `native` or `abstract` methods because those have no bytecode.
+
+* There are a few methods which cause `StackOverflowException` if they are traced,
+  due to their use in the tracer instrumentation hook. This includes a couple
+  `ThreadLocal` methods and a few methods in the tracer itself.
 
 ### How high is the tracing overhead?
 The tracing overhead is _approximately_ 200 ns per traced method call, assuming sufficient
