@@ -62,7 +62,7 @@ tasks.buildSearchableOptions {
 
 tasks.patchPluginXml {
     setSinceBuild("19.3") // TODO: Test on earlier versions.
-    setUntilBuild("202.*")
+    setUntilBuild("203.*")
 }
 
 configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
