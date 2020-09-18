@@ -16,7 +16,9 @@
 
 package com.google.idea.perf.tracer
 
+import com.google.idea.perf.sample.ComplexSuperConstructorCall
 import com.google.idea.perf.sample.Sample
+import com.google.idea.perf.sample.SimpleSuperConstructorCall
 import com.google.idea.perf.tracer.ui.TracerPanel
 import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
@@ -93,6 +95,31 @@ class TracerIntegrationTest : BasePlatformTestCase() {
                 Sample.e [3]
             """.trimIndent()
         )
+    }
+
+    @Test
+    fun testConstructorTracing() {
+        // Simple constructor.
+        tracer.handleCommandFromTest("trace ${SimpleSuperConstructorCall::class.java.name}#<init>")
+        SimpleSuperConstructorCall()
+        assertCallTreeStructure("""
+            [root] [0]
+              SimpleSuperConstructorCall.<init> [1]
+        """.trimIndent())
+
+        // Clear.
+        tracer.handleCommandFromTest("clear")
+        assertCallTreeStructure("[root] [0]")
+
+        // Complex constructor.
+        tracer.handleCommandFromTest("trace ${ComplexSuperConstructorCall::class.java.name}#<init>")
+        ComplexSuperConstructorCall()
+        // TODO: Currently fails with VerifyError from JVM, I think because ASM AdviceAdapter gets
+        //  confused when Kotlin uses control flow before the super class constructor call.
+        // assertCallTreeStructure("""
+        //     [root] [0]
+        //       ComplexSuperConstructorCall.<init> [1]
+        // """.trimIndent())
     }
 
     @Test

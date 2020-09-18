@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+@file:Suppress("UNUSED_PARAMETER")
+
 package com.google.idea.perf.sample
 
 /** These are just sample methods that can be traced during integration tests. */
-@Suppress("UNUSED_PARAMETER")
 object Sample {
     fun a() { b(); d(false) }
     fun b() { c(); c() }
@@ -36,3 +37,7 @@ object Sample {
     fun paramDouble(ignored: Double, x: Double) { if (x < 7.5) paramDouble(0.0, 8.0) }
     fun paramNull(any: Any?) {}
 }
+
+open class SuperClass(x: Boolean)
+class SimpleSuperConstructorCall : SuperClass(true)
+class ComplexSuperConstructorCall : SuperClass(listOf("str").any { it.hashCode() == 42 })
