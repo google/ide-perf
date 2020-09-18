@@ -72,6 +72,8 @@ class MethodTracepointWithArgs(
     private val method: Tracepoint,
     private val argStrings: Array<String>
 ) : Tracepoint by method {
+    private val cachedHashCode = Objects.hash(method, argStrings.contentDeepHashCode())
+
     override val displayName = "${method.displayName}: ${argStrings.joinToString(", ")}"
 
     override val detailedName by lazy(PUBLICATION) {
@@ -84,11 +86,14 @@ class MethodTracepointWithArgs(
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other !is MethodTracepointWithArgs) return false
-        return method == other.method && argStrings.contentEquals(other.argStrings)
+        return when {
+            other !is MethodTracepointWithArgs -> false
+            hashCode() != other.hashCode() -> false
+            else -> method == other.method && argStrings.contentEquals(other.argStrings)
+        }
     }
 
-    override fun hashCode(): Int = Objects.hash(method, argStrings.contentDeepHashCode())
+    override fun hashCode(): Int = cachedHashCode
 
     override fun toString(): String = displayName
 }
