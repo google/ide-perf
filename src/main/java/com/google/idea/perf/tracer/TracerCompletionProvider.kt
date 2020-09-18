@@ -23,6 +23,7 @@ import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.CharFilter
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementBuilder
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.util.textCompletion.TextCompletionProvider
 
@@ -77,6 +78,7 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
                         val traceRequests = TracerConfig.getAllRequests()
                         val affectedClasses = TracerConfigUtil.getAffectedClasses(traceRequests)
                         for (clazz in affectedClasses) {
+                            ProgressManager.checkCanceled()
                             val lookup = TracerCompletionUtil.createClassLookupElement(clazz)
                             if (lookup != null) {
                                 result.addElement(lookup)
