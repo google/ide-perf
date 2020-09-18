@@ -24,7 +24,7 @@ package com.google.idea.perf.tracer;
  * So, we install a layer of indirection between these two worlds.
  */
 public final class TracerTrampoline {
-    private static TracerHook hook = new TracerHookStub();
+    private static TracerHook hook = null;
 
     public static void installHook(TracerHook newHook) {
         hook = newHook;
@@ -37,13 +37,5 @@ public final class TracerTrampoline {
 
     public static void leave() {
         hook.leave();
-    }
-
-    private static final class TracerHookStub implements TracerHook {
-        @Override
-        public void enter(int methodId, Object[] args) {}
-
-        @Override
-        public void leave() {}
     }
 }
