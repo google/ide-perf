@@ -107,6 +107,12 @@ class TracerClassFileTransformer: ClassFileTransformer {
                 return object: AdviceAdapter(ASM_API, methodWriter, access, method, desc) {
                     val methodStart = Label()
 
+                    // For constructors with control flow prior to the super class
+                    // constructor call, AdviceAdapter will sometimes fail to call
+                    // onMethodEnter(). In those cases it is better to bail out
+                    // completely than have incorrect tracer hooks.
+                    var methodEntered = false
+
                     override fun onMethodEnter() {
                         // Note: AdviceAdapter has a comment, "For constructors... onMethodEnter()
                         // is called after each super class constructor call, because the object
@@ -117,11 +123,12 @@ class TracerClassFileTransformer: ClassFileTransformer {
                         // compromise: traced constructors will exclude the time spent in their
                         // super class constructor calls. This seems acceptable for now.
                         invokeEnter()
+                        methodEntered = true
                         visitLabel(methodStart)
                     }
 
                     override fun onMethodExit(opcode: Int) {
-                        if (opcode != ATHROW) {
+                        if (methodEntered && opcode != ATHROW) {
                             invokeLeave()
                         }
                     }
@@ -131,7 +138,18 @@ class TracerClassFileTransformer: ClassFileTransformer {
                         // the exit hook even when an exception is thrown. visitMaxs() is
                         // the first method called after visiting all instructions,
                         // so this is where we build the try-catch handler.
-                        //
+                        if (methodEntered) {
+                            buildCatchBlock()
+                        } else {
+                            LOG.warn(
+                                "Unable to instrument $className.$method$desc " +
+                                        "because ASM failed to call onMethodEnter"
+                            )
+                        }
+                        super.visitMaxs(maxStack, maxLocals)
+                    }
+
+                    private fun buildCatchBlock() {
                         // Technically, ASM requires that visitTryCatchBlock() is called *before*
                         // its start label is visited. However, we do not want to call
                         // visitTryCatchBlock() at the start of the method because that would
@@ -147,8 +165,8 @@ class TracerClassFileTransformer: ClassFileTransformer {
                         //
                         // Option 1 brings in more complexity than we want, and option 2 is a bit
                         // invasive. So we choose option 3 for now, which---despite breaking the ASM
-                        // verifier---seems to work fine. In fact option 3 is what everyone else
-                        // does too, including the author of AdviceAdapter (see the 2007 paper
+                        // verifier---seems to work fine. In fact, option 3 is what everyone else
+                        // seems to do---including the author of AdviceAdapter (see the 2007 paper
                         // "Using the ASM framework to implement common Java bytecode transformation
                         // patterns" from Eugene Kuleshov).
                         val methodEnd = Label()
@@ -157,8 +175,6 @@ class TracerClassFileTransformer: ClassFileTransformer {
                         visitFrame(Opcodes.F_NEW, 0, emptyArray(), 1, arrayOf(THROWABLE_TYPE))
                         invokeLeave()
                         visitInsn(ATHROW) // Rethrow.
-
-                        super.visitMaxs(maxStack, maxLocals)
                     }
 
                     private fun boxPrimitive(index: Int, opcode: Int, owner: String, descriptor: String) {
