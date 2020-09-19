@@ -55,27 +55,6 @@ class MethodFqMatcher(methodPattern: MethodFqName) {
     }
 
     fun mightMatchMethodInClass(className: String): Boolean = classMatcher.matches(className)
-
-    fun matchesMethodInClass(clazz: Class<*>): Boolean {
-
-        fun matchesClass(): Boolean = classMatcher.matches(clazz.name)
-
-        fun matchesSomeMethod(): Boolean {
-            return clazz.declaredMethods.any { method ->
-                methodMatcher.matches(method.name) &&
-                        descMatcher.matches(Type.getMethodDescriptor(method))
-            }
-        }
-
-        fun matchesSomeConstructor(): Boolean {
-            if (!methodMatcher.matches("<init>")) return false
-            return clazz.declaredConstructors.any { constructor ->
-                descMatcher.matches(Type.getConstructorDescriptor(constructor))
-            }
-        }
-
-        return matchesClass() && (matchesSomeMethod() || matchesSomeConstructor())
-    }
 }
 
 object TracerConfigUtil {
@@ -93,7 +72,7 @@ object TracerConfigUtil {
 
         // Currently O(n) in the number of trace requests---could be optimized if needed.
         fun classMightBeAffected(clazz: Class<*>) =
-            traceRequests.any { it.matcher.matchesMethodInClass(clazz) }
+            traceRequests.any { it.matcher.mightMatchMethodInClass(clazz.name) }
 
         return instrumentation.allLoadedClasses.filter(::classMightBeAffected)
     }
