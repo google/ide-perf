@@ -6,7 +6,7 @@ User guide for `ide-perf`
 Basic tracing
 ---
 
-The tracer window can be opened via `Help -> Diagnostic Tools -> Tracer`.
+The tracer window can be opened via `Help > Diagnostic Tools > Tracer`.
 The text field at the top of the window is the tracer command line.
 Use the `trace` command to trace specific methods.
 
@@ -55,10 +55,10 @@ Specialized tracers
 There are a couple specialized tracers which track specific subsystems of IntelliJ. These are
 slightly more experimental than the main method tracer.
 
-* The CachedValue tracer can be opened via `Help -> Diagnostic Tools -> CachedValue Tracer`.
+* The CachedValue tracer can be opened via `Help > Diagnostic Tools > CachedValue Tracer`.
   It provides hit/miss ratios for the various `CachedValue` caches in the IDE.
 
-* The VFS tracer can be opened via `Help -> Diagnostic Tools -> VFS Tracer`.
+* The VFS tracer can be opened via `Help > Diagnostic Tools > VFS Tracer`.
   It provides statistics on PSI file parses and PSI stub accesses. These statistics are viewable
   in a flat list view or in a file tree view. Make sure to use the `start` command to
   enable VFS data collection.

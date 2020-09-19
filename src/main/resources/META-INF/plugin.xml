@@ -14,14 +14,20 @@
   limitations under the License.
   -->
 
-<idea-plugin>
+<idea-plugin url="https://github.com/google/ide-perf">
     <id>com.google.ide-perf</id>
     <name>IDE Perf</name>
     <vendor>Google</vendor>
-    <description>
-        This is meant for developers working on the IDE itself to get
-        real-time insight into the performance of their code.
-    </description>
+    <description><![CDATA[
+        This is a performance diagnostic tool for developers working on the IDE itself.<br>
+        <br>
+        The main feature is a tracer which can trace methods on demand and display
+        call counts and overhead measurements in real time as the IDE is being used.
+        To open the tracer, select <b>Help > Diagnostic Tools > Tracer</b>.<br>
+        <br>
+        The full <a href="https://github.com/google/ide-perf/blob/master/docs/user-guide.md">user guide</a>
+        and <a href="https://github.com/google/ide-perf">source code</a> are on GitHub.
+    ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
 
