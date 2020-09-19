@@ -19,7 +19,7 @@ package com.google.idea.perf.tracer
 import com.google.idea.perf.tracer.TracerConfig.getMethodTraceData
 import com.google.idea.perf.tracer.TracerConfig.getMethodTracepoint
 import com.google.idea.perf.tracer.TracerConfig.shouldInstrumentClass
-import com.google.idea.perf.util.ConcurrentAppendOnlyList
+import com.google.idea.perf.util.ConcurrentCopyOnGrowList
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -39,7 +39,7 @@ import kotlin.concurrent.withLock
  * For simplicity, only the most recent applicable trace request is honored.
  */
 object TracerConfig {
-    private val tracepoints = ConcurrentAppendOnlyList<MethodTracepoint>()
+    private val tracepoints = ConcurrentCopyOnGrowList<MethodTracepoint>()
     private val lock = ReentrantLock()
     private val methodIds = mutableMapOf<MethodFqName, Int>()
     private val traceRequests = mutableListOf<TraceRequest>()
