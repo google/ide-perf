@@ -29,7 +29,6 @@ import org.objectweb.asm.Opcodes.ASM8
 import org.objectweb.asm.Type
 import org.objectweb.asm.commons.AdviceAdapter
 import org.objectweb.asm.commons.Method
-import org.objectweb.asm.util.CheckMethodAdapter
 import java.lang.instrument.ClassFileTransformer
 import java.security.ProtectionDomain
 import kotlin.reflect.jvm.javaMethod
@@ -45,9 +44,6 @@ class TracerClassFileTransformer: ClassFileTransformer {
         private val TRAMPOLINE_TYPE = Type.getType(TracerTrampoline::class.java).internalName
         private val TRAMPOLINE_ENTER_METHOD = Method.getMethod(TracerTrampoline::enter.javaMethod)
         private val TRAMPOLINE_LEAVE_METHOD = Method.getMethod(TracerTrampoline::leave.javaMethod)
-
-        // Set to true to enable bytecode verification.
-        private const val DEBUG = false
     }
 
     override fun transform(
@@ -87,7 +83,7 @@ class TracerClassFileTransformer: ClassFileTransformer {
                 signature: String?,
                 exceptions: Array<out String>?
             ): MethodVisitor? {
-                var methodWriter = super.visitMethod(access, method, desc, signature, exceptions)
+                val methodWriter = super.visitMethod(access, method, desc, signature, exceptions)
                 val methodFqName = MethodFqName(className, method, desc)
                 val traceData = TracerConfig.getMethodTraceData(methodFqName) ?: return methodWriter
                 if (!traceData.config.enabled) {
@@ -97,11 +93,6 @@ class TracerClassFileTransformer: ClassFileTransformer {
                 val parameterTypes = Type.getArgumentTypes(desc)
                 val tracedParams = traceData.config.tracedParams.filter {
                     it >= 0 && it < parameterTypes.size
-                }
-
-                @Suppress("ConstantConditionIf")
-                if (DEBUG) {
-                    methodWriter = CheckMethodAdapter(methodWriter)
                 }
 
                 return object: AdviceAdapter(ASM_API, methodWriter, access, method, desc) {
