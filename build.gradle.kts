@@ -61,8 +61,8 @@ tasks.buildSearchableOptions {
 }
 
 tasks.patchPluginXml {
-    setSinceBuild("19.3") // TODO: Test on earlier versions.
-    setUntilBuild("203.*")
+    setSinceBuild("201") // Should be tested occasionally, especially before releases.
+    setUntilBuild("203.*") // Should generally be set to the latest IntelliJ EAP version.
 }
 
 configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
