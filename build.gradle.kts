@@ -82,6 +82,7 @@ tasks.runIde {
     jvmArgs("-XX:ReservedCodeCacheSize=240m")
     jvmArgs("-XX:+UseConcMarkSweepGC")
     jvmArgs("-XX:SoftRefLRUPolicyMSPerMB=50")
+    jvmArgs("-XX:CICompilerCount=2")
     jvmArgs("-Djdk.module.illegalAccess.silent=true")
     jvmArgs("-XX:+UseCompressedOops")
 
@@ -89,6 +90,7 @@ tasks.runIde {
 }
 
 tasks.test {
+    jvmArgs("-Djdk.module.illegalAccess.silent=true") // From IntelliJ.
     testLogging.exceptionFormat = FULL
     testLogging.showStandardStreams = isCI
     enableAgent()
