@@ -67,10 +67,8 @@ class TracepointDetailsManager(private val table: TracerTable) {
 
         textArea.text = text // We hope the text did not change very much.
 
-        if (dot != mark) {
-            caret.dot = mark
-            caret.moveDot(dot)
-        }
+        caret.dot = mark
+        caret.moveDot(dot)
     }
 
     private fun buildDetailString(data: TracepointStats): String {
