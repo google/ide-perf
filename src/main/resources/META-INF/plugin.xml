@@ -25,33 +25,30 @@
         call counts and overhead measurements in real time as the IDE is being used.
         To open the tracer, select <b>Help > Diagnostic Tools > Tracer</b>.<br>
         <br>
-        The full <a href="https://github.com/google/ide-perf/blob/master/docs/user-guide.md">user guide</a>
-        and <a href="https://github.com/google/ide-perf">source code</a> are on GitHub.
+        See also the <a href="https://github.com/google/ide-perf/blob/master/docs/user-guide.md">user guide</a>
+        and the <a href="https://github.com/google/ide-perf">source code</a>.
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
 
     <actions>
-        <action text="Tracer..."
-                id="com.google.idea.perf.Tracer"
-                class="com.google.idea.perf.tracer.ui.TracerAction"
-                description="Trace IDE code to get overhead measurements and call counts in real time">
-            <add-to-group group-id="HelpDiagnosticTools" anchor="after"
-                          relative-to-action="Performance.ActivityMonitor"/>
-        </action>
-        <action text="CachedValue Tracer..."
-                id="com.google.idea.CachedValueTracer"
-                class="com.google.idea.perf.cvtracer.CachedValueTracerAction"
-                description="Trace IDE cached values to get computation measurements and hit/miss ratios in real time">
-            <add-to-group group-id="HelpDiagnosticTools" anchor="after"
-                          relative-to-action="Performance.ActivityMonitor" />
-        </action>
-        <action text="VFS Tracer..."
-                id="com.google.idea.VfsTracer"
-                class="com.google.idea.perf.vfstracer.VfsTracerAction"
-                description="Trace IDE PSI tree to get reparse events and overhead in real time">
-            <add-to-group group-id="HelpDiagnosticTools" anchor="after"
-                          relative-to-action="Performance.ActivityMonitor" />
-        </action>
+        <group id="com.google.ide-perf.PerfTools">
+            <add-to-group group-id="HelpDiagnosticTools" anchor="last"/>
+            <separator/>
+            <action text="Tracer..."
+                    id="com.google.ide-perf.Tracer"
+                    class="com.google.idea.perf.tracer.ui.TracerAction"
+                    description="Trace IDE methods on demand and display overhead measurements"/>
+
+            <action text="CachedValue Tracer..."
+                    id="com.google.ide-perf.CachedValueTracer"
+                    class="com.google.idea.perf.cvtracer.CachedValueTracerAction"
+                    description="Trace CachedValue instances and display hit/miss ratios"/>
+
+            <action text="VFS Tracer..."
+                    id="com.google.ide-perf.VfsTracer"
+                    class="com.google.idea.perf.vfstracer.VfsTracerAction"
+                    description="Trace and display PSI parse events"/>
+        </group>
     </actions>
 </idea-plugin>
