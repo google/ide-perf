@@ -36,6 +36,12 @@ interface CallTree {
         forEachNodeInSubtree { nodes.add(it) }
         return nodes.asSequence()
     }
+
+    fun copy(): CallTree {
+        val copy = MutableCallTree(Tracepoint.ROOT)
+        copy.accumulate(this)
+        return copy
+    }
 }
 
 /** A mutable call tree implementation. */
@@ -61,14 +67,5 @@ class MutableCallTree(
             val child = children.getOrPut(childTracepoint) { MutableCallTree(childTracepoint) }
             child.accumulate(otherChild)
         }
-    }
-
-    fun copy(): MutableCallTree {
-        val copy = MutableCallTree(tracepoint)
-        copy.callCount = callCount
-        copy.wallTime = wallTime
-        copy.maxWallTime = maxWallTime
-        children.mapValuesTo(copy.children) { (_, child) -> child.copy() }
-        return copy
     }
 }

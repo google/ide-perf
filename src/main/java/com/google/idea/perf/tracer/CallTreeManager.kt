@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.tracer
 
+import com.intellij.util.ui.EDT
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -27,7 +28,7 @@ import kotlin.system.measureNanoTime
 /** Builds and manages the call trees for active threads. */
 object CallTreeManager {
 
-    private class ThreadState {
+    private class ThreadState(val isEdt: Boolean) {
         var busy = false // See doPreventingRecursion().
         val lock = ReentrantLock() // Guards the thread-local CallTreeBuilder (low contention).
         var callTreeBuilder = CallTreeBuilder()
@@ -37,7 +38,9 @@ object CallTreeManager {
 
     private val threadState: ThreadLocal<ThreadState> =
         ThreadLocal.withInitial {
-            ThreadState().also { allThreadState.add(it) }
+            val state = ThreadState(EDT.isCurrentThreadEdt())
+            allThreadState.add(state)
+            state
         }
 
     fun enter(tracepoint: Tracepoint) {
@@ -62,11 +65,22 @@ object CallTreeManager {
         val mergedTree = MutableCallTree(Tracepoint.ROOT)
         for (threadState in allThreadState) {
             threadState.lock.withLock {
-                val tree = threadState.callTreeBuilder.getUpToDateTree()
-                mergedTree.accumulate(tree)
+                val localTree = threadState.callTreeBuilder.getUpToDateTree()
+                mergedTree.accumulate(localTree)
             }
         }
         return mergedTree
+    }
+
+    fun getCallTreeSnapshotEdtOnly(): CallTree {
+        val edtState = allThreadState.firstOrNull { it.isEdt }
+        if (edtState == null) {
+            return MutableCallTree(Tracepoint.ROOT)
+        }
+        edtState.lock.withLock {
+            val tree = edtState.callTreeBuilder.getUpToDateTree()
+            return tree.copy()
+        }
     }
 
     fun clearCallTrees() {
