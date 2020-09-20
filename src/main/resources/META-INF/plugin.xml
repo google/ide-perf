@@ -31,9 +31,6 @@
 
     <depends>com.intellij.modules.platform</depends>
 
-    <!-- Used for the PsiElementFinder demo. -->
-    <depends>com.intellij.modules.java</depends>
-
     <actions>
         <action text="Tracer..."
                 id="com.google.idea.perf.Tracer"

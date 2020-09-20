@@ -51,7 +51,6 @@ val isCI = System.getenv("CI") != null
 intellij {
     pluginName = "ide-perf"
     version = "2020.2"
-    setPlugins("java") // Used for the PsiElementFinder demo.
     downloadSources = !isCI
 }
 

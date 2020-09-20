@@ -32,7 +32,7 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.Disposer
-import com.intellij.psi.PsiElementFinder
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.ui.UIUtil
 import org.jetbrains.annotations.TestOnly
 import java.awt.image.BufferedImage
@@ -127,10 +127,11 @@ class TracerController(
                 when (command.target) {
                     is TraceTarget.PsiFinders -> {
                         val defaultProject = ProjectManager.getInstance().defaultProject
-                        val psiFinders = PsiElementFinder.EP.getExtensions(defaultProject)
-                        val baseMethod = PsiElementFinder::findClass.javaMethod!!
-                        val methods = psiFinders.map {
-                            it.javaClass.getMethod(baseMethod.name, *baseMethod.parameterTypes)
+                        val psiFinderEp = defaultProject.extensionArea
+                            .getExtensionPoint<Any>("com.intellij.java.elementFinder")
+                        val argTypes = arrayOf(String::class.java, GlobalSearchScope::class.java)
+                        val methods = psiFinderEp.extensionList.map {
+                            it.javaClass.getMethod("findClass", *argTypes)
                         }
                         val config = MethodConfig(enabled = command.enable, countOnly = countOnly)
                         traceAndRetransform(config, *methods.toTypedArray())
