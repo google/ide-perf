@@ -49,6 +49,8 @@ import javax.swing.BoxLayout
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComponent
 import javax.swing.JProgressBar
+import javax.swing.JSeparator
+import javax.swing.SwingConstants.HORIZONTAL
 
 // Things to improve:
 // * Optimization: only update the tracer tab that is currently visible.
@@ -88,7 +90,7 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
         // Progress bar.
         progressBar = JProgressBar()
         progressBar.isVisible = false
-        progressBar.maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
+        progressBar.maximumSize = Dimension(Integer.MAX_VALUE, progressBar.minimumSize.height)
         add(progressBar)
 
         // Thread chooser.
@@ -149,10 +151,13 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
         updateUiOverhead()
 
         // Bottom panel.
+        val separator = JSeparator(HORIZONTAL)
+        separator.maximumSize = Dimension(Integer.MAX_VALUE, separator.minimumSize.height)
+        add(separator)
         val bottomPanel = JBUI.Panels.simplePanel()
             .addToLeft(tracingOverheadLabel)
             .addToRight(uiOverheadLabel)
-            .withBorder(JBUI.Borders.empty(0, 8, 8, 10))
+            .withBorder(JBUI.Borders.empty(3, 8, 6, 8))
         bottomPanel.withMaximumHeight(bottomPanel.minimumSize.height)
         add(bottomPanel)
 
