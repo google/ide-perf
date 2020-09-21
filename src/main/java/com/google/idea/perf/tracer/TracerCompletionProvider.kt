@@ -31,7 +31,6 @@ import com.intellij.util.textCompletion.TextCompletionProvider
 // * Consider configuring typo detection, case sensitivity, etc.
 // * Consider showing completion immediately after the user types "trace" (if performance is ok).
 // * Consider showing documentation while completing the primary commands (reset, trace, etc.)
-// * Fix <tab> so that the focus always remains on the command line.
 // * The default prefix matcher seems to treat '*' as a pattern for completion, which is strange.
 // * When auto-completing an untrace command, only show methods which were traced.
 
