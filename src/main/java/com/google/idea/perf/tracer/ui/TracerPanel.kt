@@ -90,7 +90,6 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
         // Progress bar.
         progressBar = JProgressBar()
         progressBar.isVisible = false
-        progressBar.maximumSize = Dimension(Integer.MAX_VALUE, progressBar.minimumSize.height)
         add(progressBar)
 
         // Thread chooser.
@@ -151,20 +150,24 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
         updateUiOverhead()
 
         // Bottom panel.
-        val separator = JSeparator(HORIZONTAL)
-        separator.maximumSize = Dimension(Integer.MAX_VALUE, separator.minimumSize.height)
-        add(separator)
+        add(JSeparator(HORIZONTAL))
         val bottomPanel = JBUI.Panels.simplePanel()
             .addToLeft(tracingOverheadLabel)
             .addToRight(uiOverheadLabel)
             .withBorder(JBUI.Borders.empty(3, 8, 6, 8))
-        bottomPanel.withMaximumHeight(bottomPanel.minimumSize.height)
         add(bottomPanel)
 
         // Schedule tree data updates.
         val refreshFuture = EdtExecutorService.getScheduledExecutorInstance()
             .scheduleWithFixedDelay(::updateCallTree, 0, REFRESH_DELAY_MS, MILLISECONDS)
         parentDisposable.attach { refreshFuture.cancel(false) }
+
+        // Condense all components except the tab view.
+        for (child in components) {
+            if (child !== tabs) {
+                child.maximumSize = Dimension(Integer.MAX_VALUE, 0)
+            }
+        }
     }
 
     fun showCommandLinePopup(message: String, type: MessageType) {

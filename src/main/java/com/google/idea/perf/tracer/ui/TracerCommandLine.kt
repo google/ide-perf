@@ -41,7 +41,6 @@ class TracerCommandLine(
 ) {
     init {
         font = EditorUtil.getEditorFont()
-        maximumSize = Dimension(Integer.MAX_VALUE, minimumSize.height)
 
         // Prevent accidental focus loss due to <tab> key.
         setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptySet())
