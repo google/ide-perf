@@ -22,8 +22,12 @@ plugins {
     id("org.jetbrains.kotlin.jvm").version("1.4.0")
 }
 
+val isCI = System.getenv("CI") != null
+val isRelease = findProperty("release") != null
+val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
+
 group = "com.google.idea.perf"
-version = "1.0-SNAPSHOT"
+version = "1.0.0$versionSuffix"
 
 repositories {
     mavenCentral()
@@ -44,8 +48,6 @@ configureEach(tasks.compileKotlin, tasks.compileTestKotlin) {
         freeCompilerArgs = listOf("-Xjvm-default=enable")
     }
 }
-
-val isCI = System.getenv("CI") != null
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
