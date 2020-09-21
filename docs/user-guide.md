@@ -1,4 +1,4 @@
-User guide for `ide-perf`
+User guide for ide-perf
 ===
 
 <!-- TODO: Add images? -->

@@ -23,7 +23,7 @@ plugins {
 }
 
 val isCI = System.getenv("CI") != null
-val isRelease = findProperty("release") != null
+val isRelease = project.findProperty("release") != null
 val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
 
 group = "com.google.idea.perf"
@@ -64,12 +64,22 @@ tasks.buildSearchableOptions {
 tasks.patchPluginXml {
     setSinceBuild("201") // Should be tested occasionally, especially before releases.
     setUntilBuild("203.*") // Should generally be set to the latest IntelliJ EAP version.
+    changeNotes(null) // Should describe changes in the latest release only.
 }
 
 configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
     // Copy the agent jar into our plugin home directory.
     from(tasks.getByPath(":agent:jar")) {
         into(intellij.pluginName)
+    }
+}
+
+tasks.publishPlugin {
+    val tokenProp = "plugins.repository.token"
+    token(project.findProperty(tokenProp))
+    doFirst {
+        check(isRelease) { "Must do a release build when publishing the plugin" }
+        check(project.hasProperty(tokenProp)) { "Must specify an upload token via -P$tokenProp" }
     }
 }
 
@@ -99,7 +109,7 @@ tasks.test {
 }
 
 fun JavaForkOptions.enableAgent() {
-    val atStartup = findProperty("loadAgentAtStartup") == "true"
+    val atStartup = project.findProperty("loadAgentAtStartup") == "true"
     if (atStartup) {
         // Add the -javaagent startup flag.
         val agentName = tasks.getByPath(":agent:jar").outputs.files.singleFile.name
