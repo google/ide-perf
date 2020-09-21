@@ -50,3 +50,5 @@ Contributing
 ---
 To make changes, open this project in IntelliJ and import it as a Gradle project. Please
 see [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request.
+
+See also [dev-guide.md](docs/dev-guide.md).

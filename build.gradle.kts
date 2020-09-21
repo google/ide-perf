@@ -23,7 +23,7 @@ plugins {
 }
 
 val isCI = System.getenv("CI") != null
-val isRelease = findProperty("release") != null
+val isRelease = project.findProperty("release") != null
 val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
 
 group = "com.google.idea.perf"
@@ -73,6 +73,15 @@ configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
     }
 }
 
+tasks.publishPlugin {
+    val tokenProp = "plugins.repository.token"
+    token(project.findProperty(tokenProp))
+    doFirst {
+        check(isRelease) { "Must do a release build when publishing the plugin" }
+        check(project.hasProperty(tokenProp)) { "Must specify an upload token via -P$tokenProp" }
+    }
+}
+
 tasks.runIde {
     // Disable auto-reload until we make sure it works correctly for this plugin.
     autoReloadPlugins = false
@@ -99,7 +108,7 @@ tasks.test {
 }
 
 fun JavaForkOptions.enableAgent() {
-    val atStartup = findProperty("loadAgentAtStartup") == "true"
+    val atStartup = project.findProperty("loadAgentAtStartup") == "true"
     if (atStartup) {
         // Add the -javaagent startup flag.
         val agentName = tasks.getByPath(":agent:jar").outputs.files.singleFile.name
