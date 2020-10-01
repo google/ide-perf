@@ -1,54 +1,77 @@
 [![build status](https://github.com/google/ide-perf/workflows/build/badge.svg)](https://github.com/google/ide-perf/actions?query=branch%3Amaster)
+[![plugin version](https://img.shields.io/jetbrains/plugin/v/15104?label=release)](https://plugins.jetbrains.com/plugin/15104-ide-perf)
 
-Performance diagnostics for [IntelliJ Platform](https://www.jetbrains.com/opensource/idea/)
+
+IDE Perf: Performance diagnostics for [IntelliJ Platform](https://www.jetbrains.com/opensource/idea/)
 ===
 This is a plugin for IntelliJ-based IDEs that gives real-time insight into the performance
-of the IDE itself. The plugin is under active development and should be considered experimental.
-This is not an officially supported Google product.
+of the IDE itself. You can [install](https://plugins.jetbrains.com/plugin/15104-ide-perf)
+it from the JetBrains Plugin Repository, then see [user-guide.md](docs/user-guide.md) for
+usage instructions. Note: this is not an officially supported Google product.
 
-So far the plugin has the ability to trace methods on demand and get call counts and time
-measurements in real time as the IDE is being used. Since the tracer is tightly integrated with
-IntelliJ, it can easily do things like "trace all extensions that implement the PsiElementFinder
-extension point". Click [here](http://services.google.com/fh/files/misc/trace-psi-finders.png)
-to see what that looks like. The overhead of the tracer is low, so high-traffic methods like
-`HashMap.get()` and `ProgressManager.checkCanceled()` can be traced without issue.
 
-Getting started
+Current features
 ---
-`ide-perf` is not yet released on the plugin repository, so you will need to build and install
-it manually. You can expect `ide-perf` to be compatible with the latest stable version of IntelliJ.
+* **Method tracing:** get call counts and overhead measurements in real time as the IDE is
+  being used. You can trace most methods, including methods in the JDK. The tracing overhead
+  is low, so high-traffic methods like `ProgressManager.checkCanceled` can be traced
+  without issue. The tracer has both a method list view and a call tree view. Tracing
+  commands are auto-completed as you type.
 
-To build the plugin, make sure you have `JAVA_HOME` pointing to JDK 11 or higher, then run
+* **Parameter tracing:** track how many times a method is called with a specific argument.
+  For example, you can trace the first parameter of `JavaPsiFacade.findClass` to visualize
+  class search queries.
 
-```bash
-./gradlew assemble
-```
+* **CachedValue tracing:** track `CachedValue` hit ratios in real time.
 
-Next add these JVM flags to the IDE that you would like to trace.
+See [user-guide.md](docs/user-guide.md) for instructions on how to use each feature, and
+feel free to [file an issue](https://github.com/google/ide-perf/issues) if you have a feature
+request.
 
-* `-Djdk.attach.allowAttachSelf=true`
+Here is a screenshot of the method tracer:
 
-  This flag ensures that the tracer can instrument IDE bytecode.
-  It is already set by default if you are using a recent version of IntelliJ.
+![screenshot](https://plugins.jetbrains.com/files/15104/screenshot_23378.png)
 
-* `-Dplugin.path=/path/to/ide-perf/build/idea-sandbox/plugins/ide-perf`
+Comparison to other tools
+---
+IDE Perf does not replace other tools. A batch profiler such as YourKit is still the first tool
+you should reach for when diagnosing an unknown performance issue. However, IDE Perf is useful
+when you want to dig deeper into a specific issue.
 
-  This flag loads the `ide-perf` plugin.
-  Be sure to adjust the `/path/to/ide-perf` part based on where you cloned this repository.
-  Alternatively, if you do not want to add this flag, you can run `Install Plugin from Disk`
-  in the IDE and choose the zip file under `build/distributions`.
+#### Advantages
 
-Next launch the IDE and open the tracer via `Help -> Diagnostic Tools -> Tracer`. In the window
-that pops up you can try typing in a command like this:
-```
-trace com.intellij.openapi.progress.ProgressManager#checkCanceled
-```
+* IDE Perf displays data in real time. This is especially useful in user-interactive scenarios
+  because you will notice patterns in the way the data changes in response to
+  specific user actions.
 
-See [user-guide.md](docs/user-guide.md) for the full guide on using `ide-perf`.
+* Tracing is targeted at only a small set of methods that you care about. This leads to low
+  tracing overhead, accurate time measurements, and low visual clutter when looking at
+  the call tree. In contrast, the overhead of tracing in batch profilers is often
+  prohibitively high.
+
+* IDE Perf is tailored specifically for IntelliJ, which means that it can surface
+  IntelliJ-specific diagnostics. The `CachedValue` tracer is a good example of this.
+
+#### Example use cases
+
+* Use the tracer to quickly answer the question, "how fast is the code I just wrote?"
+  Tracing data updates in real time, so you can quickly cycle through a variety of user
+  scenarios to see if any of them trigger high overhead.
+
+* Use the tracer to figure out _why_ a method has high overhead in a CPU sampling snapshot.
+  Is it invoked millions of times? Do particular method arguments lead to
+  significantly higher overhead?
+
+* Use wildcard tracing to audit a new feature and look for unexpected overhead.
+  For example, if the feature happens to add code that runs on every key press in the
+  editor, you will find out about it.
+
+* Use the tracer to accurately measure the effect of a performance optimization.
+
 
 Contributing
 ---
-To make changes, open this project in IntelliJ and import it as a Gradle project. Please
-see [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request.
-
-See also [dev-guide.md](docs/dev-guide.md).
+See [dev-guide.md](docs/dev-guide.md) for development tips, and see
+[CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request. If you plan to make any
+large-scale changes, it is a good idea to [file an issue](https://github.com/google/ide-perf/issues)
+first to discuss!

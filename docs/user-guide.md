@@ -1,7 +1,5 @@
-User guide for ide-perf
+User guide for IDE Perf
 ===
-
-<!-- TODO: Add images? -->
 
 Basic tracing
 ---

@@ -25,8 +25,8 @@
         call counts and overhead measurements in real time as the IDE is being used.
         To open the tracer, select <b>Help > Diagnostic Tools > Tracer</b>.<br>
         <br>
-        See also the <a href="https://github.com/google/ide-perf/blob/master/docs/user-guide.md">user guide</a>
-        and the <a href="https://github.com/google/ide-perf">source code</a>.
+        See also the <a href="https://github.com/google/ide-perf">README</a> and the
+        <a href="https://github.com/google/ide-perf/blob/master/docs/user-guide.md">user guide</a>.
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
