@@ -6,7 +6,7 @@ IDE Perf: Performance diagnostics for [IntelliJ Platform](https://www.jetbrains.
 ===
 This is a plugin for IntelliJ-based IDEs that gives real-time insight into the performance
 of the IDE itself. You can [install](https://plugins.jetbrains.com/plugin/15104-ide-perf)
-it from the JetBrains Plugin Repository, then see [user-guide.md](docs/user-guide.md) for
+it from the JetBrains Plugin Repository, then see the [user guide](docs/user-guide.md) for
 usage instructions. Note: this is not an officially supported Google product.
 
 
@@ -24,9 +24,10 @@ Current features
 
 * **CachedValue tracing:** track `CachedValue` hit ratios in real time.
 
-See [user-guide.md](docs/user-guide.md) for instructions on how to use each feature, and
-feel free to [file an issue](https://github.com/google/ide-perf/issues) if you have a feature
-request.
+See the [user guide](docs/user-guide.md) for instructions on how to use each feature.
+
+Feel free to [file an issue](https://github.com/google/ide-perf/issues) if you find a bug
+or have a feature request.
 
 Here is a screenshot of the method tracer:
 
@@ -55,7 +56,7 @@ when you want to dig deeper into a specific issue.
 #### Example use cases
 
 * Use the tracer to quickly answer the question, "how fast is the code I just wrote?"
-  Tracing data updates in real time, so you can quickly cycle through a variety of user
+  The tracing data updates in real time, so you can quickly cycle through a variety of user
   scenarios to see if any of them trigger high overhead.
 
 * Use the tracer to figure out _why_ a method has high overhead in a CPU sampling snapshot.
