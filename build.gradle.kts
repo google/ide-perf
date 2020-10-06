@@ -68,11 +68,14 @@ tasks.patchPluginXml {
 }
 
 val javaAgent: Configuration by configurations.creating
+val nativeAgent: Configuration by configurations.creating
 
 configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
     // Copy agent artifacts into the plugin home directory.
     val agentDir = "$pluginName/agent"
     from(javaAgent) { into(agentDir) }
+    from(nativeAgent) { into(agentDir) }
+    if (isRelease) TODO("Figure out how to bundle native agent binaries for all three platforms")
 }
 
 tasks.publishPlugin {
@@ -115,9 +118,11 @@ tasks.test {
 fun JavaForkOptions.enableAgent() {
     val atStartup = project.findProperty("loadAgentAtStartup") == "true"
     if (atStartup) {
-        // Add the -javaagent startup flag.
+        // Add the -javaagent and -agentpath startup flags.
         jvmArgumentProviders.add(CommandLineArgumentProvider {
-            javaAgent.map { file -> "-javaagent:$file" }
+            val javaAgentFlags = javaAgent.map { file -> "-javaagent:$file" }
+            val nativeAgentFlags = nativeAgent.map { file -> "-agentpath:$file" }
+            javaAgentFlags + nativeAgentFlags
         })
     } else {
         // Let the agent load itself later.
@@ -128,6 +133,7 @@ fun JavaForkOptions.enableAgent() {
 dependencies {
     // Bundle the agent artifacts.
     javaAgent(project(":agent:java", "runtimeElements"))
+    nativeAgent(project(":agent:native", "releaseRuntimeElements"))
 
     // Using 'compileOnly' because the agent is loaded in the boot classpath.
     compileOnly(project(":agent:java"))

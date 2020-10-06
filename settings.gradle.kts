@@ -15,4 +15,4 @@
  */
 
 rootProject.name = "ide-perf"
-include("agent:java")
+include("agent:java", "agent:native")
