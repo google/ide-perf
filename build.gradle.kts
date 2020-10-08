@@ -127,11 +127,11 @@ fun JavaForkOptions.enableAgent() {
 
 dependencies {
     // Bundle the agent artifacts.
-    javaAgent(project(":agent", "runtimeElements"))
+    javaAgent(project(":agent:java", "runtimeElements"))
 
     // Using 'compileOnly' because the agent is loaded in the boot classpath.
-    compileOnly(project(":agent"))
-    testCompileOnly(project(":agent"))
+    compileOnly(project(":agent:java"))
+    testCompileOnly(project(":agent:java"))
 
     implementation("org.ow2.asm:asm:8.0.1")
     implementation("org.ow2.asm:asm-util:8.0.1")
