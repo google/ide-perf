@@ -105,13 +105,14 @@ object AgentLoader {
     private fun tryLoadAgentAfterStartup() {
         val plugin = PluginManagerCore.getPlugin(PluginId.getId("com.google.ide-perf"))
             ?: error("Failed to find our own plugin")
+        val agentDir = plugin.pluginPath.resolve("agent")
 
-        val agentJar = plugin.pluginPath.resolve("agent.jar")
-        check(agentJar.isFile()) { "Could not find agent.jar at $agentJar" }
+        val javaAgent = agentDir.resolve("agent.jar")
+        check(javaAgent.isFile()) { "Could not find agent.jar at $javaAgent" }
 
         val vm = VirtualMachine.attach(OSProcessUtil.getApplicationPid())
         try {
-            vm.loadAgent(agentJar.toAbsolutePath().toString())
+            vm.loadAgent(javaAgent.toAbsolutePath().toString())
         }
         finally {
             vm.detach()

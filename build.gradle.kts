@@ -67,11 +67,12 @@ tasks.patchPluginXml {
     changeNotes(null) // Should describe changes in the latest release only.
 }
 
+val javaAgent: Configuration by configurations.creating
+
 configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
-    // Copy the agent jar into our plugin home directory.
-    from(tasks.getByPath(":agent:jar")) {
-        into(intellij.pluginName)
-    }
+    // Copy agent artifacts into the plugin home directory.
+    val agentDir = "$pluginName/agent"
+    from(javaAgent) { into(agentDir) }
 }
 
 tasks.publishPlugin {
@@ -106,15 +107,18 @@ tasks.test {
     testLogging.exceptionFormat = FULL
     testLogging.showStandardStreams = isCI
     enableAgent()
+
+    // Workaround for https://github.com/JetBrains/gradle-intellij-plugin/issues/541.
+    inputs.files(tasks.prepareTestingSandbox)
 }
 
 fun JavaForkOptions.enableAgent() {
     val atStartup = project.findProperty("loadAgentAtStartup") == "true"
     if (atStartup) {
         // Add the -javaagent startup flag.
-        val agentName = tasks.getByPath(":agent:jar").outputs.files.singleFile.name
-        val agentPath = "${intellij.sandboxDirectory}/plugins/${intellij.pluginName}/$agentName"
-        jvmArgs("-javaagent:$agentPath")
+        jvmArgumentProviders.add(CommandLineArgumentProvider {
+            javaAgent.map { file -> "-javaagent:$file" }
+        })
     } else {
         // Let the agent load itself later.
         systemProperty("jdk.attach.allowAttachSelf", true)
@@ -122,6 +126,9 @@ fun JavaForkOptions.enableAgent() {
 }
 
 dependencies {
+    // Bundle the agent artifacts.
+    javaAgent(project(":agent", "runtimeElements"))
+
     // Using 'compileOnly' because the agent is loaded in the boot classpath.
     compileOnly(project(":agent"))
     testCompileOnly(project(":agent"))
