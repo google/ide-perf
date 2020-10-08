@@ -148,11 +148,11 @@ dependencies {
  * we add 'compileOnly' dependencies on certain IDEA dependencies in order to get their sources.
  * This task checks that the versions we use are the same as the ones bundled in IDEA.
  */
-val checkIdeaDependencyVersions = tasks.register("checkIdeaDependencyVersions") {
+val checkIdeaDependencyVersions by tasks.registering {
     doFirst {
         fun findIdeaDependencyVersion(jarPrefix: String): String {
             // We cannot inspect maven coordinates because IDEA bundles dependencies as simple jars.
-            for (file in configurations.idea.get().files) {
+            for (file in configurations.idea.get()) {
                 if (file.name.startsWith("$jarPrefix-")) {
                     val version = file.name.removePrefix("$jarPrefix-").removeSuffix(".jar")
                     if (version.isNotEmpty() && version.first().isDigit()) {
