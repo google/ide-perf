@@ -73,7 +73,7 @@ class TracerController(
 
         // Install tracer instrumentation hooks.
         executor.execute {
-            if (!AgentLoader.initTracerInstrumentation) {
+            if (!AgentLoader.ensureTracerHooksInstalled) {
                 displayWarning("Failed to install instrumentation agent (see idea.log)")
             }
         }

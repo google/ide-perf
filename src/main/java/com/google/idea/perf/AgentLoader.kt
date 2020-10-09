@@ -16,7 +16,7 @@
 
 package com.google.idea.perf
 
-import com.google.idea.perf.AgentLoader.initTracerInstrumentation
+import com.google.idea.perf.AgentLoader.ensureTracerHooksInstalled
 import com.google.idea.perf.AgentLoader.instrumentation
 import com.google.idea.perf.agent.AgentMain
 import com.google.idea.perf.tracer.TracerClassFileTransformer
@@ -40,7 +40,7 @@ import kotlin.system.measureTimeMillis
  * Loads and initializes the instrumentation agent with [VirtualMachine.loadAgent].
  *
  * See [instrumentation] for the global [java.lang.instrument.Instrumentation] instance.
- * See [initTracerInstrumentation] for installing tracer hooks.
+ * See [ensureTracerHooksInstalled] for installing tracer hooks.
  *
  * Note: the agent must be loaded here before any of its classes are referenced, otherwise
  * [NoClassDefFoundError] is thrown. So, for safety, all direct references to agent
@@ -49,12 +49,15 @@ import kotlin.system.measureTimeMillis
 object AgentLoader {
     private val LOG = Logger.getInstance(AgentLoader::class.java)
 
-    val instrumentation: Instrumentation? by lazy { tryLoadAgent() }
+    val instrumentation: Instrumentation?
+        get() = if (ensureJavaAgentLoaded) AgentMain.savedInstrumentationInstance else null
 
-    val initTracerInstrumentation: Boolean by lazy { tryInitTracerInstrumentation() }
+    val ensureJavaAgentLoaded: Boolean by lazy { doLoadJavaAgent() }
+
+    val ensureTracerHooksInstalled: Boolean by lazy { doInstallTracerHooks() }
 
     // Note: this method can take around 200 ms or so.
-    private fun tryLoadAgent(): Instrumentation? {
+    private fun doLoadJavaAgent(): Boolean {
         val agentLoadedAtStartup = try {
             // Until the agent is loaded, we cannot trigger symbol resolution for its
             // classes---otherwise NoClassDefFoundError is imminent. So we use reflection.
@@ -65,18 +68,13 @@ object AgentLoader {
             false
         }
 
-        val instrumentation: Instrumentation
         if (agentLoadedAtStartup) {
-            instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
-            LOG.info("Agent was loaded at startup")
+            LOG.info("Java agent was loaded at startup")
         }
         else {
             try {
-                val overhead = measureTimeMillis {
-                    tryLoadAgentAfterStartup()
-                }
-                instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
-                LOG.info("Agent was loaded on demand in $overhead ms")
+                val overhead = measureTimeMillis { tryLoadAgentAfterStartup() }
+                LOG.info("Java agent was loaded on demand in $overhead ms")
             }
             catch (e: Throwable) {
                 val msg = """
@@ -86,19 +84,20 @@ object AgentLoader {
                     """.trimIndent()
                 Notification("Tracer", "", msg, NotificationType.ERROR).notify(null)
                 LOG.warn(e)
-                return null
+                return false
             }
         }
 
         // Disable tracing entirely if class retransformation is not supported.
+        val instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
         if (!instrumentation.isRetransformClassesSupported) {
             val msg = "[Tracer] The current JVM configuration does not allow class retransformation"
             Notification("Tracer", "", msg, NotificationType.ERROR).notify(null)
             LOG.warn(msg)
-            return null
+            return false
         }
 
-        return instrumentation
+        return true
     }
 
     // Note: this method can throw a variety of exceptions.
@@ -119,7 +118,7 @@ object AgentLoader {
         }
     }
 
-    private fun tryInitTracerInstrumentation(): Boolean {
+    private fun doInstallTracerHooks(): Boolean {
         val instrumentation = instrumentation ?: return false
         TracerTrampoline.installHook(TracerHookImpl())
         instrumentation.addTransformer(TracerClassFileTransformer(), true)
