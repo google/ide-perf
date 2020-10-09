@@ -8,7 +8,7 @@ First, make sure you have JDK 11 or higher.
 Then open this project in IntelliJ and import it as a Gradle project. The default run configuration
 will launch a sandboxed IntelliJ instance with the plugin installed.
 
-To run all tests, run `./gradlew build` from the command line.
+To run all tests, run `./gradlew check` from the command line.
 
 If you would like to test the plugin in a production instance of IntelliJ, first run
 `./gradlew assemble`, then use the following VM option:
