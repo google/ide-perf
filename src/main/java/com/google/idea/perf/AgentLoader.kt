@@ -28,6 +28,7 @@ import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.PluginId
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.io.isFile
 import com.sun.tools.attach.VirtualMachine
 import java.lang.instrument.Instrumentation
@@ -54,9 +55,10 @@ object AgentLoader {
 
     val ensureJavaAgentLoaded: Boolean by lazy { doLoadJavaAgent() }
 
+    val ensureNativeAgentLoaded: Boolean by lazy { doLoadNativeAgent() }
+
     val ensureTracerHooksInstalled: Boolean by lazy { doInstallTracerHooks() }
 
-    // Note: this method can take around 200 ms or so.
     private fun doLoadJavaAgent(): Boolean {
         val agentLoadedAtStartup = try {
             // Until the agent is loaded, we cannot trigger symbol resolution for its
@@ -73,17 +75,17 @@ object AgentLoader {
         }
         else {
             try {
-                val overhead = measureTimeMillis { tryLoadAgentAfterStartup() }
+                val overhead = measureTimeMillis {
+                    tryLoadAgent("agent.jar", native = false)
+                }
                 LOG.info("Java agent was loaded on demand in $overhead ms")
             }
             catch (e: Throwable) {
-                val msg = """
-                    [Tracer] Failed to attach the instrumentation agent after startup.
-                    On JDK 9+, make sure jdk.attach.allowAttachSelf is set to true.
-                    Alternatively, you can attach the agent at startup via the -javaagent flag.
-                    """.trimIndent()
-                Notification("Tracer", "", msg, NotificationType.ERROR).notify(null)
-                LOG.warn(e)
+                var msg = "Failed to load the Java agent"
+                if (System.getProperty("jdk.attach.allowAttachSelf") == null) {
+                    msg += ". Please set the VM option jdk.attach.allowAttachSelf to true."
+                }
+                LOG.warn(msg, e)
                 return false
             }
         }
@@ -91,27 +93,61 @@ object AgentLoader {
         // Disable tracing entirely if class retransformation is not supported.
         val instrumentation = checkNotNull(AgentMain.savedInstrumentationInstance)
         if (!instrumentation.isRetransformClassesSupported) {
-            val msg = "[Tracer] The current JVM configuration does not allow class retransformation"
-            Notification("Tracer", "", msg, NotificationType.ERROR).notify(null)
-            LOG.warn(msg)
+            LOG.warn("This JVM does not support class retransformations")
             return false
         }
 
         return true
     }
 
-    // Note: this method can throw a variety of exceptions.
-    private fun tryLoadAgentAfterStartup() {
+    private fun doLoadNativeAgent(): Boolean {
+        val agentLoadedAtStartup = try {
+            AllocationSampling.countAllocationsForCurrentThread()
+            true
+        }
+        catch (e: LinkageError) {
+            false
+        }
+
+        if (agentLoadedAtStartup) {
+            LOG.info("Native agent was loaded at startup")
+        }
+        else {
+            try {
+                val binary = when {
+                    SystemInfo.isMac -> "libagent.dylib"
+                    SystemInfo.isWindows -> "agent.dll"
+                    else -> "libagent.so"
+                }
+                val overhead = measureTimeMillis {
+                    tryLoadAgent(binary, native = true)
+                }
+                LOG.info("Native agent was loaded on demand in $overhead ms")
+            }
+            catch (e: Throwable) {
+                LOG.warn("Failed to load the native agent", e)
+                return false
+            }
+        }
+
+        return true
+    }
+
+    // Throws exceptions on failure.
+    private fun tryLoadAgent(fileName: String, native: Boolean) {
         val plugin = PluginManagerCore.getPlugin(PluginId.getId("com.google.ide-perf"))
             ?: error("Failed to find our own plugin")
-        val agentDir = plugin.pluginPath.resolve("agent")
 
-        val javaAgent = agentDir.resolve("agent.jar")
-        check(javaAgent.isFile()) { "Could not find agent.jar at $javaAgent" }
+        val path = plugin.pluginPath.resolve("agent").resolve(fileName)
+        check(path.isFile()) { "Could not find agent at $path" }
 
+        val absolutePath = path.toAbsolutePath().toString()
         val vm = VirtualMachine.attach(OSProcessUtil.getApplicationPid())
         try {
-            vm.loadAgent(javaAgent.toAbsolutePath().toString())
+            when {
+                native -> vm.loadAgentPath(absolutePath)
+                else -> vm.loadAgent(absolutePath)
+            }
         }
         finally {
             vm.detach()
