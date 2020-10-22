@@ -54,6 +54,7 @@ intellij {
     pluginName = "ide-perf"
     version = "2020.2"
     downloadSources = !isCI
+    updateSinceUntilBuild = false // So that we can leave the until-build blank.
 }
 
 tasks.buildSearchableOptions {
@@ -63,7 +64,6 @@ tasks.buildSearchableOptions {
 
 tasks.patchPluginXml {
     setSinceBuild("201") // Should be tested occasionally, especially before releases.
-    setUntilBuild("203.*") // Should generally be set to the latest IntelliJ EAP version.
     changeNotes(null) // Should describe changes in the latest release only.
 }
 

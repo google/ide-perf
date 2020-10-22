@@ -25,8 +25,8 @@ Steps to publish a new version of the plugin
 
     * Bump the plugin version number.
 
-    * Review the platform compatibility metadata (`setSinceBuild` and `setUntilBuild`).
-      Make sure tests pass for each IntelliJ version in the specified range.
+    * Review the platform compatibility metadata (`setSinceBuild`).
+      Make sure tests pass for each IntelliJ version in the compatibility range.
 
     * Set the `changeNotes` field to a description of what changed since the last release.
 
