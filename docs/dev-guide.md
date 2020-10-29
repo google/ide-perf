@@ -52,6 +52,6 @@ Steps to publish a new version of the plugin
   ```
   Then push to the remote with
   ```
-  git push --follow-tags
+  git push origin <tagname>
   ```
-  Then [create a release](https://github.com/google/ide-perf/releases/new) on GitHub using the tag.
+  Then [create a release](https://github.com/google/ide-perf/releases/new) on GitHub using the tag and the release archive.
