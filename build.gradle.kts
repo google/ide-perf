@@ -126,12 +126,8 @@ fun JavaForkOptions.enableAgent() {
 }
 
 dependencies {
-    // Bundle the agent artifacts.
     javaAgent(project(":agent", "runtimeElements"))
-
-    // Using 'compileOnly' because the agent is loaded in the boot classpath.
-    compileOnly(project(":agent"))
-    testCompileOnly(project(":agent"))
+    compileOnly(project(":agent")) // 'compileOnly' because it is put on the bootclasspath later.
 
     implementation("org.ow2.asm:asm:8.0.1")
     implementation("org.ow2.asm:asm-util:8.0.1")
@@ -142,12 +138,13 @@ dependencies {
     // If you add something here, update the 'checkIdeaDependencyVersions' task as well.
     compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinStdlibVersion")
     compileOnly("org.jetbrains.kotlin:kotlin-reflect:$kotlinStdlibVersion")
-    testCompileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinStdlibVersion")
-    testCompileOnly("org.jetbrains.kotlin:kotlin-reflect:$kotlinStdlibVersion")
 
     testImplementation("junit:junit:4.12")
     testImplementation("com.google.truth:truth:1.0.1")
     testImplementation("com.google.truth.extensions:truth-java8-extension:1.0.1")
+
+    // For simplicity we assume all 'compileOnly' dependencies should be 'testCompileOnly' as well.
+    configurations.testCompileOnly.get().extendsFrom(configurations.compileOnly.get())
 }
 
 /**
