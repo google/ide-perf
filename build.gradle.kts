@@ -147,6 +147,17 @@ dependencies {
     configurations.testCompileOnly.get().extendsFrom(configurations.compileOnly.get())
 }
 
+val pluginLibs: Configuration by configurations.creating {
+    extendsFrom(configurations.implementation.get())
+}
+sourceSets.all {
+    // Reorder the classpath to better match the class loading behavior used in production.
+    // Ideally we could run tests using proper classloaders (idea.run.tests.with.bundled.plugins),
+    // but that will require a more complex JUnit setup (probably via BlockJUnit4ClassRunner).
+    compileClasspath = pluginLibs + compileClasspath
+    runtimeClasspath = pluginLibs + runtimeClasspath
+}
+
 /**
  * As a workaround for https://github.com/JetBrains/gradle-intellij-plugin/issues/264
  * we add 'compileOnly' dependencies on certain IDEA dependencies in order to get their sources.
