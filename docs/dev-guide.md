@@ -26,9 +26,16 @@ Steps to publish a new version of the plugin
     * Bump the plugin version number.
 
     * Review the platform compatibility metadata (`setSinceBuild`).
-      Make sure tests pass for each IntelliJ version in the compatibility range.
 
     * Set the `changeNotes` field to a description of what changed since the last release.
+
+* Make sure tests pass for each IntelliJ version in the compatibility range.
+
+* Review the value of `tasks.runPluginVerifier.ideVersions`, then run the verifier:
+  ```
+  ./gradlew runPluginVerifier
+  ```
+  Look for unexpected usages of deprecated, experimental, or missing APIs.
 
 * Create a release build by running
   ```

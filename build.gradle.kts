@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.jetbrains.intellij.tasks.RunPluginVerifierTask
+import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("0.4.22")
+    id("org.jetbrains.intellij").version("0.6.1")
     id("org.jetbrains.kotlin.jvm").version("1.4.0")
 }
 
@@ -63,8 +65,31 @@ tasks.buildSearchableOptions {
 }
 
 tasks.patchPluginXml {
-    setSinceBuild("201") // Should be tested occasionally, especially before releases.
+    setSinceBuild("201") // Should be tested occasionally (see runPluginVerifier).
     changeNotes(null) // Should describe changes in the latest release only.
+}
+
+tasks.runPluginVerifier {
+    ideVersions(
+        listOf(
+            "201.8743.12", // Should match the since-build from plugin.xml.
+            intellij.buildVersion // We check the current version too for deprecations, etc.
+        )
+    )
+
+    // TODO: VfsStatTreeTable still uses experimental APIs (JBTreeTable).
+    val suppressedFailures = listOf(RunPluginVerifierTask.FailureLevel.EXPERIMENTAL_API_USAGES)
+    failureLevel(EnumSet.copyOf(RunPluginVerifierTask.FailureLevel.ALL - suppressedFailures))
+
+    // Suppress false-positive NoSuchClassErrors; they are caused by the agent being
+    // loaded in the boot classloader rather than the plugin classloader.
+    externalPrefixes(listOf("com.google.idea.perf"))
+
+    val verifierHomeProp = "plugin.verifier.home.dir"
+    if (System.getProperty(verifierHomeProp) == null) {
+        // Download files into the build directory rather than ~/.pluginVerifier.
+        System.setProperty(verifierHomeProp, "$buildDir/pluginVerifier")
+    }
 }
 
 val javaAgent: Configuration by configurations.creating
@@ -104,7 +129,7 @@ tasks.runIde {
 
 tasks.test {
     jvmArgs("-Djdk.module.illegalAccess.silent=true") // From IntelliJ.
-    testLogging.exceptionFormat = FULL
+    testLogging.exceptionFormat = TestExceptionFormat.FULL
     testLogging.showStandardStreams = isCI
     enableAgent()
 
