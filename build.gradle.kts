@@ -27,7 +27,7 @@ val isRelease = project.findProperty("release") != null
 val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
 
 group = "com.google.idea.perf"
-version = "1.0.1$versionSuffix"
+version = "1.0.2$versionSuffix"
 
 repositories {
     mavenCentral()
@@ -64,7 +64,7 @@ tasks.buildSearchableOptions {
 
 tasks.patchPluginXml {
     setSinceBuild("201") // Should be tested occasionally, especially before releases.
-    changeNotes("Bump until-build for compatibility with IJ 2021.1")
+    changeNotes("Fix UI layout for the CachedValue and VFS tracers")
 }
 
 configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
