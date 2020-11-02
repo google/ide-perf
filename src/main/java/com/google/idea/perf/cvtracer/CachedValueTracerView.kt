@@ -80,6 +80,7 @@ class CachedValueTracerView(parentDisposable: Disposable) : JBPanel<CachedValueT
         // Command line.
         val completionProvider = controller.autocomplete
         commandLine = TracerCommandLine(completionProvider, controller::handleRawCommandFromEdt)
+        commandLine.maximumSize = Dimension(Integer.MAX_VALUE, commandLine.minimumSize.height)
         add(commandLine)
 
         // List view.
