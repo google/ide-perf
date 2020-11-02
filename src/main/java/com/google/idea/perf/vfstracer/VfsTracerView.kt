@@ -92,6 +92,7 @@ class VfsTracerView(parentDisposable: Disposable) : JBPanel<VfsTracerView>() {
             listOf("start", "stop", "clear", "reset")
         )
         commandLine = TracerCommandLine(completionProvider, controller::handleRawCommandFromEdt)
+        commandLine.maximumSize = Dimension(Integer.MAX_VALUE, commandLine.minimumSize.height)
         add(commandLine)
 
         // Tabs.
