@@ -52,7 +52,7 @@ configureEach(tasks.compileKotlin, tasks.compileTestKotlin) {
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     pluginName = "ide-perf"
-    version = "2020.2"
+    version = "2020.2.3"
     downloadSources = !isCI
     updateSinceUntilBuild = false // So that we can leave the until-build blank.
 }
