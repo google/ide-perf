@@ -20,7 +20,7 @@ import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("0.6.1")
+    id("org.jetbrains.intellij").version("0.6.2")
     id("org.jetbrains.kotlin.jvm").version("1.4.0")
 }
 
@@ -132,9 +132,6 @@ tasks.test {
     testLogging.exceptionFormat = TestExceptionFormat.FULL
     testLogging.showStandardStreams = isCI
     enableAgent()
-
-    // Workaround for https://github.com/JetBrains/gradle-intellij-plugin/issues/541.
-    inputs.files(tasks.prepareTestingSandbox)
 }
 
 fun JavaForkOptions.enableAgent() {
