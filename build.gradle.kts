@@ -27,7 +27,7 @@ val isRelease = project.findProperty("release") != null
 val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
 
 group = "com.google.idea.perf"
-version = "1.0.2$versionSuffix"
+version = "1.0.3$versionSuffix"
 
 repositories {
     mavenCentral()
@@ -66,7 +66,7 @@ tasks.buildSearchableOptions {
 
 tasks.patchPluginXml {
     setSinceBuild("201") // Should be tested occasionally, especially before releases.
-    changeNotes("Fix UI layout for the CachedValue and VFS tracers")
+    changeNotes("Fixed compatibility with JDK 8 and Android Studio 4.1")
 }
 
 configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
