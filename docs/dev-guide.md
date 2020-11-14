@@ -3,9 +3,7 @@ Developer guide for IDE Perf
 
 Setup
 ---
-First, make sure you have JDK 11 or higher.
-
-Then open this project in IntelliJ and import it as a Gradle project. The default run configuration
+Open this project in IntelliJ and import it as a Gradle project. The default run configuration
 will launch a sandboxed IntelliJ instance with the plugin installed.
 
 To run all tests, run `./gradlew check` from the command line.
