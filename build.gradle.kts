@@ -33,10 +33,11 @@ repositories {
     mavenCentral()
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
+// We still compile with JDK 8 for compatibility with Android Studio 4.1.
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(8))
+val javac = javaToolchains.compilerFor(java.toolchain).get()
+val javaHome: Directory = javac.metadata.installationPath
+val jdk = javaInstalls.installationForDirectory(javaHome).get().jdk.get()
 
 val kotlinStdlibVersion = "1.3.70" // Should match the version bundled with IDEA.
 val kotlinApiVersion = kotlinStdlibVersion.substringBeforeLast('.')
@@ -44,7 +45,8 @@ val kotlinApiVersion = kotlinStdlibVersion.substringBeforeLast('.')
 configureEach(tasks.compileKotlin, tasks.compileTestKotlin) {
     kotlinOptions {
         apiVersion = kotlinApiVersion
-        jvmTarget = "11"
+        jvmTarget = "1.8"
+        kotlinOptions.jdkHome = javaHome.asFile.absolutePath
         freeCompilerArgs = listOf("-Xjvm-default=enable")
     }
 }
@@ -125,6 +127,8 @@ dependencies {
     // Using 'compileOnly' because the agent is loaded in the boot classpath.
     compileOnly(project(":agent"))
     testCompileOnly(project(":agent"))
+
+    implementation(jdk.toolsClasspath) // Needed when using JDK 8.
 
     implementation("org.ow2.asm:asm:8.0.1")
     implementation("org.ow2.asm:asm-util:8.0.1")

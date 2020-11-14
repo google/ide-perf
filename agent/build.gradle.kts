@@ -24,10 +24,8 @@ repositories {
     mavenCentral()
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-}
+// We still compile with JDK 8 for compatibility with Android Studio 4.1.
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(8))
 
 tasks.jar {
     archiveFileName.set("agent.jar")
