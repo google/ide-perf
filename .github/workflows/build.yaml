@@ -20,7 +20,7 @@ jobs:
       uses: actions/checkout@01aeccc # v2.1.0
 
     - name: JDK setup
-      uses: actions/setup-java@b74d5a6 # v1.3.0
+      uses: actions/setup-java@d202f5d # v1.4.3
       with:
         java-version: 11.0.7
 
