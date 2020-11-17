@@ -15,7 +15,9 @@
  */
 
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import org.jetbrains.intellij.tasks.RunPluginVerifierTask
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.*
 
 plugins {
@@ -44,7 +46,7 @@ val jdk = javaInstalls.installationForDirectory(javaHome).get().jdk.get()
 val kotlinStdlibVersion = "1.3.70" // Should match the version bundled with IDEA.
 val kotlinApiVersion = kotlinStdlibVersion.substringBeforeLast('.')
 
-configureEach(tasks.compileKotlin, tasks.compileTestKotlin) {
+tasks.withType<KotlinCompile> {
     kotlinOptions {
         apiVersion = kotlinApiVersion
         jvmTarget = "1.8"
@@ -96,7 +98,7 @@ tasks.runPluginVerifier {
 
 val javaAgent: Configuration by configurations.creating
 
-configureEach(tasks.prepareSandbox, tasks.prepareTestingSandbox) {
+tasks.withType<PrepareSandboxTask> {
     // Copy agent artifacts into the plugin home directory.
     val agentDir = "$pluginName/agent"
     from(javaAgent) { into(agentDir) }
@@ -221,9 +223,3 @@ val checkIdeaDependencyVersions by tasks.registering {
 }
 
 tasks.check { dependsOn(checkIdeaDependencyVersions) }
-
-fun <T : Task> configureEach(vararg taskProviders: TaskProvider<T>, action: T.() -> Unit) {
-    for (taskProvider in taskProviders) {
-        taskProvider(action)
-    }
-}
