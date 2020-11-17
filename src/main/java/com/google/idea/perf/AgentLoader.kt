@@ -21,7 +21,7 @@ import com.google.idea.perf.AgentLoader.instrumentation
 import com.google.idea.perf.agent.AgentMain
 import com.google.idea.perf.tracer.TracerClassFileTransformer
 import com.google.idea.perf.tracer.TracerHookImpl
-import com.google.idea.perf.tracer.TracerTrampoline
+import com.google.idea.perf.agent.TracerTrampoline
 import com.intellij.execution.process.OSProcessUtil
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.notification.Notification

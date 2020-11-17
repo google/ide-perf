@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.vfstracer;
+package com.google.idea.perf.agent;
 
-public interface VfsTracerHook {
-    void onPsiElementCreate(Object psiElement);
-
-    Object onStubIndexProcessorCreate(Object processor);
+/** Handler for method entry/exit events coming from instrumented bytecode. */
+public interface TracerHook {
+    void enter(int methodId, Object[] args);
+    void leave();
 }

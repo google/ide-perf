@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.tracer
 
+import com.google.idea.perf.agent.TracerTrampoline
 import com.intellij.openapi.diagnostic.Logger
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassReader.EXPAND_FRAMES

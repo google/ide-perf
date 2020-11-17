@@ -87,7 +87,7 @@ tasks.runPluginVerifier {
 
     // Suppress false-positive NoSuchClassErrors; they are caused by the agent being
     // loaded in the boot classloader rather than the plugin classloader.
-    externalPrefixes(listOf("com.google.idea.perf"))
+    externalPrefixes(listOf("com.google.idea.perf.agent"))
 
     val verifierHomeProp = "plugin.verifier.home.dir"
     if (System.getProperty(verifierHomeProp) == null) {

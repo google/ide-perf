@@ -17,6 +17,8 @@
 package com.google.idea.perf.vfstracer
 
 import com.google.idea.perf.AgentLoader
+import com.google.idea.perf.agent.VfsTracerHook
+import com.google.idea.perf.agent.VfsTracerTrampoline
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.psi.PsiElement
 import com.intellij.util.Processor

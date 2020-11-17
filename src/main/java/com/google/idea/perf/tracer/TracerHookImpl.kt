@@ -16,6 +16,8 @@
 
 package com.google.idea.perf.tracer
 
+import com.google.idea.perf.agent.TracerHook
+
 /** Dispatches method entry/exit events to the [CallTreeManager]. */
 class TracerHookImpl : TracerHook {
 

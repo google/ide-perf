@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.vfstracer;
+package com.google.idea.perf.agent;
 
 /**
  * Hook methods that IntelliJ can call into as a link between IntelliJ's core class loaders and
