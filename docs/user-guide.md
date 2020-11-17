@@ -1,6 +1,18 @@
 User guide for IDE Perf
 ===
 
+Setup
+---
+IDE Perf should work out of the box in most cases.
+
+If it does not, make sure you have the following in your IDE VM options:
+```
+-Djdk.attach.allowAttachSelf=true
+```
+
+Feel free to [file an issue](https://github.com/google/ide-perf/issues) if
+IDE Perf does not work in your environment.
+
 Basic tracing
 ---
 
