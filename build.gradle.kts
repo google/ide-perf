@@ -153,7 +153,9 @@ dependencies {
     javaAgent(project(":agent", "runtimeElements"))
     compileOnly(project(":agent")) // 'compileOnly' because it is put on the bootclasspath later.
 
-    implementation(jdk.toolsClasspath) // Needed when using JDK 8.
+    // For JDK 8 we need to explicitly add tools.jar to the classpath.
+    compileOnly(jdk.toolsClasspath)
+    testRuntimeOnly(jdk.toolsClasspath)
 
     implementation("org.ow2.asm:asm:8.0.1")
     implementation("org.ow2.asm:asm-util:8.0.1")
