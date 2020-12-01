@@ -16,26 +16,14 @@
 
 package com.google.idea.perf.cvtracer
 
-import com.google.idea.perf.util.fuzzyMatch
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.CompletionUtilCore
-import com.intellij.codeInsight.completion.PrefixMatcher
 import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.CharFilter
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.util.textCompletion.DefaultTextCompletionValueDescriptor
 import com.intellij.util.textCompletion.TextCompletionProvider
-
-private class TokenMatcher(val pattern: String): PrefixMatcher(pattern) {
-    override fun prefixMatches(name: String): Boolean {
-        return fuzzyMatch(name, pattern) != null
-    }
-
-    override fun cloneWithPrefix(prefix: String): PrefixMatcher {
-        return TokenMatcher(pattern)
-    }
-}
 
 interface CommandPredictor {
     fun predict(text: String, offset: Int): List<String>
@@ -48,12 +36,12 @@ class CommandCompletionProvider(
         result: CompletionResultSet,
         prefix: String
     ): CompletionResultSet {
-        return result.withPrefixMatcher(TokenMatcher(prefix))
+        return result.withPrefixMatcher(prefix)
     }
 
-    override fun getAdvertisement(): String? = ""
+    override fun getAdvertisement(): String = ""
 
-    override fun getPrefix(text: String, offset: Int): String? {
+    override fun getPrefix(text: String, offset: Int): String {
         var start = Int.MIN_VALUE
         for (char in listOf(' ', '\t', '#')) {
             start = maxOf(start, text.lastIndexOf(char, offset - 1))

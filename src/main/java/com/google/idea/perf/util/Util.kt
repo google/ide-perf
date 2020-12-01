@@ -49,20 +49,3 @@ fun formatNsInBestUnit(ns: Long): String {
         else -> formatNum(ns / 1_000_000, "ms")
     }
 }
-
-fun shouldHideClassFromCompletionResults(c: Class<*>): Boolean {
-    return try {
-        c.isArray ||
-                c.isAnonymousClass ||
-                c.isLocalClass ||
-                c.isSynthetic ||
-                c.name.startsWith("java.lang.invoke.") ||
-                c.name.startsWith("com.sun.proxy.") ||
-                c.name.startsWith("jdk.internal.reflect.") ||
-                c.name.contains("$$")
-    } catch (e: Throwable) {
-        // We are inspecting arbitrary user classes, so it is possible to hit exceptions
-        // like NoClassDefFoundError when calling methods like isAnonymousClass().
-        false
-    }
-}

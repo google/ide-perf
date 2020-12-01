@@ -16,45 +16,22 @@
 
 package com.google.idea.perf.cvtracer
 
-import com.google.idea.perf.AgentLoader
-import com.google.idea.perf.util.FuzzySearcher
-import com.google.idea.perf.util.shouldHideClassFromCompletionResults
-import com.intellij.openapi.progress.ProgressManager
-
 class CachedValueTracerCommandPredictor: CommandPredictor {
-    private val searcher = FuzzySearcher()
 
     override fun predict(text: String, offset: Int): List<String> {
         val tokens = text.trimStart().split(' ', '\t')
         val normalizedText = tokens.joinToString(" ")
         val command = parseCachedValueTracerCommand(normalizedText)
         val tokenIndex = getTokenIndex(normalizedText, offset)
-        val token = tokens.getOrElse(tokenIndex) { "" }
 
         return when (tokenIndex) {
-            0 -> predictToken(
-                listOf("clear", "reset", "filter", "clear-filters", "group-by"), token
-            )
+            0 -> listOf("clear", "reset", "filter", "clear-filters", "group-by")
             1 -> when (command) {
-                is CachedValueTracerCommand.Filter -> {
-                    val instrumentation = AgentLoader.instrumentation ?: return emptyList()
-                    val classNames = instrumentation.allLoadedClasses
-                        .filterNot(::shouldHideClassFromCompletionResults)
-                        .map { it.name }
-                    predictToken(classNames, token)
-                }
-                is CachedValueTracerCommand.GroupBy -> predictToken(
-                    listOf("class", "stack-trace"), token
-                )
+                is CachedValueTracerCommand.GroupBy -> listOf("class", "stack-trace")
                 else -> emptyList()
             }
             else -> emptyList()
         }
-    }
-
-    private fun predictToken(choices: Collection<String>, token: String): List<String> {
-        return searcher.search(choices, token, 100) { ProgressManager.checkCanceled() }
-            .map { it.source }
     }
 
     private fun getTokenIndex(input: String, index: Int): Int {
