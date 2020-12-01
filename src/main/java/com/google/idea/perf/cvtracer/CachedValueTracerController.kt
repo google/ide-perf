@@ -17,15 +17,15 @@
 package com.google.idea.perf.cvtracer
 
 import com.google.idea.perf.util.ExecutorWithExceptionLogging
+import com.google.idea.perf.util.GlobMatcher
 import com.google.idea.perf.util.formatNsInMs
-import com.google.idea.perf.util.fuzzyMatch
 import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.Disposer
 import com.intellij.psi.util.CachedValueProfiler
-import java.util.*
+import com.intellij.util.text.Matcher
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.measureNanoTime
@@ -44,7 +44,7 @@ class CachedValueTracerController(
     private val executor = ExecutorWithExceptionLogging("CachedValue Tracer", 1)
     private val dataRefreshLoopStarted = AtomicBoolean()
     private val currentStats = mutableMapOf<String, MutableCachedValueStats>()
-    private val filteredStatKeys = ArrayList<StackTraceElement>()
+    private var filter: Matcher = GlobMatcher.create("*")
     private var groupMode = GroupOption.CLASS
 
     private val predictor = CachedValueTracerCommandPredictor()
@@ -104,18 +104,19 @@ class CachedValueTracerController(
                 CachedValueProfiler.getInstance().isEnabled = false
                 CachedValueProfiler.getInstance().isEnabled = true
                 currentStats.clear()
-                filteredStatKeys.clear()
+                filter = GlobMatcher.create("*")
                 updateUi()
             }
             is CachedValueTracerCommand.Filter -> {
-                if (command.pattern != null) {
-                    filterStats(command.pattern)
+                val pattern = command.pattern
+                if (pattern != null) {
+                    filter = GlobMatcher.create("*$pattern*")
                     currentStats.clear()
                     updateUi()
                 }
             }
             is CachedValueTracerCommand.ClearFilters -> {
-                filteredStatKeys.clear()
+                filter = GlobMatcher.create("*")
                 currentStats.clear()
                 updateUi()
             }
@@ -135,13 +136,11 @@ class CachedValueTracerController(
     private fun getNewStats(): List<MutableCachedValueStats> {
         val snapshot = CachedValueProfiler.getInstance().storageSnapshot
 
-        if (filteredStatKeys.isNotEmpty()) {
-            val iterator = snapshot.entrySet().iterator()
-            while (iterator.hasNext()) {
-                val (key, _) = iterator.next()
-                if (!filteredStatKeys.contains(key)) {
-                    iterator.remove()
-                }
+        val iterator = snapshot.entrySet().iterator()
+        while (iterator.hasNext()) {
+            val (key, _) = iterator.next()
+            if (!filter.matches(key.className)) {
+                iterator.remove()
             }
         }
 
@@ -162,37 +161,6 @@ class CachedValueTracerController(
                     values.size.toLong()
                 )
             }
-    }
-
-    private fun filterStats(pattern: String) {
-        if (filteredStatKeys.isEmpty()) {
-            val snapshot = CachedValueProfiler.getInstance().storageSnapshot
-
-            when (groupMode) {
-                GroupOption.CLASS -> {
-                    filteredStatKeys.addAll(snapshot.keySet().filter {
-                        fuzzyMatch(it.className, pattern) != null
-                    })
-                }
-                GroupOption.STACK_TRACE -> {
-                    filteredStatKeys.addAll(snapshot.keySet().filter {
-                        fuzzyMatch(getStackTraceName(it), pattern) != null
-                    })
-                }
-            }
-        }
-        else {
-            when (groupMode) {
-                GroupOption.CLASS -> {
-                    filteredStatKeys.removeIf { fuzzyMatch(it.className, pattern) == null }
-                }
-                GroupOption.STACK_TRACE -> {
-                    filteredStatKeys.removeIf {
-                        fuzzyMatch(getStackTraceName(it), pattern) == null
-                    }
-                }
-            }
-        }
     }
 
     private fun getStackTraceName(element: StackTraceElement): String =
