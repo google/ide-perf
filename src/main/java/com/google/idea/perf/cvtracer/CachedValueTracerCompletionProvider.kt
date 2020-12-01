@@ -22,7 +22,7 @@ import com.intellij.codeInsight.lookup.CharFilter
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.util.textCompletion.TextCompletionProvider
 
-class CommandCompletionProvider : TextCompletionProvider {
+class CachedValueTracerCompletionProvider : TextCompletionProvider {
     override fun applyPrefixMatcher(
         result: CompletionResultSet,
         prefix: String
