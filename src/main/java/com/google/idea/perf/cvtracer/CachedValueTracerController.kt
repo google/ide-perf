@@ -90,11 +90,7 @@ class CachedValueTracerController(
             is CachedValueTracerCommand.Clear -> {
                 CachedValueProfiler.getInstance().isEnabled = false
                 CachedValueProfiler.getInstance().isEnabled = true
-                for ((_, stat) in currentStats) {
-                    stat.lifetime = 0L
-                    stat.hits = 0L
-                    stat.misses = 0L
-                }
+                currentStats.clear()
                 updateUi()
             }
             is CachedValueTracerCommand.Reset -> {
