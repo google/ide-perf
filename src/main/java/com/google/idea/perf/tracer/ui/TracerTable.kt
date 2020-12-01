@@ -126,9 +126,9 @@ class TracerTable(private val model: TracerTableModel) : JBTable(model) {
             table.rowHeight = JBUI.scale(22)
 
             // Column rendering.
-            val columnModel = table.columnModel
-            for (col in Column.values) {
-                val tableColumn = columnModel.getColumn(col.ordinal)
+            val tableColumns = table.columnModel.columns.toList()
+            for (tableColumn in tableColumns) {
+                val col = Column.valueOf(tableColumn.modelIndex)
 
                 // Hide some less-important columns for now.
                 // Eventually we may give the user the ability to choose which columns are visible.
