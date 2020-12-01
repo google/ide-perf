@@ -88,9 +88,14 @@ class CachedValueTable(private val model: CachedValueTableModel): JBTable(model)
         setShowGrid(false)
 
         // Column rendering.
-        val columnModel = columnModel
-        for (col in 0 until COL_COUNT) {
-            val tableColumn = columnModel.getColumn(col)
+        val tableColumns = columnModel.columns.toList()
+        for (tableColumn in tableColumns) {
+            val col = tableColumn.modelIndex
+
+            if (col == LIFETIME) {
+                // TODO: Probably remove the "lifetime" column entirely (it does not seem useful).
+                removeColumn(tableColumn)
+            }
 
             // Column widths.
             tableColumn.minWidth = 100
