@@ -79,7 +79,7 @@ class CachedValueTracerView(parentDisposable: Disposable) : JBPanel<CachedValueT
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
-        val completionProvider = controller.autocomplete
+        val completionProvider = CommandCompletionProvider()
         commandLine = TracerCommandLine(completionProvider, controller::handleRawCommandFromEdt)
         commandLine.maximumSize = Dimension(Integer.MAX_VALUE, commandLine.minimumSize.height)
         add(commandLine)

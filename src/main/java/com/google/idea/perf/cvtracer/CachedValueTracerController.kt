@@ -47,9 +47,6 @@ class CachedValueTracerController(
     private var filter: Matcher = GlobMatcher.create("*")
     private var groupMode = GroupOption.CLASS
 
-    private val predictor = CachedValueTracerCommandPredictor()
-    val autocomplete = CommandCompletionProvider(predictor)
-
     init {
         Disposer.register(parentDisposable, this)
         CachedValueProfiler.getInstance().isEnabled = true

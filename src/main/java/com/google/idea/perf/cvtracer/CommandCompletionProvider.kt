@@ -18,20 +18,11 @@ package com.google.idea.perf.cvtracer
 
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
-import com.intellij.codeInsight.completion.CompletionUtilCore
-import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.CharFilter
-import com.intellij.codeInsight.lookup.LookupElement
-import com.intellij.util.textCompletion.DefaultTextCompletionValueDescriptor
+import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.util.textCompletion.TextCompletionProvider
 
-interface CommandPredictor {
-    fun predict(text: String, offset: Int): List<String>
-}
-
-class CommandCompletionProvider(
-    private val predictor: CommandPredictor
-): TextCompletionProvider {
+class CommandCompletionProvider : TextCompletionProvider {
     override fun applyPrefixMatcher(
         result: CompletionResultSet,
         prefix: String
@@ -39,14 +30,12 @@ class CommandCompletionProvider(
         return result.withPrefixMatcher(prefix)
     }
 
-    override fun getAdvertisement(): String = ""
+    override fun getAdvertisement(): String? = null
 
     override fun getPrefix(text: String, offset: Int): String {
-        var start = Int.MIN_VALUE
-        for (char in listOf(' ', '\t', '#')) {
-            start = maxOf(start, text.lastIndexOf(char, offset - 1))
-        }
-        return text.substring(start + 1, offset)
+        val separators = charArrayOf(' ', '\t')
+        val lastSeparatorPos = text.lastIndexOfAny(separators, offset - 1)
+        return text.substring(lastSeparatorPos + 1, offset)
     }
 
     override fun fillCompletionVariants(
@@ -54,26 +43,33 @@ class CommandCompletionProvider(
         prefix: String,
         result: CompletionResultSet
     ) {
-        val text = parameters.position.text.substringBeforeLast(CompletionUtilCore.DUMMY_IDENTIFIER)
-        val offset = parameters.offset
-        val suggestions = predictor.predict(text, offset)
+        val textBeforeCaret = parameters.editor.document.text.substring(0, parameters.offset)
+        val words = textBeforeCaret.split(' ', '\t').filter(String::isNotBlank)
+        val normalizedText = words.joinToString(" ")
+        val command = parseCachedValueTracerCommand(normalizedText)
 
-        val descriptor = DefaultTextCompletionValueDescriptor.StringValueDescriptor()
-        val elements = ArrayList<LookupElement>()
-
-        for ((index, suggestion) in suggestions.withIndex()) {
-            val builder = descriptor.createLookupBuilder(suggestion)
-            val element = PrioritizedLookupElement.withPriority(builder, -index.toDouble())
-            elements.add(element)
+        var tokenIndex = normalizedText.count(Char::isWhitespace)
+        if (textBeforeCaret.isNotBlank() && textBeforeCaret.last().isWhitespace()) {
+            ++tokenIndex
         }
 
-        result.addAllElements(elements)
+        val elements = when (tokenIndex) {
+            0 -> listOf("clear", "reset", "filter", "clear-filters", "group-by")
+            1 -> when (command) {
+                is CachedValueTracerCommand.GroupBy -> listOf("class", "stack-trace")
+                else -> emptyList()
+            }
+            else -> emptyList()
+        }
+
+        result.addAllElements(elements.map(LookupElementBuilder::create))
+        result.stopHere()
     }
 
-    override fun acceptChar(c: Char): CharFilter.Result? {
-        if (c == ' ' || c == '\t' || c == '#') {
-            return CharFilter.Result.HIDE_LOOKUP
+    override fun acceptChar(c: Char): CharFilter.Result {
+        return when (c) {
+            ' ', '\t' -> CharFilter.Result.HIDE_LOOKUP
+            else -> CharFilter.Result.ADD_TO_PREFIX
         }
-        return CharFilter.Result.ADD_TO_PREFIX
     }
 }
