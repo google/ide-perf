@@ -51,6 +51,7 @@ tasks.withType<KotlinCompile> {
         apiVersion = kotlinApiVersion
         jvmTarget = "1.8"
         kotlinOptions.jdkHome = javaHome.asFile.absolutePath
+        allWarningsAsErrors = true
         freeCompilerArgs = listOf("-Xjvm-default=enable")
     }
 }
