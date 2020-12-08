@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.tracer
 
+import com.google.idea.perf.agent.TracerHook
 import com.google.idea.perf.tracer.TracerConfig.getMethodTraceData
 import com.google.idea.perf.tracer.TracerConfig.getMethodTracepoint
 import com.google.idea.perf.tracer.TracerConfig.shouldInstrumentClass
