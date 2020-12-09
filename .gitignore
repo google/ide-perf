@@ -11,3 +11,4 @@ build/
 /.idea/jarRepositories.xml
 /.idea/uiDesigner.xml
 /.idea/*.iml
+/.idea/modules.xml
