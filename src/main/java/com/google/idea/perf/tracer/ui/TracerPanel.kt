@@ -20,6 +20,7 @@ import com.google.idea.perf.tracer.CallTreeManager
 import com.google.idea.perf.tracer.CallTreeUtil
 import com.google.idea.perf.tracer.TracerController
 import com.google.idea.perf.util.formatNsInMs
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeLater
@@ -30,6 +31,7 @@ import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.util.PopupUtil
+import com.intellij.ui.SimpleTextAttributes.LINK_PLAIN_ATTRIBUTES
 import com.intellij.ui.components.JBBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
@@ -40,6 +42,8 @@ import com.intellij.ui.tabs.impl.JBTabsImpl
 import com.intellij.util.concurrency.EdtExecutorService
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.StatusText
+import com.intellij.util.ui.StatusText.DEFAULT_ATTRIBUTES
 import com.intellij.util.ui.UIUtil
 import java.awt.Dimension
 import java.util.concurrent.TimeUnit.MILLISECONDS
@@ -133,6 +137,20 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
             .setText("Tree")
             .setSideComponent(createTabSideComponent())
         tabs.addTab(treeTab)
+
+        // User instructions.
+        @Suppress("DialogTitleCapitalization")
+        fun setHelpText(text: StatusText) {
+            text.appendText("Start by typing a command in the text field above")
+                .appendSecondaryText("See the ", DEFAULT_ATTRIBUTES, null)
+                .appendSecondaryText("user guide", LINK_PLAIN_ATTRIBUTES) {
+                    val link = "https://github.com/google/ide-perf/blob/master/docs/user-guide.md"
+                    BrowserUtil.browse(link)
+                }
+                .appendSecondaryText(" for examples", DEFAULT_ATTRIBUTES, null)
+        }
+        setHelpText(listView.emptyText)
+        setHelpText(treeView.emptyText)
 
         // Tracing overhead label.
         val overheadFont = JBFont
