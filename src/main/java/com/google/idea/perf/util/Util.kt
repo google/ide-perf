@@ -30,10 +30,6 @@ inline fun <T> Iterable<T>.sumByLong(selector: (T) -> Long): Long {
 
 inline fun <T> Sequence<T>.sumByLong(selector: (T) -> Long): Long = asIterable().sumByLong(selector)
 
-// TODO: Remove this when we no longer need to support JDK 8.
-val Class<*>.packageName: String
-    get() = `package`?.name ?: ""
-
 // Helper methods for locale-aware number rendering.
 private val formatter = NumberFormat.getInstance()
 fun formatNum(num: Long): String = formatter.format(num)

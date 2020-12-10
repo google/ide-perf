@@ -17,7 +17,6 @@
 package com.google.idea.perf.tracer
 
 import com.google.common.truth.Truth.assertThat
-import com.google.idea.perf.util.packageName
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.textCompletion.TextCompletionUtil

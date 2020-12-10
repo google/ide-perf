@@ -16,7 +16,6 @@
 
 package com.google.idea.perf.tracer.ui
 
-import com.google.idea.perf.util.packageName
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBScrollPane

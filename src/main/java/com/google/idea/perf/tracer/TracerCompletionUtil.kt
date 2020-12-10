@@ -17,7 +17,6 @@
 package com.google.idea.perf.tracer
 
 import com.google.idea.perf.AgentLoader
-import com.google.idea.perf.util.packageName
 import com.intellij.codeInsight.AutoPopupController
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.InsertionContext

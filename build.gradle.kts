@@ -22,7 +22,7 @@ import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("0.6.2")
+    id("org.jetbrains.intellij").version("0.6.5")
     id("org.jetbrains.kotlin.jvm").version("1.4.0")
 }
 
@@ -37,21 +37,19 @@ repositories {
     mavenCentral()
 }
 
-// We still compile with JDK 8 for compatibility with Android Studio 4.1.
-java.toolchain.languageVersion.set(JavaLanguageVersion.of(8))
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
 val javac = javaToolchains.compilerFor(java.toolchain).get()
 val javaHome: Directory = javac.metadata.installationPath
-val jdk = javaInstalls.installationForDirectory(javaHome).get().jdk.get()
 
-val kotlinStdlibVersion = "1.3.70" // Should match the version bundled with IDEA.
-val kotlinApiVersion = kotlinStdlibVersion.substringBeforeLast('.')
+val kotlinStdlibVersion = "1.4.0" // Should match the version bundled with IDEA.
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        apiVersion = kotlinApiVersion
-        jvmTarget = "1.8"
+        languageVersion = "1.4"
+        apiVersion = "1.3" // IJ 2020.2 still bundles Kotlin 1.3.
+        jvmTarget = "11"
         kotlinOptions.jdkHome = javaHome.asFile.absolutePath
-        allWarningsAsErrors = true
+        // allWarningsAsErrors = true
         freeCompilerArgs = listOf("-Xjvm-default=enable")
     }
 }
@@ -59,7 +57,7 @@ tasks.withType<KotlinCompile> {
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     pluginName = "ide-perf"
-    version = "2020.2.3"
+    version = "2020.3"
     downloadSources = !isCI
     updateSinceUntilBuild = false // So that we can leave the until-build blank.
 }
@@ -70,20 +68,24 @@ tasks.buildSearchableOptions {
 }
 
 tasks.patchPluginXml {
-    setSinceBuild("201") // Should be tested occasionally (see runPluginVerifier).
+    setSinceBuild("202") // Should be tested occasionally (see runPluginVerifier).
     changeNotes(null) // Should describe changes in the latest release only.
 }
 
 tasks.runPluginVerifier {
+    // See https://www.jetbrains.com/idea/download/other.html or
+    // https://jb.gg/intellij-platform-builds-list for the list of platform versions.
     ideVersions(
         listOf(
-            "201.8743.12", // Should match the since-build from plugin.xml.
-            intellij.buildVersion // We check the current version too for deprecations, etc.
+            "2020.2.4", // Should match the since-build from plugin.xml.
+            intellij.version // We check the current version too for deprecations, etc.
         )
     )
 
-    // TODO: VfsStatTreeTable still uses experimental APIs (JBTreeTable).
-    val suppressedFailures = listOf(RunPluginVerifierTask.FailureLevel.EXPERIMENTAL_API_USAGES)
+    val suppressedFailures = listOf(
+        RunPluginVerifierTask.FailureLevel.DEPRECATED_API_USAGES, // TODO: We use Kotlin stdlib appendln.
+        RunPluginVerifierTask.FailureLevel.EXPERIMENTAL_API_USAGES // TODO: VfsStatTreeTable uses JBTreeTable.
+    )
     failureLevel(EnumSet.copyOf(RunPluginVerifierTask.FailureLevel.ALL - suppressedFailures))
 
     // Suppress false-positive NoSuchClassErrors; they are caused by the agent being
@@ -155,10 +157,6 @@ fun JavaForkOptions.enableAgent() {
 dependencies {
     javaAgent(project(":agent", "runtimeElements"))
     compileOnly(project(":agent")) // 'compileOnly' because it is put on the bootclasspath later.
-
-    // For JDK 8 we need to explicitly add tools.jar to the classpath.
-    compileOnly(jdk.toolsClasspath)
-    testRuntimeOnly(jdk.toolsClasspath)
 
     implementation("org.ow2.asm:asm:8.0.1")
     implementation("org.ow2.asm:asm-util:8.0.1")

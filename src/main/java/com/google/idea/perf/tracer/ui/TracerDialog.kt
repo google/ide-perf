@@ -16,7 +16,6 @@
 
 package com.google.idea.perf.tracer.ui
 
-import com.google.idea.perf.util.packageName
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.util.ui.UIUtil
 import java.awt.AWTEvent

@@ -17,7 +17,6 @@
 package com.google.idea.perf.cvtracer
 
 import com.google.idea.perf.tracer.ui.TracerCommandLine
-import com.google.idea.perf.util.packageName
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
