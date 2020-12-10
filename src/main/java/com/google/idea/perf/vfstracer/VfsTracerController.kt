@@ -41,7 +41,6 @@ class VfsTracerController(
     private val executor = ExecutorWithExceptionLogging("VFS Tracer", 1)
     private val dataRefreshLoopStarted = AtomicBoolean()
     private var accumulatedStats = MutableVirtualFileTree.createRoot()
-    private var collectedStats = VirtualFileTree.EMPTY
 
     init {
         Disposer.register(parentDisposable, this)
@@ -58,11 +57,7 @@ class VfsTracerController(
     }
 
     private fun updateUi() {
-        collectedStats = VirtualFileTracer.collectAndReset()
-        if (collectedStats.children.isEmpty()) {
-            return
-        }
-
+        val collectedStats = VirtualFileTracer.collectAndReset()
         accumulatedStats.accumulate(collectedStats)
         val listStats = accumulatedStats.flattenedList()
 
