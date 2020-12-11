@@ -135,6 +135,7 @@ class TracerController(
                         }
                         val config = MethodConfig(enabled = command.enable, countOnly = countOnly)
                         traceAndRetransform(config, *methods.toTypedArray())
+                        CallTreeManager.clearCallTrees()
                     }
                     is TraceTarget.Tracer -> {
                         val config = MethodConfig(enabled = command.enable, countOnly = countOnly)
@@ -145,11 +146,15 @@ class TracerController(
                             TracerTable::setTracepointStats.javaMethod!!,
                             TracerTree::setCallTree.javaMethod!!,
                         )
+                        CallTreeManager.clearCallTrees()
                     }
                     is TraceTarget.All -> {
                         when {
                             command.enable -> displayWarning("Cannot trace all classes")
-                            else -> handleCommand(TracerCommand.Reset)
+                            else -> {
+                                handleCommand(TracerCommand.Reset)
+                                CallTreeManager.clearCallTrees()
+                            }
                         }
                     }
                     is TraceTarget.ClassPattern -> {
@@ -159,6 +164,7 @@ class TracerController(
                         val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
                         val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
                         retransformClasses(affectedClasses)
+                        CallTreeManager.clearCallTrees()
                     }
                     is TraceTarget.MethodPattern -> {
                         // TODO: Simplify (join with other branches).
@@ -169,6 +175,7 @@ class TracerController(
                         val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
                         val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
                         retransformClasses(affectedClasses)
+                        CallTreeManager.clearCallTrees()
                     }
                     is TraceTarget.Method -> {
                         // TODO: Simplify (join with other branches).
@@ -183,6 +190,7 @@ class TracerController(
                         val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
                         val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
                         retransformClasses(affectedClasses)
+                        CallTreeManager.clearCallTrees()
                     }
                 }
             }
