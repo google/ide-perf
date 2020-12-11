@@ -16,56 +16,109 @@
 
 package com.google.idea.perf.tracer.ui
 
-import com.intellij.openapi.application.ApplicationManager.getApplication
-import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.editor.Document
-import com.intellij.openapi.editor.event.BulkAwareDocumentListener
+import com.google.idea.perf.tracer.TracerCompletionProvider
+import com.google.idea.perf.tracer.TracerController
+import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.psi.PsiDocumentManager
-import com.intellij.util.textCompletion.TextCompletionProvider
-import com.intellij.util.textCompletion.TextCompletionUtil
+import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.wm.IdeFocusManager
+import com.intellij.ui.EditorTextField
 import com.intellij.util.textCompletion.TextFieldWithCompletion
-import java.awt.Dimension
-import java.awt.KeyboardFocusManager
 import java.awt.event.ActionListener
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
+import javax.swing.ComboBoxEditor
+import javax.swing.DefaultComboBoxModel
 
-class TracerCommandLine(
-    completionProvider: TextCompletionProvider,
-    commandHandler: (String) -> Unit
-) : TextFieldWithCompletion(
-    ProjectManager.getInstance().defaultProject,
-    completionProvider, "", true, true, true
-) {
+/**
+ * This is the command line at the top of the tracer panel.
+ * It delegates commands to [TracerController], keeps track of command history, etc.
+ */
+class TracerCommandLine(private val tracerController: TracerController) {
+    private val textField: EditorTextField
+    private val comboBox = ComboBox<String>()
+    private var history = emptyArray<String>()
+    val component get() = comboBox
+
+    companion object {
+        private const val HISTORY_SIZE = 20
+        private const val HISTORY_KEY = "com.google.idea.perf.tracer.command.history"
+    }
+
     init {
-        font = EditorUtil.getEditorFont()
+        // Text field with completion.
+        val completionProvider = TracerCompletionProvider()
+        textField = TextFieldWithCompletion(
+            ProjectManager.getInstance().defaultProject,
+            completionProvider, "", true, true, false
+        )
+        textField.font = EditorUtil.getEditorFont()
+        TracerUIUtil.reinstallCompletionProviderAsNeeded(textField, completionProvider)
+        TracerUIUtil.addEnterKeyAction(textField, ::handleEnterKey)
 
-        // Prevent accidental focus loss due to <tab> key.
-        setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptySet())
-        setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, emptySet())
+        // Combo box.
+        comboBox.editor = MyComboBoxEditor(textField)
+        comboBox.font = EditorUtil.getEditorFont()
+        comboBox.isEditable = true
 
-        addSettingsProvider { editor ->
-            // Register the command handler.
-            val enter = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0)
-            val enterHandler = ActionListener { commandHandler(text); text = "" }
-            editor.contentComponent.registerKeyboardAction(enterHandler, enter, WHEN_FOCUSED)
-
-            // TODO: This is a workaround for IDEA-248576.
-            editor.document.addDocumentListener(object : BulkAwareDocumentListener.Simple {
-                override fun beforeDocumentChange(document: Document) {
-                    getApplication().assertReadAccessAllowed()
-                    val psiDocumentManager = PsiDocumentManager.getInstance(project)
-                    val psiFile = psiDocumentManager.getPsiFile(document) ?: return
-                    val provider = TextCompletionUtil.getProvider(psiFile)
-                    if (provider == null) {
-                        val logger = Logger.getInstance(TracerCommandLine::class.java)
-                        logger.warn("Reinstalling TextCompletionProvider (see IDEA-248576)")
-                        TextCompletionUtil.installProvider(psiFile, completionProvider, true)
-                    }
-                }
-            })
+        // Initial command history.
+        val restoredHistory = PropertiesComponent.getInstance().getValues(HISTORY_KEY)
+        if (restoredHistory != null) {
+            setHistory(restoredHistory)
+        } else {
+            // Just add some sample tracing commands.
+            setHistory(
+                arrayOf(
+                    "trace com.intellij.openapi.progress.ProgressManager#checkCanceled",
+                    "trace com.intellij.openapi.progress.ProgressManager#*",
+                    "trace com.intellij.openapi.progress.*",
+                )
+            )
         }
+    }
+
+    private fun handleEnterKey() {
+        if (comboBox.isPopupVisible) {
+            comboBox.hidePopup()
+        } else {
+            tracerController.handleRawCommandFromEdt(textField.text)
+            setHistory(arrayOf(textField.text, *history))
+            textField.text = ""
+        }
+    }
+
+    private fun setHistory(items: Array<String>) {
+        history = items.toSet().take(HISTORY_SIZE).toTypedArray()
+
+        val model = DefaultComboBoxModel(history)
+        model.selectedItem = null // Otherwise the first item is selected automatically.
+        comboBox.model = model
+
+        PropertiesComponent.getInstance().setValues(HISTORY_KEY, history)
+    }
+
+    private class MyComboBoxEditor(private val textField: EditorTextField) : ComboBoxEditor {
+
+        override fun selectAll() {
+            // Inspired by EditorComboBoxEditor.
+            textField.selectAll()
+            IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown {
+                IdeFocusManager.getGlobalInstance().requestFocus(textField, true)
+            }
+        }
+
+        override fun getEditorComponent(): EditorTextField = textField
+
+        override fun getItem() = textField.text
+
+        override fun setItem(item: Any?) {
+            if (item is String) {
+                textField.text = item
+                textField.setCaretPosition(textField.document.textLength)
+            }
+        }
+
+        override fun addActionListener(l: ActionListener) {}
+
+        override fun removeActionListener(l: ActionListener) {}
     }
 }

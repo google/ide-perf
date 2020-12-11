@@ -18,7 +18,6 @@ package com.google.idea.perf.tracer.ui
 
 import com.google.idea.perf.tracer.CallTreeManager
 import com.google.idea.perf.tracer.CallTreeUtil
-import com.google.idea.perf.tracer.TracerCompletionProvider
 import com.google.idea.perf.tracer.TracerController
 import com.google.idea.perf.util.formatNsInMs
 import com.intellij.openapi.Disposable
@@ -39,7 +38,6 @@ import com.intellij.ui.tabs.JBTabs
 import com.intellij.ui.tabs.TabInfo
 import com.intellij.ui.tabs.impl.JBTabsImpl
 import com.intellij.util.concurrency.EdtExecutorService
-import com.intellij.util.textCompletion.TextFieldWithCompletion
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -56,6 +54,7 @@ import javax.swing.SwingConstants.HORIZONTAL
 // * Optimization: only update the tracer tab that is currently visible.
 // * Optimization: fast path in updateCallTree() if the tree did not change.
 // * Reset UI overhead to 0 after 'clear' command.
+// * Focus traversal.
 
 /**
  * This is the main tracer panel containing the command line, call tree view,
@@ -65,7 +64,7 @@ import javax.swing.SwingConstants.HORIZONTAL
  */
 class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPanel>() {
     val controller = TracerController(this, parentDisposable)
-    private val commandLine: TextFieldWithCompletion
+    private val commandLine: TracerCommandLine
     private val progressBar: JProgressBar
     private var showingEdtOnly = false
     private val listView: TracerTable
@@ -83,9 +82,8 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
-        val completionProvider = TracerCompletionProvider()
-        commandLine = TracerCommandLine(completionProvider, controller::handleRawCommandFromEdt)
-        add(commandLine)
+        commandLine = TracerCommandLine(controller)
+        add(commandLine.component)
 
         // Progress bar.
         progressBar = JProgressBar()
@@ -172,7 +170,9 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
 
     fun showCommandLinePopup(message: String, type: MessageType) {
         getApplication().assertIsDispatchThread()
-        PopupUtil.showBalloonForComponent(commandLine, message, type, true, parentDisposable)
+        PopupUtil.showBalloonForComponent(
+            commandLine.component, message, type, true, parentDisposable
+        )
     }
 
     fun createProgressIndicator(): ProgressIndicator {
