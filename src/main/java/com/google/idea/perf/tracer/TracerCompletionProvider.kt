@@ -63,6 +63,7 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
 
         when (tokenIndex) {
             0 -> {
+                // TODO: When completing 'trace', immediately offer some sample classes.
                 val addSpace = AddSpaceInsertHandler.INSTANCE
                 result.addElement(createLookup("clear"))
                 result.addElement(createLookup("reset"))
