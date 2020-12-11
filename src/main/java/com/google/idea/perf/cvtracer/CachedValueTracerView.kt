@@ -16,10 +16,11 @@
 
 package com.google.idea.perf.cvtracer
 
-import com.google.idea.perf.tracer.ui.TracerCommandLine
+import com.google.idea.perf.tracer.ui.TracerUIUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBLabel
@@ -79,7 +80,15 @@ class CachedValueTracerView(parentDisposable: Disposable) : JBPanel<CachedValueT
 
         // Command line.
         val completionProvider = CachedValueTracerCompletionProvider()
-        commandLine = TracerCommandLine(completionProvider, controller::handleRawCommandFromEdt)
+        commandLine = TextFieldWithCompletion(
+            ProjectManager.getInstance().defaultProject,
+            completionProvider, "", true, true, false
+        )
+        TracerUIUtil.addEnterKeyAction(commandLine) {
+            controller.handleRawCommandFromEdt(commandLine.text)
+            commandLine.text = ""
+        }
+        TracerUIUtil.reinstallCompletionProviderAsNeeded(commandLine, completionProvider)
         commandLine.maximumSize = Dimension(Integer.MAX_VALUE, commandLine.minimumSize.height)
         add(commandLine)
 
