@@ -65,7 +65,7 @@ object CallTreeManager {
         val mergedTree = MutableCallTree(Tracepoint.ROOT)
         for (threadState in allThreadState) {
             threadState.lock.withLock {
-                val localTree = threadState.callTreeBuilder.getUpToDateTree()
+                val localTree = threadState.callTreeBuilder.borrowUpToDateTree()
                 mergedTree.accumulate(localTree)
             }
         }
@@ -78,7 +78,7 @@ object CallTreeManager {
             return MutableCallTree(Tracepoint.ROOT)
         }
         edtState.lock.withLock {
-            val tree = edtState.callTreeBuilder.getUpToDateTree()
+            val tree = edtState.callTreeBuilder.borrowUpToDateTree()
             return tree.copy()
         }
     }

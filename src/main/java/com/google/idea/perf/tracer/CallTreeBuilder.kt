@@ -101,7 +101,7 @@ class CallTreeBuilder(clock: Clock = SystemClock) {
     }
 
     // Returns the current call tree. Careful: it is mutable (not copied).
-    fun getUpToDateTree(): CallTree {
+    fun borrowUpToDateTree(): CallTree {
 
         // Update timing data for nodes still on the stack.
         val now = clock.sample()

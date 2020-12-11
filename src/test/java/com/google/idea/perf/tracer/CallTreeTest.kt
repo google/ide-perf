@@ -298,7 +298,7 @@ class CallTreeTest {
     }
 
     private fun buildAndCheckTree(builder: CallTreeBuilder, expected: String) {
-        val tree = builder.getUpToDateTree()
+        val tree = builder.borrowUpToDateTree()
         val treeStr = buildString { printTree(tree, "") }
         assertEquals(expected, treeStr.trim())
         builder.clear()
