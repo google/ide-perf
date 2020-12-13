@@ -52,6 +52,7 @@ class TracerCommandLine(private val tracerController: TracerController) {
             completionProvider, "", true, true, false
         )
         textField.font = EditorUtil.getEditorFont()
+        textField.setPreferredWidth(0) // Otherwise the minimum width is determined by the text.
         TracerUIUtil.reinstallCompletionProviderAsNeeded(textField, completionProvider)
         TracerUIUtil.addEnterKeyAction(textField, ::handleEnterKey)
 
@@ -59,6 +60,7 @@ class TracerCommandLine(private val tracerController: TracerController) {
         comboBox.editor = MyComboBoxEditor(textField)
         comboBox.font = EditorUtil.getEditorFont()
         comboBox.isEditable = true
+        comboBox.prototypeDisplayValue = ""
 
         // Initial command history.
         val restoredHistory = PropertiesComponent.getInstance().getValues(HISTORY_KEY)
