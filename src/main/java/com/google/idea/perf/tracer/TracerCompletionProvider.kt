@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.tracer
 
+import com.google.idea.perf.tracer.TracerCompletionUtil.NoFilterPrefixMatcher
 import com.intellij.codeInsight.completion.AddSpaceInsertHandler
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
@@ -63,12 +64,15 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
 
         when (tokenIndex) {
             0 -> {
+                // We want all commands to be shown regardless of the prefix.
+                val prefixMatcher = NoFilterPrefixMatcher(result.prefixMatcher)
+                val customResult = result.withPrefixMatcher(prefixMatcher)
                 // TODO: When completing 'trace', immediately offer some sample classes.
                 val addSpace = AddSpaceInsertHandler.INSTANCE
-                result.addElement(createLookup("clear"))
-                result.addElement(createLookup("reset"))
-                result.addElement(createLookup("trace").withInsertHandler(addSpace))
-                result.addElement(createLookup("untrace").withInsertHandler(addSpace))
+                customResult.addElement(createLookup("clear"))
+                customResult.addElement(createLookup("reset"))
+                customResult.addElement(createLookup("trace").withInsertHandler(addSpace))
+                customResult.addElement(createLookup("untrace").withInsertHandler(addSpace))
             }
             1 -> {
                 if (command is TracerCommand.Trace) {

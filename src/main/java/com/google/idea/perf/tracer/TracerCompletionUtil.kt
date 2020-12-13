@@ -20,6 +20,7 @@ import com.google.idea.perf.AgentLoader
 import com.intellij.codeInsight.AutoPopupController
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.InsertionContext
+import com.intellij.codeInsight.completion.PrefixMatcher
 import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementBuilder
@@ -107,6 +108,20 @@ object TracerCompletionUtil {
         override fun renderElement(presentation: LookupElementPresentation) {
             presentation.itemText = lookupString
             presentation.icon = AllIcons.Actions.RegexHovered
+        }
+    }
+
+    /** A prefix matcher that matches all strings (but still sorts them by matching degree). */
+    class NoFilterPrefixMatcher(
+        private val delegate: PrefixMatcher
+    ) : PrefixMatcher(delegate.prefix) {
+
+        override fun prefixMatches(name: String): Boolean = true
+
+        override fun matchingDegree(string: String): Int = delegate.matchingDegree(string)
+
+        override fun cloneWithPrefix(prefix: String): NoFilterPrefixMatcher {
+            return NoFilterPrefixMatcher(delegate.cloneWithPrefix(prefix))
         }
     }
 
