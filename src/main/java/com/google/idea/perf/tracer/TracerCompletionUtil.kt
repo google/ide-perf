@@ -56,6 +56,9 @@ object TracerCompletionUtil {
         val instrumentation = AgentLoader.instrumentation ?: return
         val seenPackages = mutableSetOf<String>()
 
+        val prefixIsEmpty = result.prefixMatcher.prefix.isEmpty()
+        var numResultsForEmptyPrefix = 0
+
         for (clazz in instrumentation.allLoadedClasses) {
             ProgressManager.checkCanceled()
             val classInfo = ClassInfo.tryCreate(clazz) ?: continue
@@ -63,13 +66,19 @@ object TracerCompletionUtil {
             // Class name completion: com.example.Class
             if (!shouldHideClassFromCompletionResults(classInfo)) {
                 result.addElement(createClassLookupElement(classInfo))
+                if (prefixIsEmpty && ++numResultsForEmptyPrefix >= 100) {
+                    result.restartCompletionOnAnyPrefixChange()
+                    break
+                }
             }
 
             // Package wildcard completion: com.example.*
-            val packageName = classInfo.packageName
-            if (packageName.isNotEmpty() && seenPackages.add(packageName)) {
-                val lookup = LookupElementBuilder.create("$packageName.*").withIcon(PACKAGE_ICON)
-                result.addElement(PrioritizedLookupElement.withPriority(lookup, 1.0))
+            if (!prefixIsEmpty) {
+                val pkgName = classInfo.packageName
+                if (pkgName.isNotEmpty() && seenPackages.add(pkgName)) {
+                    val lookup = LookupElementBuilder.create("$pkgName.*").withIcon(PACKAGE_ICON)
+                    result.addElement(PrioritizedLookupElement.withPriority(lookup, 1.0))
+                }
             }
         }
     }

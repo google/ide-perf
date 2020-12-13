@@ -67,8 +67,8 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
                 // We want all commands to be shown regardless of the prefix.
                 val prefixMatcher = NoFilterPrefixMatcher(result.prefixMatcher)
                 val customResult = result.withPrefixMatcher(prefixMatcher)
-                // TODO: When completing 'trace', immediately offer some sample classes.
-                val addSpace = AddSpaceInsertHandler.INSTANCE
+                // TODO: Invoke completion even if the user types space manually.
+                val addSpace = AddSpaceInsertHandler.INSTANCE_WITH_AUTO_POPUP
                 customResult.addElement(createLookup("clear"))
                 customResult.addElement(createLookup("reset"))
                 customResult.addElement(createLookup("trace").withInsertHandler(addSpace))
