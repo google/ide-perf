@@ -18,7 +18,7 @@ Basic tracing
 
 The tracer window can be opened via `Help > Diagnostic Tools > Tracer`.
 The text field at the top of the window is the tracer command line.
-Use the `trace` command to trace specific methods.
+Use the `trace` command to trace methods, classes, or packages.
 
 #### Examples
 * `trace com.intellij.openapi.progress.ProgressManager#checkCanceled`
