@@ -87,7 +87,7 @@ class TracerCompletionTest : BasePlatformTestCase() {
         TracerConfigUtil.appendTraceRequest(MethodFqName(className, "bar", "*"), MethodConfig())
         try {
             checkInsert("untrace UniqueClass1729", "untrace $className#")
-            assertThat(complete("untrace ")).containsExactly("UniqueClass1729")
+            assertThat(complete("untrace ")).containsExactly("all", "UniqueClass1729")
         }
         finally {
             TracerConfig.clearAllRequests()

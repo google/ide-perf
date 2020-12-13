@@ -79,6 +79,9 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
                     if (command.enable) {
                         TracerCompletionUtil.addLookupElementsForLoadedClasses(result)
                     } else {
+                        val wildcard = TracerCompletionUtil.WildcardLookupElement.withPriority(1.0)
+                        result.addElement(wildcard)
+
                         val traceRequests = TracerConfig.getAllRequests()
                         val affectedClasses = TracerConfigUtil.getAffectedClasses(traceRequests)
                         for (clazz in affectedClasses) {
