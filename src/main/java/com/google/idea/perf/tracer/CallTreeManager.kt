@@ -94,17 +94,14 @@ object CallTreeManager {
     // Subtracts lock contention overhead if needed.
     // This should only be called by the thread that owns the ThreadState.
     private inline fun doWithLockAndAdjustOverhead(state: ThreadState, action: () -> Unit) {
-        val lock = state.lock
-        val lockOverhead = when {
-            lock.tryLock() -> 0L
-            else -> measureNanoTime { lock.lock() }
+        if (!state.lock.tryLock()) {
+            val overhead = measureNanoTime { state.lock.lock() }
+            state.callTreeBuilder.subtractOverhead(overhead)
         }
         try {
-            if (lockOverhead != 0L) state.callTreeBuilder.subtractOverhead(lockOverhead)
             action()
-        }
-        finally {
-            lock.unlock()
+        } finally {
+            state.lock.unlock()
         }
     }
 
