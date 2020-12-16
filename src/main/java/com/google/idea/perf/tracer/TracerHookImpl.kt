@@ -17,27 +17,42 @@
 package com.google.idea.perf.tracer
 
 import com.google.idea.perf.agent.TracerHook
+import com.intellij.openapi.diagnostic.Logger
 
 /** Dispatches method entry/exit events to the [CallTreeManager]. */
 class TracerHookImpl : TracerHook {
 
     override fun enter(methodId: Int, args: Array<Any?>?) {
-        val methodTracepoint = TracerConfig.getMethodTracepoint(methodId)
+        doWithExceptionLogging {
+            val methodTracepoint = TracerConfig.getMethodTracepoint(methodId)
 
-        // Support for parameter tracing.
-        val tracepoint =
-            if (args != null) {
-                val argStrings = Array(args.size) { args[it].toString() }
-                MethodTracepointWithArgs(methodTracepoint, argStrings)
-            } else {
-                methodTracepoint
-            }
+            // Support for parameter tracing.
+            val tracepoint =
+                if (args != null) {
+                    val argStrings = Array(args.size) { args[it].toString() }
+                    MethodTracepointWithArgs(methodTracepoint, argStrings)
+                } else {
+                    methodTracepoint
+                }
 
-        CallTreeManager.enter(tracepoint)
+            CallTreeManager.enter(tracepoint)
+        }
     }
 
     override fun leave() {
-        CallTreeManager.leave()
+        doWithExceptionLogging {
+            CallTreeManager.leave()
+        }
+    }
+
+    // In case there are bugs in the tracer, catch exceptions to protect user code.
+    private inline fun doWithExceptionLogging(action: () -> Unit) {
+        try {
+            action()
+        } catch (e: Throwable) {
+            val logger = Logger.getInstance(TracerHookImpl::class.java)
+            logger.error(e)
+        }
     }
 
     companion object {
