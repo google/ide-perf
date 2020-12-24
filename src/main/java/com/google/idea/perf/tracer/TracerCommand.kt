@@ -67,17 +67,11 @@ sealed class TraceTarget {
     /** Trace everything. */
     object All: TraceTarget()
 
-    /** Trace methods that match a wildcard. */
-    data class MethodPattern(
-        val className: String,
-        val methodPattern: String
-    ): TraceTarget()
-
     /** Trace a specific method. */
     data class Method(
         val className: String,
         val methodName: String?,
-        val parameterIndexes: List<Int>?
+        val parameterIndexes: List<Int>? = emptyList()
     ): TraceTarget()
 
     val errors: List<String>
@@ -130,9 +124,9 @@ private fun parseTraceTarget(tokens: List<Token>): TraceTarget? {
     return when {
         first is PsiFindersKeyword -> TraceTarget.PsiFinders
         first is Pattern && first.text == "*" -> TraceTarget.All
-        first is Pattern -> TraceTarget.MethodPattern(first.textString, "*")
+        first is Pattern -> TraceTarget.Method(first.textString, "*")
         first is Identifier && second is HashSymbol && third is Pattern ->
-            TraceTarget.MethodPattern(first.textString, third.textString)
+            TraceTarget.Method(first.textString, third.textString)
         first is Identifier && second is HashSymbol && third is Identifier && fourth is OpenBracketSymbol ->
             TraceTarget.Method(first.textString, third.textString, parseParameterList(tokens.advance(4)))
         first is Identifier && second is HashSymbol && third is Identifier ->
