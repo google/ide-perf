@@ -77,7 +77,7 @@ sealed class TraceTarget {
     val errors: List<String>
         get() = when (this) {
             is Method -> when {
-                methodName == null -> listOf("Expected a method name")
+                methodName.isNullOrBlank() -> listOf("Expected a method name")
                 parameterIndexes == null -> listOf("Invalid parameter index syntax")
                 else -> emptyList()
             }
@@ -122,19 +122,24 @@ private fun parseTraceTarget(tokens: List<Token>): TraceTarget? {
     val fourth = tokens.getOrNull(3)
 
     return when {
-        first is PsiFindersKeyword -> TraceTarget.PsiFinders
-        first is Pattern && first.text == "*" -> TraceTarget.All
-        first is Pattern -> TraceTarget.Method(first.textString, "*")
-        first is Identifier && second is HashSymbol && third is Pattern ->
-            TraceTarget.Method(first.textString, third.textString)
-        first is Identifier && second is HashSymbol && third is Identifier && fourth is OpenBracketSymbol ->
+        first is PsiFindersKeyword -> {
+            TraceTarget.PsiFinders
+        }
+        first is Identifier && second is HashSymbol && third is Identifier && fourth is OpenBracketSymbol -> {
             TraceTarget.Method(first.textString, third.textString, parseParameterList(tokens.advance(4)))
-        first is Identifier && second is HashSymbol && third is Identifier ->
-            TraceTarget.Method(first.textString, third.textString, emptyList())
-        first is Identifier && second is HashSymbol ->
-            TraceTarget.Method(first.textString, "", null)
-        first is Identifier ->
-            TraceTarget.Method(first.textString, null, null)
+        }
+        first is Identifier && second is HashSymbol && third is Identifier -> {
+            TraceTarget.Method(first.textString, third.textString)
+        }
+        first is Identifier && second is HashSymbol -> {
+            TraceTarget.Method(first.textString, "")
+        }
+        first is Identifier && first.text == "*" -> {
+            TraceTarget.All
+        }
+        first is Identifier -> {
+            TraceTarget.Method(first.textString, "*")
+        }
         else -> null
     }
 }
@@ -170,9 +175,6 @@ private fun <E> List<E>.advance(numTokens: Int = 1): List<E> {
 private sealed class Token
 private object UnrecognizedToken: Token()
 private data class Identifier(val text: CharSequence): Token() {
-    val textString: String get() = text.toString()
-}
-private data class Pattern(val text: CharSequence): Token() {
     val textString: String get() = text.toString()
 }
 private data class IntLiteral(val value: Int): Token()
@@ -223,14 +225,7 @@ private fun tokenize(text: CharSequence): List<Token> {
                     "count" -> tokens.add(CountKeyword)
                     "wall-time" -> tokens.add(WallTimeKeyword)
                     "psi-finders" -> tokens.add(PsiFindersKeyword)
-                    else -> {
-                        if (identifierText.contains('*')) {
-                            tokens.add(Pattern(identifierText))
-                        }
-                        else {
-                            tokens.add(Identifier(identifierText))
-                        }
-                    }
+                    else -> tokens.add(Identifier(identifierText))
                 }
             }
             in '0'..'9' -> {

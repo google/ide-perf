@@ -92,11 +92,11 @@ class TracerCommandParserTest {
 
         // Method trace commands.
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", null, null)),
+            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "*")),
             "trace com.example.MyAction"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "", null)),
+            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "")),
             "trace com.example.MyAction#"
         )
         assertCommand(
@@ -104,15 +104,15 @@ class TracerCommandParserTest {
             "trace com.example.MyAction#actionPerformed"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", null, null)),
+            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "*")),
             "trace all com.example.MyAction"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "", null)),
+            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "")),
             "trace all com.example.MyAction#"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", emptyList())),
+            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed")),
             "trace all com.example.MyAction#actionPerformed"
         )
         assertCommand(
