@@ -180,7 +180,6 @@ private object UntraceKeyword: Token()
 private object AllKeyword: Token()
 private object CountKeyword: Token()
 private object WallTimeKeyword: Token()
-private object PsiFindersKeyword: Token()
 private object HashSymbol: Token()
 private object CommaSymbol: Token()
 private object OpenBracketSymbol: Token()
@@ -218,7 +217,6 @@ private fun tokenize(text: CharSequence): List<Token> {
                     "all" -> tokens.add(AllKeyword)
                     "count" -> tokens.add(CountKeyword)
                     "wall-time" -> tokens.add(WallTimeKeyword)
-                    "psi-finders" -> tokens.add(PsiFindersKeyword)
                     else -> tokens.add(Identifier(identifierText))
                 }
             }
