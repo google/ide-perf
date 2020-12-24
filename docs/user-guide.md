@@ -40,7 +40,6 @@ or press `enter` on a selected row in the `List` view.
 #### Other commands
 * `clear` - Clear the current call tree data
 * `reset` - Untrace all methods and clear the call tree
-* `trace psi-finders` - Trace all overrides of `PsiElementFinder.findClass`
 * `save /path/to/file.png` - Save a screenshot of the current tracer window
 
 Parameter tracing

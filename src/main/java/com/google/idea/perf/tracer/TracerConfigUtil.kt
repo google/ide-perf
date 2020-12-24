@@ -19,7 +19,6 @@ package com.google.idea.perf.tracer
 import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.util.GlobMatcher
 import org.objectweb.asm.Type
-import java.lang.reflect.Method
 
 class TraceRequest(
     val matcher: MethodFqMatcher,
@@ -107,13 +106,5 @@ object TracerConfigUtil {
             traceRequests.any { it.matcher.matchesMethodInClass(clazz) }
 
         return instrumentation.allLoadedClasses.filter(::classMightBeAffected)
-    }
-
-    fun createMethodFqName(method: Method): MethodFqName {
-        return MethodFqName(
-            clazz = method.declaringClass.name,
-            method = method.name,
-            desc = Type.getMethodDescriptor(method)
-        )
     }
 }

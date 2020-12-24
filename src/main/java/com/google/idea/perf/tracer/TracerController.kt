@@ -18,8 +18,6 @@ package com.google.idea.perf.tracer
 
 import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.tracer.ui.TracerPanel
-import com.google.idea.perf.tracer.ui.TracerTable
-import com.google.idea.perf.tracer.ui.TracerTree
 import com.google.idea.perf.util.ExecutorWithExceptionLogging
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
@@ -28,20 +26,16 @@ import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.Disposer
-import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.ui.UIUtil
 import org.jetbrains.annotations.TestOnly
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.IOException
 import java.lang.instrument.UnmodifiableClassException
-import java.lang.reflect.Method
 import javax.imageio.ImageIO
-import kotlin.reflect.jvm.javaMethod
 
 // Things to improve:
 // - Audit overall overhead and memory usage.
@@ -125,18 +119,6 @@ class TracerController(
                 val countOnly = command.traceOption == TraceOption.COUNT_ONLY
 
                 when (command.target) {
-                    is TraceTarget.PsiFinders -> {
-                        val defaultProject = ProjectManager.getInstance().defaultProject
-                        val psiFinderEp = defaultProject.extensionArea
-                            .getExtensionPoint<Any>("com.intellij.java.elementFinder")
-                        val argTypes = arrayOf(String::class.java, GlobalSearchScope::class.java)
-                        val methods = psiFinderEp.extensionList.map {
-                            it.javaClass.getMethod("findClass", *argTypes)
-                        }
-                        val config = MethodConfig(enabled = command.enable, countOnly = countOnly)
-                        traceAndRetransform(config, *methods.toTypedArray())
-                        CallTreeManager.clearCallTrees()
-                    }
                     is TraceTarget.All -> {
                         when {
                             command.enable -> displayWarning("Cannot trace all classes")
@@ -166,18 +148,6 @@ class TracerController(
                 displayWarning("Command not implemented")
             }
         }
-    }
-
-    private fun traceAndRetransform(config: MethodConfig, vararg methods: Method) {
-        if (methods.isEmpty()) return
-        val traceRequests = mutableListOf<TraceRequest>()
-        for (method in methods) {
-            val methodFqName = TracerConfigUtil.createMethodFqName(method)
-            val request = TracerConfigUtil.appendTraceRequest(methodFqName, config)
-            traceRequests.add(request)
-        }
-        val affectedClasses = TracerConfigUtil.getAffectedClasses(traceRequests)
-        retransformClasses(affectedClasses)
     }
 
     // This method can be slow.

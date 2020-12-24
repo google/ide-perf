@@ -61,9 +61,6 @@ enum class TraceOption {
 
 /** A set of methods that the tracer will trace. */
 sealed class TraceTarget {
-    /** Trace some important methods of the PSI. */
-    object PsiFinders: TraceTarget()
-
     /** Trace everything. */
     object All: TraceTarget()
 
@@ -122,9 +119,6 @@ private fun parseTraceTarget(tokens: List<Token>): TraceTarget? {
     val fourth = tokens.getOrNull(3)
 
     return when {
-        first is PsiFindersKeyword -> {
-            TraceTarget.PsiFinders
-        }
         first is Identifier && second is HashSymbol && third is Identifier && fourth is OpenBracketSymbol -> {
             TraceTarget.Method(first.textString, third.textString, parseParameterList(tokens.advance(4)))
         }

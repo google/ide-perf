@@ -45,9 +45,6 @@ class TracerCommandParserTest {
         assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, null), "untrace")
         assertCommand(Trace(false, TraceOption.COUNT_ONLY, null), "untrace count")
 
-        assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.PsiFinders), "untrace psi-finders")
-        assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.PsiFinders), "untrace all psi-finders")
-
         // Wildcard untrace commands.
         assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.All), "untrace *")
         assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("Test*", "*")), "untrace Test*")
@@ -79,8 +76,6 @@ class TracerCommandParserTest {
         // Basic trace commands.
         assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, null), "trace")
         assertCommand(Trace(true, TraceOption.COUNT_ONLY, null), "trace count")
-        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.PsiFinders), "trace psi-finders")
-        assertCommand(Trace(true, TraceOption.COUNT_ONLY, TraceTarget.PsiFinders), "trace count psi-finders")
 
         // Wildcard trace commands.
         assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.All), "trace *")
