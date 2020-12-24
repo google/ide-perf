@@ -18,6 +18,7 @@ package com.google.idea.perf.tracer
 
 import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.util.GlobMatcher
+import com.intellij.openapi.progress.ProgressManager
 import org.objectweb.asm.Type
 
 class TraceRequest(
@@ -61,7 +62,7 @@ class MethodFqMatcher(methodPattern: MethodFqName) {
         try {
             if (!classMatcher.matches(clazz.name)) return false
 
-            // Note: getDeclaredMethods() is quite slow, but it seems to be the only option.
+            // getDeclaredMethods() is quite slow, but it seems to be the only option.
             for (m in clazz.declaredMethods) {
                 if (methodMatcher.matches(m.name) &&
                     descMatcher.matches(Type.getMethodDescriptor(m))
@@ -97,13 +98,15 @@ object TracerConfigUtil {
         return request
     }
 
+    // This may be slow if there are many trace requests or if they use broad glob patterns.
     fun getAffectedClasses(traceRequests: Collection<TraceRequest>): List<Class<*>> {
         if (traceRequests.isEmpty()) return emptyList()
         val instrumentation = AgentLoader.instrumentation ?: return emptyList()
 
-        // Currently O(n) in the number of trace requests---could be optimized if needed.
-        fun classMightBeAffected(clazz: Class<*>) =
-            traceRequests.any { it.matcher.matchesMethodInClass(clazz) }
+        fun classMightBeAffected(clazz: Class<*>): Boolean {
+            ProgressManager.checkCanceled()
+            return traceRequests.any { it.matcher.matchesMethodInClass(clazz) }
+        }
 
         return instrumentation.allLoadedClasses.filter(::classMightBeAffected)
     }
