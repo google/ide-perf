@@ -54,7 +54,39 @@ class MethodFqMatcher(methodPattern: MethodFqName) {
                 descMatcher.matches(m.desc)
     }
 
-    fun mightMatchMethodInClass(className: String): Boolean = classMatcher.matches(className)
+    fun mightMatchMethodInClass(className: String): Boolean {
+        return classMatcher.matches(className)
+    }
+
+    fun matchesMethodInClass(clazz: Class<*>): Boolean {
+        try {
+            if (!classMatcher.matches(clazz.name)) return false
+
+            // Note: getDeclaredMethods() is quite slow, but it seems to be the only option.
+            for (m in clazz.declaredMethods) {
+                if (methodMatcher.matches(m.name) &&
+                    descMatcher.matches(Type.getMethodDescriptor(m))
+                ) {
+                    return true
+                }
+            }
+
+            if (methodMatcher.matches("<init>")) {
+                for (c in clazz.declaredConstructors) {
+                    if (descMatcher.matches(Type.getConstructorDescriptor(c))) {
+                        return true
+                    }
+                }
+            }
+
+            return false
+        }
+        catch (ignored: Throwable) {
+            // We are interacting with arbitrary user classes, so exceptions like
+            // NoClassDefFoundError may be thrown in certain corner cases.
+            return false
+        }
+    }
 }
 
 object TracerConfigUtil {
@@ -72,7 +104,7 @@ object TracerConfigUtil {
 
         // Currently O(n) in the number of trace requests---could be optimized if needed.
         fun classMightBeAffected(clazz: Class<*>) =
-            traceRequests.any { it.matcher.mightMatchMethodInClass(clazz.name) }
+            traceRequests.any { it.matcher.matchesMethodInClass(clazz) }
 
         return instrumentation.allLoadedClasses.filter(::classMightBeAffected)
     }
