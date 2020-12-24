@@ -110,10 +110,12 @@ class TracerController(
                 CallTreeManager.clearCallTrees()
             }
             is TracerCommand.Reset -> {
-                val oldRequests = TracerConfig.clearAllRequests()
-                val affectedClasses = TracerConfigUtil.getAffectedClasses(oldRequests)
-                retransformClasses(affectedClasses)
-                CallTreeManager.clearCallTrees()
+                runWithProgress { progress ->
+                    val oldRequests = TracerConfig.clearAllRequests()
+                    val affectedClasses = TracerConfigUtil.getAffectedClasses(oldRequests)
+                    retransformClasses(affectedClasses, progress)
+                    CallTreeManager.clearCallTrees()
+                }
             }
             is TracerCommand.Trace -> {
                 val countOnly = command.traceOption == TraceOption.COUNT_ONLY
@@ -122,25 +124,24 @@ class TracerController(
                     is TraceTarget.All -> {
                         when {
                             command.enable -> displayWarning("Cannot trace all classes")
-                            else -> {
-                                handleCommand(TracerCommand.Reset)
-                                CallTreeManager.clearCallTrees()
-                            }
+                            else -> handleCommand(TracerCommand.Reset)
                         }
                     }
                     is TraceTarget.Method -> {
-                        val clazz = command.target.className
-                        val method = command.target.methodName ?: "*"
-                        val methodPattern = MethodFqName(clazz, method, "*")
-                        val config = MethodConfig(
-                            enabled = command.enable,
-                            countOnly = countOnly,
-                            tracedParams = command.target.parameterIndexes!!
-                        )
-                        val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
-                        val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
-                        retransformClasses(affectedClasses)
-                        CallTreeManager.clearCallTrees()
+                        runWithProgress { progress ->
+                            val clazz = command.target.className
+                            val method = command.target.methodName ?: "*"
+                            val methodPattern = MethodFqName(clazz, method, "*")
+                            val config = MethodConfig(
+                                enabled = command.enable,
+                                countOnly = countOnly,
+                                tracedParams = command.target.parameterIndexes!!
+                            )
+                            val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
+                            val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
+                            retransformClasses(affectedClasses, progress)
+                            CallTreeManager.clearCallTrees()
+                        }
                     }
                 }
             }
@@ -150,34 +151,32 @@ class TracerController(
         }
     }
 
-    // This method can be slow.
-    private fun retransformClasses(classes: Collection<Class<*>>) {
+    private fun retransformClasses(classes: Collection<Class<*>>, progress: ProgressIndicator) {
         if (classes.isEmpty()) return
         val instrumentation = AgentLoader.instrumentation ?: return
 
         LOG.info("Retransforming ${classes.size} classes")
-        runWithProgress { progress ->
-            progress.isIndeterminate = classes.size <= 5
-            var count = 0.0
-            for (clazz in classes) {
-                // Retransforming classes tends to lock up all threads, so to keep
-                // the UI responsive it helps to flush the EDT queue in between.
-                invokeAndWaitIfNeeded {}
-                progress.checkCanceled()
-                try {
-                    instrumentation.retransformClasses(clazz)
-                }
-                catch (e: UnmodifiableClassException) {
-                    LOG.info("Cannot instrument non-modifiable class: ${clazz.name}")
-                }
-                catch (e: Throwable) {
-                    LOG.error("Failed to retransform class: ${clazz.name}", e)
-                }
-                if (!progress.isIndeterminate) {
-                    progress.fraction = ++count / classes.size
-                }
+        progress.isIndeterminate = classes.size <= 5
+        var count = 0.0
+        for (clazz in classes) {
+            // Retransforming classes tends to lock up all threads, so to keep
+            // the UI responsive it helps to flush the EDT queue in between.
+            invokeAndWaitIfNeeded {}
+            progress.checkCanceled()
+            try {
+                instrumentation.retransformClasses(clazz)
+            }
+            catch (e: UnmodifiableClassException) {
+                LOG.info("Cannot instrument non-modifiable class: ${clazz.name}")
+            }
+            catch (e: Throwable) {
+                LOG.error("Failed to retransform class: ${clazz.name}", e)
+            }
+            if (!progress.isIndeterminate) {
+                progress.fraction = ++count / classes.size
             }
         }
+        progress.isIndeterminate = true
     }
 
     /** Saves a png of the current view. */
