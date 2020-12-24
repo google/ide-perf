@@ -68,16 +68,17 @@ class TracerClassFileTransformer : ClassFileTransformer {
         clazz: String,
         classBytes: ByteArray
     ): ByteArray? {
-        val reader = ClassReader(classBytes)
-
         // Note: we avoid using COMPUTE_FRAMES because that causes ClassWriter to use
         // reflection. Reflection triggers class loading (undesirable) and can also fail outright
         // if it is using the wrong classloader. See ClassWriter.getCommonSuperClass().
+        val reader = ClassReader(classBytes)
         val writer = ClassWriter(reader, COMPUTE_MAXS)
         val classVisitor = TracerClassVisitor(clazz, writer)
-
         reader.accept(classVisitor, EXPAND_FRAMES) // EXPAND_FRAMES is required by AdviceAdapter.
-        return writer.toByteArray()
+        return when {
+            classVisitor.transformedSomeMethods -> writer.toByteArray()
+            else -> null
+        }
     }
 }
 
@@ -85,6 +86,7 @@ class TracerClassVisitor(
     private val clazz: String,
     writer: ClassVisitor,
 ) : ClassVisitor(ASM_API, writer) {
+    var transformedSomeMethods = false
 
     override fun visitMethod(
         access: Int, method: String, desc: String, signature: String?,
@@ -93,10 +95,11 @@ class TracerClassVisitor(
         val methodWriter = super.visitMethod(access, method, desc, signature, exceptions)
         val methodFqName = MethodFqName(clazz, method, desc)
         val traceData = TracerConfig.getMethodTraceData(methodFqName)
-        return if (traceData != null && traceData.config.enabled) {
-            TracerMethodVisitor(methodWriter, traceData, clazz, method, desc, access)
+        if (traceData != null && traceData.config.enabled) {
+            transformedSomeMethods = true
+            return TracerMethodVisitor(methodWriter, traceData, clazz, method, desc, access)
         } else {
-            methodWriter
+            return methodWriter
         }
     }
 }
