@@ -140,7 +140,11 @@ object TracerCompletionUtil {
     }
 
     private fun createClassLookupElement(c: ClassInfo): LookupElement {
-        val contextString = computeClassContextString(c.fqName, c.simpleName)
+        val shortName = when {
+            c.simpleName.isBlank() -> c.fqName.substringAfterLast('.') // For anonymous classes.
+            else -> c.simpleName
+        }
+        val contextString = computeClassContextString(c.fqName, shortName)
         val icon = when {
             c.isInterface -> INTERFACE_ICON
             c.isEnum -> ENUM_ICON
@@ -150,7 +154,7 @@ object TracerCompletionUtil {
             c.isAbstract -> ABSTRACT_CLASS_ICON
             else -> CLASS_ICON
         }
-        return ClassLookupElement(c.fqName, c.simpleName, contextString, icon)
+        return ClassLookupElement(c.fqName, shortName, contextString, icon)
     }
 
     private fun computeClassContextString(fqName: String, simpleName: String): String {
@@ -160,12 +164,12 @@ object TracerCompletionUtil {
     /** An auto-completion result for a class that can be traced. */
     private class ClassLookupElement(
         private val fqName: String,
-        private val simpleName: String,
+        private val shortName: String,
         private val contextString: String, // Like package name, but includes enclosing classes.
         private val icon: Icon
     ) : LookupElement() {
 
-        override fun getLookupString(): String = simpleName
+        override fun getLookupString(): String = shortName
 
         override fun getAllLookupStrings(): Set<String> {
             val result = ArrayListSet<String>()
