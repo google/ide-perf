@@ -50,7 +50,7 @@ class TracerCommandParserTest {
 
         // Wildcard untrace commands.
         assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.All), "untrace *")
-        assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.ClassPattern("Test*")), "untrace Test*")
+        assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.MethodPattern("Test*", "*")), "untrace Test*")
         assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.MethodPattern("Test", "*")), "untrace Test#*")
         assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.MethodPattern("Test", "get*")), "untrace Test#get*")
 
@@ -84,8 +84,8 @@ class TracerCommandParserTest {
 
         // Wildcard trace commands.
         assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.All), "trace *")
-        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.ClassPattern("*Test")), "trace *Test")
-        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.ClassPattern("Test*")), "trace Test*")
+        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.MethodPattern("*Test", "*")), "trace *Test")
+        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.MethodPattern("Test*", "*")), "trace Test*")
         assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.MethodPattern("Test", "*")), "trace Test#*")
         assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.MethodPattern("Test", "*Value")), "trace Test#*Value")
         assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.MethodPattern("Test", "get*")), "trace Test#get*")

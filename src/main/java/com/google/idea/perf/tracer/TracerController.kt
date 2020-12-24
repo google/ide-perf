@@ -146,15 +146,6 @@ class TracerController(
                             }
                         }
                     }
-                    is TraceTarget.ClassPattern -> {
-                        // TODO: Simplify (join with other branches).
-                        val methodPattern = MethodFqName(command.target.classPattern, "*", "*")
-                        val config = MethodConfig(enabled = command.enable, countOnly = countOnly)
-                        val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
-                        val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
-                        retransformClasses(affectedClasses)
-                        CallTreeManager.clearCallTrees()
-                    }
                     is TraceTarget.MethodPattern -> {
                         // TODO: Simplify (join with other branches).
                         val clazz = command.target.className
