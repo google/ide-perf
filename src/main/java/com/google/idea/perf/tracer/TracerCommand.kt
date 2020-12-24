@@ -61,9 +61,6 @@ enum class TraceOption {
 
 /** A set of methods that the tracer will trace. */
 sealed class TraceTarget {
-    /** Trace the tracer's own internal methods. */
-    object Tracer: TraceTarget()
-
     /** Trace some important methods of the PSI. */
     object PsiFinders: TraceTarget()
 
@@ -135,7 +132,6 @@ private fun parseTraceTarget(tokens: List<Token>): TraceTarget? {
 
     return when {
         first is PsiFindersKeyword -> TraceTarget.PsiFinders
-        first is TracerKeyword -> TraceTarget.Tracer
         first is Pattern && first.text == "*" -> TraceTarget.All
         first is Pattern -> TraceTarget.ClassPattern(first.textString)
         first is Identifier && second is HashSymbol && third is Pattern ->
@@ -198,7 +194,6 @@ private object AllKeyword: Token()
 private object CountKeyword: Token()
 private object WallTimeKeyword: Token()
 private object PsiFindersKeyword: Token()
-private object TracerKeyword: Token()
 private object HashSymbol: Token()
 private object CommaSymbol: Token()
 private object OpenBracketSymbol: Token()
@@ -237,7 +232,6 @@ private fun tokenize(text: CharSequence): List<Token> {
                     "count" -> tokens.add(CountKeyword)
                     "wall-time" -> tokens.add(WallTimeKeyword)
                     "psi-finders" -> tokens.add(PsiFindersKeyword)
-                    "tracer" -> tokens.add(TracerKeyword)
                     else -> {
                         if (identifierText.contains('*')) {
                             tokens.add(Pattern(identifierText))

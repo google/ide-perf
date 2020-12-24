@@ -137,17 +137,6 @@ class TracerController(
                         traceAndRetransform(config, *methods.toTypedArray())
                         CallTreeManager.clearCallTrees()
                     }
-                    is TraceTarget.Tracer -> {
-                        val config = MethodConfig(enabled = command.enable, countOnly = countOnly)
-                        traceAndRetransform(
-                            config,
-                            CallTreeManager::getCallTreeSnapshotAllThreadsMerged.javaMethod!!,
-                            CallTreeUtil::computeFlatTracepointStats.javaMethod!!,
-                            TracerTable::setTracepointStats.javaMethod!!,
-                            TracerTree::setCallTree.javaMethod!!,
-                        )
-                        CallTreeManager.clearCallTrees()
-                    }
                     is TraceTarget.All -> {
                         when {
                             command.enable -> displayWarning("Cannot trace all classes")
