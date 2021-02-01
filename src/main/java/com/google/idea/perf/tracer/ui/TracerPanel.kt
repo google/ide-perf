@@ -20,6 +20,7 @@ import com.google.idea.perf.tracer.CallTreeManager
 import com.google.idea.perf.tracer.CallTreeUtil
 import com.google.idea.perf.tracer.TracerController
 import com.google.idea.perf.util.formatNsInMs
+import com.intellij.CommonBundle
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
@@ -32,7 +33,6 @@ import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.util.PopupUtil
-import com.intellij.ui.SimpleTextAttributes.LINK_PLAIN_ATTRIBUTES
 import com.intellij.ui.components.JBBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
@@ -43,13 +43,14 @@ import com.intellij.ui.tabs.impl.JBTabsImpl
 import com.intellij.util.concurrency.EdtExecutorService
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
-import com.intellij.util.ui.StatusText
-import com.intellij.util.ui.StatusText.DEFAULT_ATTRIBUTES
 import com.intellij.util.ui.UIUtil
 import java.awt.Dimension
+import java.awt.event.ActionEvent
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import javax.swing.AbstractAction
 import javax.swing.BoxLayout
 import javax.swing.DefaultComboBoxModel
+import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JProgressBar
 import javax.swing.JSeparator
@@ -116,6 +117,20 @@ class TracerPanel(
             return threadChooser
         }
 
+        // Help button.
+        fun createHelpButton(): JButton {
+            val helpAction = object : AbstractAction(CommonBundle.getHelpButtonText()) {
+                override fun actionPerformed(e: ActionEvent) {
+                    val link = "https://github.com/google/ide-perf/blob/master/docs/user-guide.md"
+                    BrowserUtil.browse(link)
+                }
+            }
+            val helpButton = JButton(helpAction)
+            helpButton.putClientProperty("JButton.buttonType", "help")
+            helpButton.toolTipText = "Open user guide"
+            return helpButton
+        }
+
         // Tabs.
         val tabs: JBTabs = JBTabsImpl(null, null, parentDisposable)
         add(tabs.component)
@@ -124,6 +139,7 @@ class TracerPanel(
         fun createTabSideComponent(): JComponent {
             val box = JBBox.createHorizontalBox()
             box.add(createThreadChooser())
+            box.add(createHelpButton())
             box.add(JBBox.createHorizontalGlue())
             return box
         }
@@ -141,20 +157,6 @@ class TracerPanel(
             .setText("Tree")
             .setSideComponent(createTabSideComponent())
         tabs.addTab(treeTab)
-
-        // User instructions.
-        @Suppress("DialogTitleCapitalization")
-        fun setHelpText(text: StatusText) {
-            text.appendText("Start by typing a command in the text field above")
-                .appendSecondaryText("See the ", DEFAULT_ATTRIBUTES, null)
-                .appendSecondaryText("user guide", LINK_PLAIN_ATTRIBUTES) {
-                    val link = "https://github.com/google/ide-perf/blob/master/docs/user-guide.md"
-                    BrowserUtil.browse(link)
-                }
-                .appendSecondaryText(" for examples", DEFAULT_ATTRIBUTES, null)
-        }
-        setHelpText(listView.emptyText)
-        setHelpText(treeView.emptyText)
 
         // Tracing overhead label.
         val overheadFont = JBFont
