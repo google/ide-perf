@@ -21,6 +21,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
@@ -50,7 +51,8 @@ class VfsTracerAction: DumbAwareAction() {
             tracer.toFront()
         }
         else {
-            val newTracer = VfsTracerDialog()
+            val project = e.project ?: ProjectManager.getInstance().defaultProject
+            val newTracer = VfsTracerDialog(project)
             currentTracer = newTracer
             newTracer.disposable.attach { currentTracer = null }
             newTracer.show()
@@ -58,20 +60,25 @@ class VfsTracerAction: DumbAwareAction() {
     }
 }
 
-class VfsTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
+class VfsTracerDialog(private val project: Project) :
+    DialogWrapper(project, null, false, IdeModalityType.IDE, false) {
+
     init {
         title = "VFS Tracer"
         isModal = false
         init()
     }
 
-    override fun createCenterPanel(): JComponent = VfsTracerView(disposable)
+    override fun createCenterPanel(): JComponent = VfsTracerView(project, disposable)
+
     override fun createContentPaneBorder(): Border? = null
+
     override fun getDimensionServiceKey(): String = "com.google.idea.perf.vfstracer.VfsTracer"
+
     override fun createActions(): Array<Action> = emptyArray()
 }
 
-class VfsTracerView(parentDisposable: Disposable) : JBPanel<VfsTracerView>() {
+class VfsTracerView(project: Project, parentDisposable: Disposable) : JBPanel<VfsTracerView>() {
     private val controller = VfsTracerController(this, parentDisposable)
     private val commandLine: TextFieldWithCompletion
     val refreshTimeLabel: JBLabel
@@ -92,10 +99,7 @@ class VfsTracerView(parentDisposable: Disposable) : JBPanel<VfsTracerView>() {
             DefaultTextCompletionValueDescriptor.StringValueDescriptor(),
             listOf("start", "stop", "clear", "reset")
         )
-        commandLine = TextFieldWithCompletion(
-            ProjectManager.getInstance().defaultProject,
-            completionProvider, "", true, true, false
-        )
+        commandLine = TextFieldWithCompletion(project, completionProvider, "", true, true, false)
         TracerUIUtil.addEnterKeyAction(commandLine) {
             controller.handleRawCommandFromEdt(commandLine.text)
             commandLine.text = ""

@@ -45,6 +45,7 @@ object TracerUIUtil {
     }
 
     // TODO: This is a workaround for https://youtrack.jetbrains.com/issue/IDEA-248576.
+    //  (Needed when the text field is backed by the 'default' project.)
     fun reinstallCompletionProviderAsNeeded(
         textField: TextFieldWithCompletion,
         completionProvider: TextCompletionProvider

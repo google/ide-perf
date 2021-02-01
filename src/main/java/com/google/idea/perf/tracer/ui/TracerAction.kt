@@ -18,6 +18,7 @@ package com.google.idea.perf.tracer.ui
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
 
 /** Invoked by the user via the "Trace" action. Pulls up the [TracerDialog]. */
@@ -31,7 +32,8 @@ class TracerAction : DumbAwareAction() {
             tracer.toFront()
         }
         else {
-            val newTracer = TracerDialog()
+            val project = e.project ?: ProjectManager.getInstance().defaultProject
+            val newTracer = TracerDialog(project)
             currentTracer = newTracer
             newTracer.disposable.attach { currentTracer = null }
             newTracer.show()

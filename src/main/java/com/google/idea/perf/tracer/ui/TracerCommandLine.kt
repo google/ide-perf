@@ -20,7 +20,7 @@ import com.google.idea.perf.tracer.TracerCompletionProvider
 import com.google.idea.perf.tracer.TracerController
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.editor.ex.util.EditorUtil
-import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.wm.IdeFocusManager
 import com.intellij.ui.EditorTextField
@@ -33,7 +33,7 @@ import javax.swing.DefaultComboBoxModel
  * This is the command line at the top of the tracer panel.
  * It delegates commands to [TracerController], keeps track of command history, etc.
  */
-class TracerCommandLine(private val tracerController: TracerController) {
+class TracerCommandLine(project: Project, private val tracerController: TracerController) {
     private val textField: EditorTextField
     private val comboBox = ComboBox<String>()
     private var history = emptyArray<String>()
@@ -47,10 +47,7 @@ class TracerCommandLine(private val tracerController: TracerController) {
     init {
         // Text field with completion.
         val completionProvider = TracerCompletionProvider()
-        textField = TextFieldWithCompletion(
-            ProjectManager.getInstance().defaultProject,
-            completionProvider, "", true, true, false
-        )
+        textField = TextFieldWithCompletion(project, completionProvider, "", true, true, false)
         textField.font = EditorUtil.getEditorFont()
         textField.setPreferredWidth(0) // Otherwise the minimum width is determined by the text.
         TracerUIUtil.reinstallCompletionProviderAsNeeded(textField, completionProvider)

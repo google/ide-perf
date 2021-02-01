@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.tracer.ui
 
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.util.ui.UIUtil
 import java.awt.AWTEvent
@@ -30,7 +31,9 @@ import javax.swing.border.Border
 // * DialogWrapper is tied to a specific project window, which is not ideal.
 
 /** The dialog window that pops up via the "Trace" action. It displays the [TracerPanel]. */
-class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
+class TracerDialog(private val project: Project) :
+    DialogWrapper(project, null, false, IdeModalityType.IDE, false) {
+
     init {
         init()
         title = "Tracer"
@@ -42,9 +45,12 @@ class TracerDialog : DialogWrapper(null, null, false, IdeModalityType.IDE, false
         }
     }
 
-    override fun createCenterPanel(): JComponent = TracerPanel(disposable)
+    override fun createCenterPanel(): JComponent = TracerPanel(project, disposable)
+
     override fun createContentPaneBorder(): Border? = null // No border.
+
     override fun getDimensionServiceKey(): String = "${javaClass.packageName}.Tracer"
+
     override fun createActions(): Array<Action> = emptyArray()
 
     override fun show() {

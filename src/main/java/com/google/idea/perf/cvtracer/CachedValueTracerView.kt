@@ -20,6 +20,7 @@ import com.google.idea.perf.tracer.ui.TracerUIUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.DialogWrapper
@@ -46,7 +47,8 @@ class CachedValueTracerAction: DumbAwareAction() {
             tracer.toFront()
         }
         else {
-            val newTracer = CachedValueTracerDialog()
+            val project = e.project ?: ProjectManager.getInstance().defaultProject
+            val newTracer = CachedValueTracerDialog(project)
             currentTracer = newTracer
             newTracer.disposable.attach { currentTracer = null }
             newTracer.show()
@@ -54,7 +56,8 @@ class CachedValueTracerAction: DumbAwareAction() {
     }
 }
 
-class CachedValueTracerDialog: DialogWrapper(null, null, false, IdeModalityType.IDE, false) {
+class CachedValueTracerDialog(private val project: Project) :
+    DialogWrapper(project, null, false, IdeModalityType.IDE, false) {
 
     init {
         title = "CachedValue Tracer"
@@ -62,13 +65,19 @@ class CachedValueTracerDialog: DialogWrapper(null, null, false, IdeModalityType.
         init()
     }
 
-    override fun createCenterPanel(): JComponent = CachedValueTracerView(disposable)
+    override fun createCenterPanel(): JComponent = CachedValueTracerView(project, disposable)
+
     override fun createContentPaneBorder(): Border? = null
-    override fun getDimensionServiceKey(): String? = "${javaClass.packageName}.CachedValueTracer"
+
+    override fun getDimensionServiceKey(): String = "${javaClass.packageName}.CachedValueTracer"
+
     override fun createActions(): Array<Action> = emptyArray()
 }
 
-class CachedValueTracerView(parentDisposable: Disposable) : JBPanel<CachedValueTracerView>() {
+class CachedValueTracerView(
+    project: Project,
+    parentDisposable: Disposable
+) : JBPanel<CachedValueTracerView>() {
     private val controller = CachedValueTracerController(this, parentDisposable)
     private val commandLine: TextFieldWithCompletion
     val refreshTimeLabel: JBLabel
@@ -80,10 +89,7 @@ class CachedValueTracerView(parentDisposable: Disposable) : JBPanel<CachedValueT
 
         // Command line.
         val completionProvider = CachedValueTracerCompletionProvider()
-        commandLine = TextFieldWithCompletion(
-            ProjectManager.getInstance().defaultProject,
-            completionProvider, "", true, true, false
-        )
+        commandLine = TextFieldWithCompletion(project, completionProvider, "", true, true, false)
         TracerUIUtil.addEnterKeyAction(commandLine) {
             controller.handleRawCommandFromEdt(commandLine.text)
             commandLine.text = ""

@@ -39,7 +39,7 @@ class TracerIntegrationTest : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
-        val tracerView = invokeAndWaitIfNeeded { TracerPanel(testRootDisposable) }
+        val tracerView = invokeAndWaitIfNeeded { TracerPanel(project, testRootDisposable) }
         tracer = tracerView.controller
     }
 

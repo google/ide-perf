@@ -27,6 +27,7 @@ import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.rd.attach
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.MessageType
@@ -66,7 +67,10 @@ import javax.swing.SwingConstants.HORIZONTAL
  *
  * This panel is displayed via the [TracerDialog].
  */
-class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPanel>() {
+class TracerPanel(
+    project: Project,
+    private val parentDisposable: Disposable
+) : JBPanel<TracerPanel>() {
     val controller = TracerController(this, parentDisposable)
     private val commandLine: TracerCommandLine
     private val progressBar: JProgressBar
@@ -86,7 +90,7 @@ class TracerPanel(private val parentDisposable: Disposable) : JBPanel<TracerPane
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
 
         // Command line.
-        commandLine = TracerCommandLine(controller)
+        commandLine = TracerCommandLine(project, controller)
         add(commandLine.component)
 
         // Progress bar.
