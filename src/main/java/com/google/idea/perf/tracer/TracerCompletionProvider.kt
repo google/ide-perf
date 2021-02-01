@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.tracer
 
-import com.google.idea.perf.tracer.TracerCompletionUtil.NoFilterPrefixMatcher
+import com.google.idea.perf.tracer.TracerCompletionUtil.LenientPrefixMatcher
 import com.intellij.codeInsight.completion.AddSpaceInsertHandler
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
@@ -48,8 +48,9 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
     override fun fillCompletionVariants(
         parameters: CompletionParameters,
         prefix: String,
-        result: CompletionResultSet
+        initialResult: CompletionResultSet
     ) {
+        var result = initialResult
         val textBeforeCaret = parameters.editor.document.text.substring(0, parameters.offset)
         val command = parseMethodTracerCommand(textBeforeCaret)
 
@@ -64,15 +65,23 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
 
         when (tokenIndex) {
             0 -> {
-                // We want all commands to be shown regardless of the prefix.
-                val prefixMatcher = NoFilterPrefixMatcher(result.prefixMatcher)
-                val customResult = result.withPrefixMatcher(prefixMatcher)
-                // TODO: Invoke completion even if the user types space manually.
-                val addSpace = AddSpaceInsertHandler.INSTANCE_WITH_AUTO_POPUP
-                customResult.addElement(createLookup("clear"))
-                customResult.addElement(createLookup("reset"))
-                customResult.addElement(createLookup("trace").withInsertHandler(addSpace))
-                customResult.addElement(createLookup("untrace").withInsertHandler(addSpace))
+                // We want all commands to be shown regardless of the prefix (for discoverability).
+                val allCommands = setOf("clear", "reset", "trace", "untrace")
+                val prefixMatcher = LenientPrefixMatcher(result.prefixMatcher, allCommands)
+                result = result.withPrefixMatcher(prefixMatcher)
+
+                result.addElement(LookupElementBuilder.create("clear"))
+                result.addElement(LookupElementBuilder.create("reset"))
+                result.addElement(
+                    LookupElementBuilder.create("trace")
+                        .withTailText(" <method>")
+                        .withInsertHandler(AddSpaceInsertHandler.INSTANCE_WITH_AUTO_POPUP)
+                )
+                result.addElement(
+                    LookupElementBuilder.create("untrace")
+                        .withTailText(" <method>")
+                        .withInsertHandler(AddSpaceInsertHandler.INSTANCE_WITH_AUTO_POPUP)
+                )
             }
             1 -> {
                 if (command is TracerCommand.Trace) {
@@ -109,10 +118,6 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
         }
 
         result.stopHere()
-    }
-
-    private fun createLookup(string: String): LookupElementBuilder {
-        return LookupElementBuilder.create(string)
     }
 
     private fun LookupElement.withPriority(priority: Double): LookupElement {

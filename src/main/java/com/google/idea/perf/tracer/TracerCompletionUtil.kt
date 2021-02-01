@@ -120,17 +120,25 @@ object TracerCompletionUtil {
         }
     }
 
-    /** A prefix matcher that matches all strings (but still sorts them by matching degree). */
-    class NoFilterPrefixMatcher(
-        private val delegate: PrefixMatcher
+    /**
+     * A prefix matcher that matches *all* strings unless the prefix is in [exactPrefixes].
+     * This is useful for making non-matching lookup elements more discoverable.
+     */
+    class LenientPrefixMatcher(
+        private val delegate: PrefixMatcher,
+        private val exactPrefixes: Set<String>,
     ) : PrefixMatcher(delegate.prefix) {
 
-        override fun prefixMatches(name: String): Boolean = true
+        override fun prefixMatches(name: String): Boolean {
+            return if (prefix in exactPrefixes) delegate.prefixMatches(name) else true
+        }
+
+        override fun isStartMatch(name: String): Boolean = delegate.isStartMatch(name)
 
         override fun matchingDegree(string: String): Int = delegate.matchingDegree(string)
 
-        override fun cloneWithPrefix(prefix: String): NoFilterPrefixMatcher {
-            return NoFilterPrefixMatcher(delegate.cloneWithPrefix(prefix))
+        override fun cloneWithPrefix(prefix: String): LenientPrefixMatcher {
+            return LenientPrefixMatcher(delegate.cloneWithPrefix(prefix), exactPrefixes)
         }
     }
 
