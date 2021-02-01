@@ -79,8 +79,9 @@ class TracerCommandLine(project: Project, private val tracerController: TracerCo
         if (comboBox.isPopupVisible) {
             comboBox.hidePopup()
         } else {
-            tracerController.handleRawCommandFromEdt(textField.text)
-            setHistory(arrayOf(textField.text, *history))
+            val text = textField.text
+            tracerController.handleRawCommandFromEdt(text)
+            if (text.isNotBlank()) setHistory(arrayOf(text, *history))
             textField.text = ""
         }
     }
