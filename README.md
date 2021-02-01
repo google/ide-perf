@@ -10,7 +10,7 @@ it from the JetBrains Plugin Repository, then see the [user guide](docs/user-gui
 usage instructions. Note: this is not an officially supported Google product.
 
 
-Current features
+Features
 ---
 * **Method tracing:** get call counts and overhead measurements in real time as the IDE is
   being used. You can trace most methods, including methods in the JDK. The tracing overhead
