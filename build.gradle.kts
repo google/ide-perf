@@ -68,8 +68,21 @@ tasks.buildSearchableOptions {
 }
 
 tasks.patchPluginXml {
-    setSinceBuild("202") // Should be tested occasionally (see runPluginVerifier).
-    changeNotes(null) // Should describe changes in the latest release only.
+    // Should be tested occasionally (see runPluginVerifier).
+    setSinceBuild("202")
+    // Should describe changes in the latest release only.
+    changeNotes(
+        """
+        <ul>
+        <li>Added tracing command history.</li>
+        <li>Tracing commands can now have globs in any position.<br>Example: trace *Finder*#findClass</li>
+        <li>Added a help button linking to the user guide.</li>
+        <li>The call tree is now cleared after each tracing command (for data consistency).</li>
+        <li>Minor improvements to tracing command completion.</li>
+        <li>Fixed #38: "Light files should have PSI only in one project".</li>
+        </ul>
+        """.trimIndent()
+    )
 }
 
 tasks.runPluginVerifier {
