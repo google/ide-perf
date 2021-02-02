@@ -31,7 +31,7 @@ val isRelease = project.findProperty("release") != null
 val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
 
 group = "com.google.idea.perf"
-version = "1.0.0$versionSuffix"
+version = "1.1.0$versionSuffix"
 
 repositories {
     mavenCentral()
