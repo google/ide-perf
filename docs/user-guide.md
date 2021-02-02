@@ -24,6 +24,7 @@ Use the `trace` command to trace methods, classes, or packages.
 * `trace com.intellij.openapi.progress.ProgressManager#checkCanceled`
 * `trace com.intellij.openapi.progress.ProgressManager#*`
 * `trace com.intellij.openapi.progress.*`
+* `trace *Finder*#findClass`
 
 You generally do not need to type out the fully qualified name of a class. Instead, type
 the short name and select the fully qualified name from the completion popup.
