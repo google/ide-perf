@@ -121,7 +121,7 @@ object TracerCompletionUtil {
     }
 
     /**
-     * A prefix matcher that matches *all* strings unless the prefix is in [exactPrefixes].
+     * A prefix matcher that matches *all* strings, unless there is already an exact match.
      * This is useful for making non-matching lookup elements more discoverable.
      */
     class LenientPrefixMatcher(
@@ -130,7 +130,7 @@ object TracerCompletionUtil {
     ) : PrefixMatcher(delegate.prefix) {
 
         override fun prefixMatches(name: String): Boolean {
-            return if (prefix in exactPrefixes) delegate.prefixMatches(name) else true
+            return prefix !in exactPrefixes || delegate.prefixMatches(name)
         }
 
         override fun isStartMatch(name: String): Boolean = delegate.isStartMatch(name)
