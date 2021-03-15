@@ -117,6 +117,17 @@ class TracerController(
                     CallTreeManager.clearCallTrees()
                 }
             }
+            is TracerCommand.Sample -> {
+                val allocationSamplingManager = view.allocationSamplingManager
+                if (allocationSamplingManager != null) {
+                    val clazz = AgentLoader.instrumentation?.allLoadedClasses?.find { it.name == command.className } ?: return
+                    if (command.enable) {
+                        allocationSamplingManager.addAllocationSamplingListener(clazz)
+                    } else {
+                        allocationSamplingManager.removeAllocationSamplingListener(clazz)
+                    }
+                }
+            }
             is TracerCommand.Trace -> {
                 val countOnly = command.traceOption == TraceOption.COUNT_ONLY
 

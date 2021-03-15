@@ -30,6 +30,12 @@ sealed class TracerCommand {
     /** Zero out all tracepoint data and reset the call tree. */
     object Reset: TracerCommand()
 
+    /** Enable or disable allocation sampling of class **/
+    data class Sample(
+        val enable: Boolean,
+        val className: String?
+    ): TracerCommand()
+
     /** Trace or untrace a set of methods. */
     data class Trace(
         val enable: Boolean,
@@ -93,8 +99,15 @@ fun parseMethodTracerCommand(text: String): TracerCommand {
         ResetKeyword -> TracerCommand.Reset
         TraceKeyword -> parseTraceCommand(tokens.advance(), true)
         UntraceKeyword -> parseTraceCommand(tokens.advance(), false)
+        SampleKeyword -> parseSampleCommand(tokens.advance(), true)
+        UnsampleKeyword -> parseSampleCommand(tokens.advance(), false)
         else -> TracerCommand.Unknown
     }
+}
+
+private fun parseSampleCommand(tokens: List<Token>, enable: Boolean): TracerCommand {
+    val className = (tokens.firstOrNull() as? Identifier)?.textString
+    return TracerCommand.Sample(enable, className)
 }
 
 private fun parseTraceCommand(tokens: List<Token>, enable: Boolean): TracerCommand {
@@ -184,6 +197,8 @@ private object HashSymbol: Token()
 private object CommaSymbol: Token()
 private object OpenBracketSymbol: Token()
 private object CloseBracketSymbol: Token()
+private object SampleKeyword: Token()
+private object UnsampleKeyword: Token()
 
 private fun tokenize(text: CharSequence): List<Token> {
     fun Char.isIdentifierChar() =
@@ -217,6 +232,8 @@ private fun tokenize(text: CharSequence): List<Token> {
                     "all" -> tokens.add(AllKeyword)
                     "count" -> tokens.add(CountKeyword)
                     "wall-time" -> tokens.add(WallTimeKeyword)
+                    "sample" -> tokens.add(SampleKeyword)
+                    "unsample" -> tokens.add(UnsampleKeyword)
                     else -> tokens.add(Identifier(identifierText))
                 }
             }

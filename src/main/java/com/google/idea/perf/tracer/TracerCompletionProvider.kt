@@ -82,25 +82,39 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
                         .withTailText(" <method>")
                         .withInsertHandler(AddSpaceInsertHandler.INSTANCE_WITH_AUTO_POPUP)
                 )
+                result.addElement(
+                    LookupElementBuilder.create("sample")
+                        .withTailText(" <class>")
+                        .withInsertHandler(AddSpaceInsertHandler.INSTANCE_WITH_AUTO_POPUP)
+                )
+                result.addElement(
+                    LookupElementBuilder.create("unsample")
+                        .withTailText(" <class>")
+                        .withInsertHandler(AddSpaceInsertHandler.INSTANCE_WITH_AUTO_POPUP)
+                )
             }
             1 -> {
-                if (command is TracerCommand.Trace) {
-                    if (command.enable) {
-                        TracerCompletionUtil.addLookupElementsForLoadedClasses(result)
-                    } else {
-                        val wildcard = TracerCompletionUtil.WildcardLookupElement.withPriority(1.0)
-                        result.addElement(wildcard)
+                when (command) {
+                    is TracerCommand.Trace -> {
+                        if (command.enable) {
+                            TracerCompletionUtil.addLookupElementsForLoadedClasses(result, true)
+                        } else {
+                            val wildcard = TracerCompletionUtil.WildcardLookupElement.withPriority(1.0)
+                            result.addElement(wildcard)
 
-                        val traceRequests = TracerConfig.getAllRequests()
-                        val affectedClasses = TracerConfigUtil.getAffectedClasses(traceRequests)
-                        for (clazz in affectedClasses) {
-                            ProgressManager.checkCanceled()
-                            val lookup = TracerCompletionUtil.createClassLookupElement(clazz)
-                            if (lookup != null) {
-                                result.addElement(lookup)
+                            val traceRequests = TracerConfig.getAllRequests()
+                            val affectedClasses = TracerConfigUtil.getAffectedClasses(traceRequests)
+                            for (clazz in affectedClasses) {
+                                ProgressManager.checkCanceled()
+                                val lookup = TracerCompletionUtil.createClassLookupElement(clazz, true)
+                                if (lookup != null) {
+                                    result.addElement(lookup)
+                                }
                             }
                         }
                     }
+                    is TracerCommand.Sample -> TracerCompletionUtil.addLookupElementsForLoadedClasses(result, false)
+                    else -> {}
                 }
             }
             2, 3 -> {
@@ -111,7 +125,7 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
                         val wildcard = TracerCompletionUtil.WildcardLookupElement.withPriority(1.0)
                         result.addElement(wildcard)
                     } else {
-                        TracerCompletionUtil.addLookupElementsForLoadedClasses(result)
+                        TracerCompletionUtil.addLookupElementsForPackagesAndLoadedClasses(result, true)
                     }
                 }
             }

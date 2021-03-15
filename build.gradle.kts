@@ -35,6 +35,9 @@ version = "1.1.0$versionSuffix"
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://jetbrains.bintray.com/intellij-third-party-dependencies")
+    }
 }
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
@@ -174,6 +177,7 @@ dependencies {
     implementation("org.ow2.asm:asm:8.0.1")
     implementation("org.ow2.asm:asm-util:8.0.1")
     implementation("org.ow2.asm:asm-commons:8.0.1")
+    implementation("org.jetbrains.intellij.deps:debugger-memory-agent:1.0.32")
 
     // Add 'compileOnly' dependencies to get sources for certain IDEA dependencies.
     // This is a workaround for https://github.com/JetBrains/gradle-intellij-plugin/issues/264.
