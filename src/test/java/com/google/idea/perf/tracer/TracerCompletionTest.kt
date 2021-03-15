@@ -43,12 +43,14 @@ class TracerCompletionTest : BasePlatformTestCase() {
     @Test
     fun testCommandCompletion() {
         checkInsert("t", "trace ")
-        checkInsert("u", "untrace ")
         checkInsert("c", "clear")
         checkInsert(" r", " reset")
+        checkInsert("unt", "untrace ")
+        checkInsert("uns", "unsample ")
+        checkInsert("s", "sample ")
         checkInsert("r ", null)
         checkInsert("reset MyClass", null)
-        assertThat(complete("")).containsExactly("trace", "untrace", "clear", "reset")
+        assertThat(complete("")).containsExactly("trace", "untrace", "clear", "reset", "sample", "unsample")
     }
 
     @Test
