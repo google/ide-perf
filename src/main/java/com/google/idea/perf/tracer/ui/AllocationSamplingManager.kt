@@ -39,8 +39,14 @@ class AllocationSamplingManager(private val agent: MemoryAgent) {
             return
         }
 
+        val listener = createAllocationListener(className)
         classNameToAllocationInfo[className] = AllocationInfo()
-        addAllocationListener(className) { info ->
+        classNameToAllocationListener[className] = listener
+        agent.addAllocationListener(sampledClass, listener)
+    }
+
+    private fun createAllocationListener(className: String) =
+        AllocationListener { info ->
             classNameToAllocationInfo.compute(className) { _, currentCount ->
                 if (currentCount == null) {
                     AllocationInfo(1, info.size)
@@ -52,10 +58,4 @@ class AllocationSamplingManager(private val agent: MemoryAgent) {
                 }
             }
         }
-    }
-
-    private fun addAllocationListener(className: String, listener: AllocationListener) {
-        agent.addAllocationListener(listener)
-        classNameToAllocationListener[className] = listener
-    }
 }
