@@ -23,11 +23,7 @@ interface CachedValueStats {
     /** A name that represents the cached value aggregation. */
     val name: String
 
-    /**
-     * The aggregate lifetime of cached values. This value may increase at a faster rate because
-     * it's an aggregation.
-     */
-    val lifetime: Long
+    val lifetime: Long // TODO: Currently broken and unused. Should be replaced with computeTimeNs.
 
     /** The number of times a cached value was reused. */
     val hits: Long
@@ -36,7 +32,7 @@ interface CachedValueStats {
     val misses: Long
 
     val hitRatio: Double
-        get() = hits.toDouble() / (hits + misses)
+        get() = hits.toDouble() / maxOf(1L, hits + misses)
 }
 
 class MutableCachedValueStats(

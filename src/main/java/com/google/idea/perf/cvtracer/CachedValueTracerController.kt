@@ -24,7 +24,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.Disposer
-import com.intellij.psi.util.CachedValueProfiler
 import com.intellij.util.text.Matcher
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicBoolean
@@ -43,18 +42,18 @@ class CachedValueTracerController(
     // Most data structures below are assumed to be accessed only from this executor.
     private val executor = ExecutorWithExceptionLogging("CachedValue Tracer", 1)
     private val dataRefreshLoopStarted = AtomicBoolean()
-    private val currentStats = mutableMapOf<String, MutableCachedValueStats>()
     private var filter: Matcher = GlobMatcher.create("*")
     private var groupMode = GroupOption.CLASS
+    private val eventConsumer = CachedValueEventConsumer()
 
     init {
         Disposer.register(parentDisposable, this)
-        CachedValueProfiler.getInstance().isEnabled = true
+        eventConsumer.install()
     }
 
     override fun dispose() {
         executor.shutdownNow()
-        CachedValueProfiler.getInstance().isEnabled = false
+        eventConsumer.uninstall()
     }
 
     fun startDataRefreshLoop() {
@@ -65,12 +64,8 @@ class CachedValueTracerController(
 
     private fun updateUi() {
         val newStats = getNewStats()
-        for (stat in newStats) {
-            currentStats[stat.name] = stat
-        }
-
         getApplication().invokeAndWait {
-            view.listView.setStats(currentStats.values.toList())
+            view.listView.setStats(newStats)
         }
     }
 
@@ -88,15 +83,11 @@ class CachedValueTracerController(
     private fun handleCommand(text: String) {
         when (val command = parseCachedValueTracerCommand(text)) {
             is CachedValueTracerCommand.Clear -> {
-                CachedValueProfiler.getInstance().isEnabled = false
-                CachedValueProfiler.getInstance().isEnabled = true
-                currentStats.clear()
+                eventConsumer.clear()
                 updateUi()
             }
             is CachedValueTracerCommand.Reset -> {
-                CachedValueProfiler.getInstance().isEnabled = false
-                CachedValueProfiler.getInstance().isEnabled = true
-                currentStats.clear()
+                eventConsumer.clear()
                 filter = GlobMatcher.create("*")
                 updateUi()
             }
@@ -104,19 +95,16 @@ class CachedValueTracerController(
                 val pattern = command.pattern
                 if (pattern != null) {
                     filter = GlobMatcher.create("*$pattern*")
-                    currentStats.clear()
                     updateUi()
                 }
             }
             is CachedValueTracerCommand.ClearFilters -> {
                 filter = GlobMatcher.create("*")
-                currentStats.clear()
                 updateUi()
             }
             is CachedValueTracerCommand.GroupBy -> {
                 if (command.groupOption != null) {
                     groupMode = command.groupOption
-                    currentStats.clear()
                     updateUi()
                 }
             }
@@ -127,35 +115,23 @@ class CachedValueTracerController(
     }
 
     private fun getNewStats(): List<MutableCachedValueStats> {
-        val snapshot = CachedValueProfiler.getInstance().storageSnapshot
-
-        val iterator = snapshot.entrySet().iterator()
-        while (iterator.hasNext()) {
-            val (key, _) = iterator.next()
-            if (!filter.matches(key.className)) {
-                iterator.remove()
-            }
-        }
-
-        val groupedSnapshot = if (groupMode == GroupOption.CLASS) {
-            snapshot.entrySet().groupBy({ it.key.className }, { it.value })
-        }
-        else {
-            snapshot.entrySet().groupBy({ getStackTraceName(it.key) }, { it.value })
-        }
-
-        return groupedSnapshot
-            .map { it ->
-                val values = it.value.flatten()
+        return eventConsumer.getSnapshot()
+            .filter { filter.matches(it.location.className) }
+            .groupBy { describeStackFrame(it.location) }
+            .map { (description, stats) ->
                 MutableCachedValueStats(
-                    it.key,
-                    values.sumByLong { it.lifetime },
-                    values.sumByLong { it.useCount },
-                    values.size.toLong()
+                    description,
+                    lifetime = 0, // TODO
+                    hits = stats.sumByLong { it.hits },
+                    misses = stats.sumByLong { it.computeCount }
                 )
             }
     }
 
-    private fun getStackTraceName(element: StackTraceElement): String =
-        "${element.className}#${element.methodName}(${element.lineNumber})"
+    private fun describeStackFrame(f: StackTraceElement): String {
+        return when (groupMode) {
+            GroupOption.CLASS -> f.className
+            GroupOption.STACK_TRACE -> "${f.className}#${f.methodName}(${f.lineNumber})"
+        }
+    }
 }
