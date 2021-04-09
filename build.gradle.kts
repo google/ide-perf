@@ -22,8 +22,8 @@ import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("0.6.5")
-    id("org.jetbrains.kotlin.jvm").version("1.4.0")
+    id("org.jetbrains.intellij").version("0.7.2")
+    id("org.jetbrains.kotlin.jvm").version("1.4.32")
 }
 
 val isCI = System.getenv("CI") != null
@@ -41,12 +41,12 @@ java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
 val javac = javaToolchains.compilerFor(java.toolchain).get()
 val javaHome: Directory = javac.metadata.installationPath
 
-val kotlinStdlibVersion = "1.4.0" // Should match the version bundled with IDEA.
+val kotlinStdlibVersion = "1.4.32" // Should match the version bundled with IDEA.
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         languageVersion = "1.4"
-        apiVersion = "1.3" // IJ 2020.2 still bundles Kotlin 1.3.
+        apiVersion = "1.4"
         jvmTarget = "11"
         kotlinOptions.jdkHome = javaHome.asFile.absolutePath
         // allWarningsAsErrors = true
@@ -57,7 +57,7 @@ tasks.withType<KotlinCompile> {
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     pluginName = "ide-perf"
-    version = "2020.3"
+    version = "211.6693.111"
     downloadSources = !isCI
     updateSinceUntilBuild = false // So that we can leave the until-build blank.
 }
@@ -69,7 +69,7 @@ tasks.buildSearchableOptions {
 
 tasks.patchPluginXml {
     // Should be tested occasionally (see runPluginVerifier).
-    setSinceBuild("202")
+    setSinceBuild("211")
     // Should describe changes in the latest release only.
     changeNotes(
         """
@@ -85,19 +85,21 @@ tasks.patchPluginXml {
     )
 }
 
+// Note: the plugin verifier does not run by default in a normal build.
+// Instead you have to run it explicitly with: ./gradlew runPluginVerifier
 tasks.runPluginVerifier {
     // See https://www.jetbrains.com/idea/download/other.html or
     // https://jb.gg/intellij-platform-builds-list for the list of platform versions.
     ideVersions(
         listOf(
-            "2020.2.4", // Should match the since-build from plugin.xml.
+            // "2021.1", // Should match the since-build from plugin.xml.
             intellij.version // We check the current version too for deprecations, etc.
         )
     )
 
     val suppressedFailures = listOf(
-        RunPluginVerifierTask.FailureLevel.DEPRECATED_API_USAGES, // TODO: We use Kotlin stdlib appendln.
-        RunPluginVerifierTask.FailureLevel.EXPERIMENTAL_API_USAGES // TODO: VfsStatTreeTable uses JBTreeTable.
+        RunPluginVerifierTask.FailureLevel.EXPERIMENTAL_API_USAGES, // TODO: VfsStatTreeTable uses JBTreeTable.
+        RunPluginVerifierTask.FailureLevel.INTERNAL_API_USAGES // See CachedValueEventConsumer.
     )
     failureLevel(EnumSet.copyOf(RunPluginVerifierTask.FailureLevel.ALL - suppressedFailures))
 
@@ -229,8 +231,8 @@ val checkIdeaDependencyVersions by tasks.registering {
             }
         }
 
-        checkIdeaDependencyVersion("kotlin-stdlib", kotlinStdlibVersion)
         checkIdeaDependencyVersion("kotlin-reflect", kotlinStdlibVersion)
+        // TODO: the jar for kotlin-stdlib does not include a version in its name.
     }
 }
 
