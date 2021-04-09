@@ -17,27 +17,20 @@
 package com.google.idea.perf.cvtracer
 
 /**
- * Represents an aggregation of cached values properties.
+ * Statistics for CachedValue computations, usually grouped by the name of the
+ * class that created the CachedValue.
  */
 interface CachedValueStats {
-    /** A name that represents the cached value aggregation. */
-    val name: String
-
-    val lifetime: Long // TODO: Currently broken and unused. Should be replaced with computeTimeNs.
-
-    /** The number of times a cached value was reused. */
-    val hits: Long
-
-    /** The number of times a cached value was created or invalidated. */
-    val misses: Long
-
-    val hitRatio: Double
-        get() = hits.toDouble() / maxOf(1L, hits + misses)
+    val description: String
+    val computeTimeNs: Long
+    val hits: Long // Number of times a value was reused, without recomputing it.
+    val misses: Long // Number of times a value had to be recomputed.
+    val hitRatio: Double get() = hits.toDouble() / maxOf(1L, hits + misses)
 }
 
 class MutableCachedValueStats(
-    override val name: String,
-    override var lifetime: Long,
+    override val description: String,
+    override var computeTimeNs: Long,
     override var hits: Long,
     override var misses: Long
 ): CachedValueStats

@@ -121,7 +121,7 @@ class CachedValueTracerController(
             .map { (description, stats) ->
                 MutableCachedValueStats(
                     description,
-                    lifetime = 0, // TODO
+                    computeTimeNs = stats.sumByLong { it.computeTimeNs },
                     hits = stats.sumByLong { it.hits },
                     misses = stats.sumByLong { it.computeCount }
                 )

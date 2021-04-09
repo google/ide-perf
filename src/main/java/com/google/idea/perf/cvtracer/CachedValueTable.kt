@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.cvtracer
 
-import com.google.idea.perf.util.formatMsInSeconds
+import com.google.idea.perf.util.formatNsInMs
 import com.google.idea.perf.util.formatNum
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
@@ -29,14 +29,13 @@ import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.JTableHeader
 import javax.swing.table.TableRowSorter
 
-private const val COL_COUNT = 5
-
 // Table columns.
 private const val NAME = 0
-private const val LIFETIME = 1
+private const val COMPUTE_TIME = 1
 private const val HITS = 2
 private const val MISSES = 3
 private const val HIT_MISS_RATIO = 4
+private const val COL_COUNT = 5
 
 class CachedValueTableModel: AbstractTableModel() {
     private var data: List<CachedValueStats>? = null
@@ -46,21 +45,21 @@ class CachedValueTableModel: AbstractTableModel() {
         fireTableDataChanged()
     }
 
-    override fun getColumnCount(): Int = 5
+    override fun getColumnCount(): Int = COL_COUNT
 
     override fun getColumnName(column: Int): String = when (column) {
         NAME -> "name"
-        LIFETIME -> "lifetime"
+        COMPUTE_TIME -> "compute time"
         HITS -> "hits"
         MISSES -> "misses"
-        HIT_MISS_RATIO -> "hit/miss ratio"
+        HIT_MISS_RATIO -> "hit ratio"
         else -> error(column)
     }
 
     override fun getColumnClass(columnIndex: Int): Class<*> = when (columnIndex) {
-        NAME -> java.lang.String::class.java
-        LIFETIME, HITS, MISSES -> java.lang.Long::class.java
-        HIT_MISS_RATIO -> java.lang.Double::class.java
+        NAME -> String::class.java
+        COMPUTE_TIME, HITS, MISSES -> Long::class.javaObjectType
+        HIT_MISS_RATIO -> Double::class.javaObjectType
         else -> error(columnIndex)
     }
 
@@ -69,11 +68,11 @@ class CachedValueTableModel: AbstractTableModel() {
     override fun getValueAt(rowIndex: Int, columnIndex: Int): Any {
         val stats = data!![rowIndex]
         return when (columnIndex) {
-            NAME -> stats.name
-            LIFETIME -> formatMsInSeconds(stats.lifetime)
+            NAME -> stats.description
+            COMPUTE_TIME -> stats.computeTimeNs
             HITS -> stats.hits
             MISSES -> stats.misses
-            HIT_MISS_RATIO -> formatNum(stats.hitRatio)
+            HIT_MISS_RATIO -> stats.hitRatio
             else -> error(columnIndex)
         }
     }
@@ -92,25 +91,31 @@ class CachedValueTable(private val model: CachedValueTableModel): JBTable(model)
         for (tableColumn in tableColumns) {
             val col = tableColumn.modelIndex
 
-            if (col == LIFETIME) {
-                // TODO: Probably remove the "lifetime" column entirely (it does not seem useful).
-                removeColumn(tableColumn)
-            }
-
             // Column widths.
             tableColumn.minWidth = 100
             tableColumn.preferredWidth = when (col) {
                 NAME -> Int.MAX_VALUE
-                LIFETIME, HITS, MISSES, HIT_MISS_RATIO -> 100
+                COMPUTE_TIME, HITS, MISSES, HIT_MISS_RATIO -> 100
                 else -> tableColumn.preferredWidth
             }
 
             // Locale-aware and unit-aware rendering for numbers.
             when (col) {
-                LIFETIME, HITS, MISSES, HIT_MISS_RATIO -> {
+                COMPUTE_TIME, HITS, MISSES, HIT_MISS_RATIO -> {
                     tableColumn.cellRenderer = object: DefaultTableCellRenderer() {
                         init {
                             horizontalAlignment = SwingConstants.RIGHT
+                        }
+
+                        override fun setValue(value: Any?) {
+                            if (value == null) return super.setValue(value)
+                            val formatted = when (col) {
+                                COMPUTE_TIME -> formatNsInMs(value as Long)
+                                HITS, MISSES -> formatNum(value as Long)
+                                HIT_MISS_RATIO -> formatNum(value as Double)
+                                else -> error("Unhandled column")
+                            }
+                            super.setValue(formatted)
                         }
                     }
                 }
@@ -131,7 +136,7 @@ class CachedValueTable(private val model: CachedValueTableModel): JBTable(model)
                 sortKeys = listOf(SortKey(col, order))
             }
         }
-        rowSorter.toggleSortOrder(HIT_MISS_RATIO)
+        rowSorter.toggleSortOrder(COMPUTE_TIME)
     }
 
     override fun createDefaultTableHeader(): JTableHeader {
