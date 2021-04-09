@@ -73,23 +73,23 @@ class TracepointDetailsManager(private val table: TracerTable) {
 
     private fun buildDetailString(data: TracepointStats): String {
         return buildString {
-            appendln(data.tracepoint.displayName)
+            appendLine(data.tracepoint.displayName)
 
             val callCount = formatNum(data.callCount)
             val wallTime = formatNsInBestUnit(data.wallTime)
-            appendln()
-            appendln("Call count: $callCount")
-            appendln("Total wall time: $wallTime")
+            appendLine()
+            appendLine("Call count: $callCount")
+            appendLine("Total wall time: $wallTime")
 
             if (data.callCount > 0) {
                 val maxWallTime = formatNsInBestUnit(data.maxWallTime)
                 val avgWallTime = formatNsInBestUnit(data.wallTime / data.callCount)
-                appendln()
-                appendln("Average wall time: $avgWallTime")
-                appendln("Max wall time: $maxWallTime")
+                appendLine()
+                appendLine("Average wall time: $avgWallTime")
+                appendLine("Max wall time: $maxWallTime")
             }
 
-            appendln()
+            appendLine()
             append(data.tracepoint.detailedName)
         }
     }

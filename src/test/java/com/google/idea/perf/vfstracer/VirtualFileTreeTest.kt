@@ -72,7 +72,7 @@ private class ChangeLog: TreePatchEventListener {
         val pathString = path.parts.joinToString("/") + "/${child.name}"
         val stubIndexAccesses = child.stubIndexAccesses
         val psiElementWraps = child.psiElementWraps
-        logger.appendln("inserted $pathString $stubIndexAccesses $psiElementWraps")
+        logger.appendLine("inserted $pathString $stubIndexAccesses $psiElementWraps")
     }
 
     override fun onTreeModify(
@@ -84,7 +84,7 @@ private class ChangeLog: TreePatchEventListener {
         val pathString = path.parts.joinToString("/") + "/${child.name}"
         val stubIndexAccesses = newChild.stubIndexAccesses
         val psiElementWraps = newChild.psiElementWraps
-        logger.appendln("modified $pathString $stubIndexAccesses $psiElementWraps")
+        logger.appendLine("modified $pathString $stubIndexAccesses $psiElementWraps")
     }
 
     override fun onTreeRemove(
@@ -93,7 +93,7 @@ private class ChangeLog: TreePatchEventListener {
         child: MutableVirtualFileTree
     ) {
         val pathString = path.parts.joinToString("/") + "/${child.name}"
-        logger.appendln("removed $pathString")
+        logger.appendLine("removed $pathString")
     }
 }
 

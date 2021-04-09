@@ -50,7 +50,7 @@ class MethodTracepoint(
         buildString {
             val argTypes = Type.getArgumentTypes(fqName.desc)
             val argString = argTypes.joinToString { it.className.substringAfterLast('.') }
-            appendln("Class: ${fqName.clazz}")
+            appendLine("Class: ${fqName.clazz}")
             append("Method: ${fqName.method}($argString)")
         }
     }

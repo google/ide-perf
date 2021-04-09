@@ -290,7 +290,7 @@ class CallTreeTest {
 
     private fun StringBuilder.printTree(node: CallTree, indent: String) {
         with(node) {
-            appendln("$indent$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns")
+            appendLine("$indent$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns")
         }
         for (child in node.children.values) {
             printTree(child, "$indent  ")

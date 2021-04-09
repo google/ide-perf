@@ -266,7 +266,7 @@ class TracerIntegrationTest : BasePlatformTestCase() {
     }
 
     private fun renderCallTree(callTree: CallTree, sb: StringBuilder, indentWidth: Int) {
-        if (indentWidth > 0) sb.appendln()
+        if (indentWidth > 0) sb.appendLine()
 
         val indent = " ".repeat(indentWidth)
         val name = callTree.tracepoint.displayName
