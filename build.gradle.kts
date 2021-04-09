@@ -31,7 +31,7 @@ val isRelease = project.findProperty("release") != null
 val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
 
 group = "com.google.idea.perf"
-version = "1.1.0$versionSuffix"
+version = "1.2.0$versionSuffix"
 
 repositories {
     mavenCentral()
@@ -74,12 +74,8 @@ tasks.patchPluginXml {
     changeNotes(
         """
         <ul>
-        <li>Added tracing command history.</li>
-        <li>Tracing commands can now have globs in any position.<br>Example: trace *Finder*#findClass</li>
-        <li>Added a help button linking to the user guide.</li>
-        <li>The call tree is now cleared after each tracing command (for data consistency).</li>
-        <li>Minor improvements to tracing command completion.</li>
-        <li>Fixed #38: "Light files should have PSI only in one project".</li>
+        <li>Fixed the CachedValue tracer when running on IntelliJ 2021.1.</li>
+        <li>The CachedValue tracer now reports how much time is spent computing each value.</li>
         </ul>
         """.trimIndent()
     )
