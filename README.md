@@ -14,8 +14,9 @@ a feature request. Note: this is not an officially supported Google product.
 Features
 ---
 * **Method tracer:** choose some methods, then get call counts and overhead measurements in real
-  time as the IDE is being used. There is both a method list view and a call tree view. Tracing
-  commands are auto-completed as you type. Tracing overhead is low (approx. 200 ns per call).
+  time as the IDE is being used. Methods are traced on-the-fly using bytecode instrumentation.
+  There is both a method list view and a call tree view. Tracing commands are auto-completed as
+  you type. Tracing overhead is low (approx. 200 ns per call).
 
 * **Parameter tracer:** track how many times a method is called with a specific argument.
   For example, you can trace the first parameter of `JavaPsiFacade.findClass` to visualize
