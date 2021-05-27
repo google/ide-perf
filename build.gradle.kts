@@ -22,7 +22,7 @@ import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("0.7.2")
+    id("org.jetbrains.intellij").version("1.0")
     id("org.jetbrains.kotlin.jvm").version("1.4.32")
 }
 
@@ -56,10 +56,10 @@ tasks.withType<KotlinCompile> {
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-    pluginName = "ide-perf"
-    version = "211.6693.111"
-    downloadSources = !isCI
-    updateSinceUntilBuild = false // So that we can leave the until-build blank.
+    pluginName.set("ide-perf")
+    version.set("211.6693.111")
+    downloadSources.set(!isCI)
+    updateSinceUntilBuild.set(false) // So that we can leave the until-build blank.
 }
 
 tasks.buildSearchableOptions {
@@ -69,9 +69,9 @@ tasks.buildSearchableOptions {
 
 tasks.patchPluginXml {
     // Should be tested occasionally (see runPluginVerifier).
-    setSinceBuild("211")
+    sinceBuild.set("211")
     // Should describe changes in the latest release only.
-    changeNotes(
+    changeNotes.set(
         """
         <ul>
         <li>Fixed the CachedValue tracer when running on IntelliJ 2021.1.</li>
@@ -86,10 +86,10 @@ tasks.patchPluginXml {
 tasks.runPluginVerifier {
     // See https://www.jetbrains.com/idea/download/other.html or
     // https://jb.gg/intellij-platform-builds-list for the list of platform versions.
-    ideVersions(
+    ideVersions.set(
         listOf(
             // "2021.1", // Should match the since-build from plugin.xml.
-            intellij.version // We check the current version too for deprecations, etc.
+            intellij.version.toString() // We check the current version too for deprecations, etc.
         )
     )
 
@@ -97,11 +97,11 @@ tasks.runPluginVerifier {
         RunPluginVerifierTask.FailureLevel.EXPERIMENTAL_API_USAGES, // TODO: VfsStatTreeTable uses JBTreeTable.
         RunPluginVerifierTask.FailureLevel.INTERNAL_API_USAGES // See CachedValueEventConsumer.
     )
-    failureLevel(EnumSet.copyOf(RunPluginVerifierTask.FailureLevel.ALL - suppressedFailures))
+    failureLevel.set(EnumSet.copyOf(RunPluginVerifierTask.FailureLevel.ALL - suppressedFailures))
 
     // Suppress false-positive NoSuchClassErrors; they are caused by the agent being
     // loaded in the boot classloader rather than the plugin classloader.
-    externalPrefixes(listOf("com.google.idea.perf.agent"))
+    externalPrefixes.set(listOf("com.google.idea.perf.agent"))
 
     val verifierHomeProp = "plugin.verifier.home.dir"
     if (System.getProperty(verifierHomeProp) == null) {
@@ -114,22 +114,23 @@ val javaAgent: Configuration by configurations.creating
 
 tasks.withType<PrepareSandboxTask> {
     // Copy agent artifacts into the plugin home directory.
-    val agentDir = "$pluginName/agent"
+    val agentDir = "${pluginName.get()}/agent"
     from(javaAgent) { into(agentDir) }
 }
 
 tasks.publishPlugin {
     val tokenProp = "plugins.repository.token"
-    token(project.findProperty(tokenProp))
+    val theToken = project.findProperty(tokenProp) as? String
+    token.set(theToken)
     doFirst {
         check(isRelease) { "Must do a release build when publishing the plugin" }
-        check(project.hasProperty(tokenProp)) { "Must specify an upload token via -P$tokenProp" }
+        checkNotNull(theToken) { "Must specify an upload token via -P$tokenProp" }
     }
 }
 
 tasks.runIde {
     // Disable auto-reload until we make sure it works correctly for this plugin.
-    autoReloadPlugins = false
+    autoReloadPlugins.set(false)
 
     // Always enable assertions.
     jvmArgs("-ea")
