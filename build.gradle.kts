@@ -84,12 +84,14 @@ tasks.patchPluginXml {
 // Note: the plugin verifier does not run by default in a normal build.
 // Instead you have to run it explicitly with: ./gradlew runPluginVerifier
 tasks.runPluginVerifier {
+    downloadDir.set("$buildDir/pluginVerifier/ides")
+
     // See https://www.jetbrains.com/idea/download/other.html or
     // https://jb.gg/intellij-platform-builds-list for the list of platform versions.
     ideVersions.set(
         listOf(
             // "2021.1", // Should match the since-build from plugin.xml.
-            intellij.version.toString() // We check the current version too for deprecations, etc.
+            intellij.version.get() // We check the current version too for deprecations, etc.
         )
     )
 
@@ -102,12 +104,6 @@ tasks.runPluginVerifier {
     // Suppress false-positive NoSuchClassErrors; they are caused by the agent being
     // loaded in the boot classloader rather than the plugin classloader.
     externalPrefixes.set(listOf("com.google.idea.perf.agent"))
-
-    val verifierHomeProp = "plugin.verifier.home.dir"
-    if (System.getProperty(verifierHomeProp) == null) {
-        // Download files into the build directory rather than ~/.pluginVerifier.
-        System.setProperty(verifierHomeProp, "$buildDir/pluginVerifier")
-    }
 }
 
 val javaAgent: Configuration by configurations.creating
