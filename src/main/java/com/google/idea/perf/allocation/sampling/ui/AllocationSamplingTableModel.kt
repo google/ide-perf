@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.tracer.ui
+package com.google.idea.perf.allocation.sampling.ui
+
+import com.google.idea.perf.tracer.ui.DataTableModel
 
 data class SamplingInfo(
     val className: String,
@@ -26,7 +28,7 @@ class AllocationSamplingTableModel : DataTableModel<SamplingInfo>() {
     enum class AllocationSamplingTableColumn(val column: Column<SamplingInfo>) {
         CLASS(Column("class", String::class.java, SamplingInfo::className)),
         ALLOCATION_COUNT(Column("allocation count", Long::class.java, SamplingInfo::allocationCount)),
-        ALLOCATED_SIZE(Column("total allocation size", Long::class.java, SamplingInfo::allocatedSize));
+        ALLOCATED_SIZE(Column("total sampled allocations size", Long::class.java, SamplingInfo::allocatedSize));
     }
 
     init {

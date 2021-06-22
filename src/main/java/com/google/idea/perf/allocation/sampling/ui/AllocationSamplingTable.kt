@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.tracer.ui
+package com.google.idea.perf.allocation.sampling.ui
 
-import com.google.idea.perf.tracer.ui.AllocationSamplingTableModel.AllocationSamplingTableColumn
+import com.google.idea.perf.allocation.sampling.ui.AllocationSamplingTableModel.AllocationSamplingTableColumn
 import com.google.idea.perf.util.formatNum
 import com.google.idea.perf.util.formatSize
 import com.intellij.openapi.editor.ex.util.EditorUtil
@@ -38,7 +38,8 @@ class AllocationSamplingTable(val model: AllocationSamplingTableModel) : JBTable
 
             tableColumn.minWidth = 100
             tableColumn.preferredWidth = when (col) {
-                AllocationSamplingTableColumn.CLASS -> Integer.MAX_VALUE
+                AllocationSamplingTableColumn.ALLOCATED_SIZE -> 200
+                AllocationSamplingTableColumn.CLASS -> 400
                 else -> 100
             }
 

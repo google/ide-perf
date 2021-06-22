@@ -14,17 +14,34 @@
  * limitations under the License.
  */
 
-package com.google.idea.perf.tracer.ui
+package com.google.idea.perf.allocation.sampling
 
 import com.intellij.memory.agent.AllocationListener
 import com.intellij.memory.agent.MemoryAgent
 import java.util.concurrent.ConcurrentHashMap
 
 class AllocationSamplingManager(private val agent: MemoryAgent) {
-    data class AllocationInfo(val allocationCount: Long = 0, val totalAllocationSize: Long = 0)
+    data class AllocationInfo(var allocationCount: Long = 0, var totalAllocationSize: Long = 0) {
+        fun increment(allocationSize: Long): AllocationInfo {
+            allocationCount += 1
+            totalAllocationSize += allocationSize
+            return this
+        }
+    }
 
     val classNameToAllocationInfo: MutableMap<String, AllocationInfo> = ConcurrentHashMap()
     private val classNameToAllocationListener: MutableMap<String, AllocationListener> = HashMap()
+
+    fun resetSampledClassesList() {
+        for (listener in classNameToAllocationListener.values) {
+            agent.removeAllocationListener(listener)
+        }
+        classNameToAllocationInfo.clear()
+        classNameToAllocationListener.clear()
+    }
+
+    fun clearSampledClassesList() =
+        classNameToAllocationInfo.replaceAll { _, _ -> AllocationInfo() }
 
     fun removeAllocationSamplingListener(sampledClass: Class<*>) {
         val className = sampledClass.name
@@ -48,14 +65,7 @@ class AllocationSamplingManager(private val agent: MemoryAgent) {
     private fun createAllocationListener(className: String) =
         AllocationListener { info ->
             classNameToAllocationInfo.compute(className) { _, currentCount ->
-                if (currentCount == null) {
-                    AllocationInfo(1, info.size)
-                } else {
-                    AllocationInfo(
-                        currentCount.allocationCount + 1,
-                        currentCount.totalAllocationSize + info.size
-                    )
-                }
+                currentCount?.increment(info.size) ?: AllocationInfo(1, info.size)
             }
         }
 }

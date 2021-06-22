@@ -17,6 +17,7 @@
 package com.google.idea.perf.tracer
 
 import com.google.idea.perf.AgentLoader
+import com.google.idea.perf.allocation.sampling.AllocationSamplingManagerController
 import com.google.idea.perf.tracer.ui.TracerPanel
 import com.google.idea.perf.util.ExecutorWithExceptionLogging
 import com.intellij.openapi.Disposable
@@ -108,6 +109,7 @@ class TracerController(
         when (command) {
             is TracerCommand.Clear -> {
                 CallTreeManager.clearCallTrees()
+                AllocationSamplingManagerController.getManager()?.clearSampledClassesList()
             }
             is TracerCommand.Reset -> {
                 runWithProgress { progress ->
@@ -115,13 +117,16 @@ class TracerController(
                     val affectedClasses = TracerConfigUtil.getAffectedClasses(oldRequests)
                     retransformClasses(affectedClasses, progress)
                     CallTreeManager.clearCallTrees()
+                    AllocationSamplingManagerController.getManager()?.resetSampledClassesList()
+                    view.hideAllocationSamplingTab()
                 }
             }
-            is TracerCommand.Sample -> {
-                val allocationSamplingManager = view.allocationSamplingManager
+            is TracerCommand.SampleAlloc -> {
+                val allocationSamplingManager = AllocationSamplingManagerController.getManagerAndLoadAgent()
                 if (allocationSamplingManager != null) {
                     val clazz = AgentLoader.instrumentation?.allLoadedClasses?.find { it.name == command.className } ?: return
                     if (command.enable) {
+                        view.showAllocationSamplingTab()
                         allocationSamplingManager.addAllocationSamplingListener(clazz)
                     } else {
                         allocationSamplingManager.removeAllocationSamplingListener(clazz)

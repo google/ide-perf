@@ -83,7 +83,7 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
                         .withInsertHandler(AddSpaceInsertHandler.INSTANCE_WITH_AUTO_POPUP)
                 )
                 result.addElement(
-                    LookupElementBuilder.create("sample")
+                    LookupElementBuilder.create("sample-alloc")
                         .withTailText(" <class>")
                         .withInsertHandler(AddSpaceInsertHandler.INSTANCE_WITH_AUTO_POPUP)
                 )
@@ -113,7 +113,7 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
                             }
                         }
                     }
-                    is TracerCommand.Sample -> TracerCompletionUtil.addLookupElementsForLoadedClasses(result, false)
+                    is TracerCommand.SampleAlloc -> TracerCompletionUtil.addLookupElementsForLoadedClasses(result, false)
                     else -> {}
                 }
             }

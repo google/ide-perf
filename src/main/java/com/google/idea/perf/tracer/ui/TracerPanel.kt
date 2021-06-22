@@ -16,16 +16,20 @@
 
 package com.google.idea.perf.tracer.ui
 
+import com.google.idea.perf.allocation.sampling.AllocationSamplingManagerController
+import com.google.idea.perf.allocation.sampling.ui.AllocationSamplingTable
+import com.google.idea.perf.allocation.sampling.ui.AllocationSamplingTableModel
+import com.google.idea.perf.allocation.sampling.ui.SamplingInfo
 import com.google.idea.perf.tracer.CallTreeManager
 import com.google.idea.perf.tracer.CallTreeUtil
 import com.google.idea.perf.tracer.TracerController
 import com.google.idea.perf.util.formatNsInMs
 import com.intellij.CommonBundle
 import com.intellij.ide.BrowserUtil
-import com.intellij.memory.agent.MemoryAgent
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
@@ -74,13 +78,13 @@ class TracerPanel(
     private val parentDisposable: Disposable
 ) : JBPanel<TracerPanel>() {
     val controller = TracerController(this, parentDisposable)
-    val allocationSamplingManager: AllocationSamplingManager?
-    private val allocationSamplingTable: AllocationSamplingTable?
     private val commandLine: TracerCommandLine
     private val progressBar: JProgressBar
     private var showingEdtOnly = false
     private val listView: TracerTable
     private val treeView: TracerTree
+    private val allocationSamplingTable: AllocationSamplingTable
+    private val allocationSamplingTab: TabInfo
     private val tracingOverheadLabel: JBLabel
     private val uiOverheadLabel: JBLabel
     private var uiOverhead = 0L
@@ -162,18 +166,12 @@ class TracerPanel(
         tabs.addTab(treeTab)
 
         // Allocation sampling table.
-        val agent = MemoryAgent.get()
-        if (agent != null) {
-            allocationSamplingManager = AllocationSamplingManager(agent)
-            allocationSamplingTable = AllocationSamplingTable(AllocationSamplingTableModel())
-            val allocationSamplingTab = TabInfo(JBScrollPane(allocationSamplingTable))
-                .setText("Allocation Sampling")
-                .setSideComponent(createTabSideComponent())
-            tabs.addTab(allocationSamplingTab)
-        } else {
-            allocationSamplingManager = null
-            allocationSamplingTable = null
-        }
+        allocationSamplingTable = AllocationSamplingTable(AllocationSamplingTableModel())
+        allocationSamplingTab = TabInfo(JBScrollPane(allocationSamplingTable))
+            .setText("Allocation Sampling")
+            .setSideComponent(createTabSideComponent())
+        allocationSamplingTab.isHidden = true
+        tabs.addTab(allocationSamplingTab)
 
         // Tracing overhead label.
         val overheadFont = JBFont
@@ -198,7 +196,7 @@ class TracerPanel(
 
         // Schedule tree data updates.
         val refreshFuture = EdtExecutorService.getScheduledExecutorInstance()
-            .scheduleWithFixedDelay(::update, 0, REFRESH_DELAY_MS, MILLISECONDS)
+            .scheduleWithFixedDelay(::updateInfo, 0, REFRESH_DELAY_MS, MILLISECONDS)
 
         parentDisposable.attach { refreshFuture.cancel(false) }
 
@@ -235,19 +233,33 @@ class TracerPanel(
         }
     }
 
-    private fun update() {
+    private fun updateInfo() {
         updateSamplingInfo()
         updateCallTree()
     }
 
     private fun updateSamplingInfo() {
-        if (allocationSamplingManager == null || allocationSamplingTable == null) {
-            return
-        }
-        val samplingInfos = allocationSamplingManager.classNameToAllocationInfo.map { (name, info) ->
+        val samplingManager = AllocationSamplingManagerController.getManager() ?: return
+        val samplingInfos = samplingManager.classNameToAllocationInfo.map { (name, info) ->
             SamplingInfo(name, info.allocationCount, info.totalAllocationSize)
         }
         allocationSamplingTable.setSamplingInfo(samplingInfos)
+    }
+
+    fun showAllocationSamplingTab()  {
+        if (allocationSamplingTab.isHidden) {
+            runInEdt {
+                allocationSamplingTab.isHidden = false
+            }
+        }
+    }
+
+    fun hideAllocationSamplingTab() {
+        if (!allocationSamplingTab.isHidden) {
+            runInEdt {
+                allocationSamplingTab.isHidden = true
+            }
+        }
     }
 
     private fun updateCallTree() {

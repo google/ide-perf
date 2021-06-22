@@ -31,7 +31,7 @@ sealed class TracerCommand {
     object Reset: TracerCommand()
 
     /** Enable or disable allocation sampling of class **/
-    data class Sample(
+    data class SampleAlloc(
         val enable: Boolean,
         val className: String?
     ): TracerCommand()
@@ -99,7 +99,7 @@ fun parseMethodTracerCommand(text: String): TracerCommand {
         ResetKeyword -> TracerCommand.Reset
         TraceKeyword -> parseTraceCommand(tokens.advance(), true)
         UntraceKeyword -> parseTraceCommand(tokens.advance(), false)
-        SampleKeyword -> parseSampleCommand(tokens.advance(), true)
+        SampleAllocKeyword -> parseSampleCommand(tokens.advance(), true)
         UnsampleKeyword -> parseSampleCommand(tokens.advance(), false)
         else -> TracerCommand.Unknown
     }
@@ -107,7 +107,7 @@ fun parseMethodTracerCommand(text: String): TracerCommand {
 
 private fun parseSampleCommand(tokens: List<Token>, enable: Boolean): TracerCommand {
     val className = (tokens.firstOrNull() as? Identifier)?.textString
-    return TracerCommand.Sample(enable, className)
+    return TracerCommand.SampleAlloc(enable, className)
 }
 
 private fun parseTraceCommand(tokens: List<Token>, enable: Boolean): TracerCommand {
@@ -197,7 +197,7 @@ private object HashSymbol: Token()
 private object CommaSymbol: Token()
 private object OpenBracketSymbol: Token()
 private object CloseBracketSymbol: Token()
-private object SampleKeyword: Token()
+private object SampleAllocKeyword: Token()
 private object UnsampleKeyword: Token()
 
 private fun tokenize(text: CharSequence): List<Token> {
@@ -232,7 +232,7 @@ private fun tokenize(text: CharSequence): List<Token> {
                     "all" -> tokens.add(AllKeyword)
                     "count" -> tokens.add(CountKeyword)
                     "wall-time" -> tokens.add(WallTimeKeyword)
-                    "sample" -> tokens.add(SampleKeyword)
+                    "sample-alloc" -> tokens.add(SampleAllocKeyword)
                     "unsample" -> tokens.add(UnsampleKeyword)
                     else -> tokens.add(Identifier(identifierText))
                 }
