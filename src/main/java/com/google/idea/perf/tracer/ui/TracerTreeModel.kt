@@ -17,7 +17,7 @@
 package com.google.idea.perf.tracer.ui
 
 import com.google.idea.perf.tracer.CallTree
-import com.google.idea.perf.tracer.ui.TracerTableModel.Column
+import com.google.idea.perf.tracer.ui.TracerTableModel.TracerTableColumn
 import com.intellij.ui.treeStructure.treetable.TreeTableModel
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
@@ -26,25 +26,25 @@ import javax.swing.tree.DefaultTreeModel
 /** Tree model for [TracerTree]. */
 class TracerTreeModel : DefaultTreeModel(null), TreeTableModel {
 
-    override fun getColumnCount(): Int = Column.count
+    override fun getColumnCount(): Int = TracerTableColumn.count
 
-    override fun getColumnName(col: Int): String = Column.valueOf(col).displayName
+    override fun getColumnName(col: Int): String = TracerTableColumn.valueOf(col).column.displayName
 
     override fun getColumnClass(col: Int): Class<*> {
         return when (col) {
             0 -> TreeTableModel::class.java // A quirky requirement of TreeTable.
-            else -> Column.valueOf(col).type
+            else -> TracerTableColumn.valueOf(col).column.type
         }
     }
 
     override fun getValueAt(uiNode: Any, col: Int): Any {
         check(uiNode is CallNode)
         val callTree = uiNode.callTree
-        return when (Column.valueOf(col)) {
-            Column.TRACEPOINT -> callTree.tracepoint.displayName
-            Column.CALLS -> callTree.callCount
-            Column.WALL_TIME -> callTree.wallTime
-            Column.MAX_WALL_TIME -> callTree.maxWallTime
+        return when (TracerTableColumn.valueOf(col)) {
+            TracerTableColumn.TRACEPOINT -> callTree.tracepoint.displayName
+            TracerTableColumn.CALLS -> callTree.callCount
+            TracerTableColumn.WALL_TIME -> callTree.wallTime
+            TracerTableColumn.MAX_WALL_TIME -> callTree.maxWallTime
         }
     }
 

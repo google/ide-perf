@@ -16,6 +16,7 @@
 
 package com.google.idea.perf.util
 
+import com.intellij.openapi.util.text.StringUtil
 import java.text.NumberFormat
 import kotlin.math.absoluteValue
 
@@ -37,6 +38,7 @@ fun formatNum(num: Long, unit: String): String = "${formatNum(num)} $unit"
 fun formatNum(num: Double): String = formatter.format(num)
 fun formatNsInMs(ns: Long): String = formatNum(ns / 1_000_000, "ms")
 fun formatMsInSeconds(ms: Long): String = formatNum(ms / 1_000, "s")
+fun formatSize(size: Long) = StringUtil.formatFileSize(size)
 
 fun formatNsInBestUnit(ns: Long): String {
     return when (ns.absoluteValue) {

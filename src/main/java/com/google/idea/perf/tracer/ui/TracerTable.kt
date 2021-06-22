@@ -17,7 +17,7 @@
 package com.google.idea.perf.tracer.ui
 
 import com.google.idea.perf.tracer.TracepointStats
-import com.google.idea.perf.tracer.ui.TracerTableModel.Column
+import com.google.idea.perf.tracer.ui.TracerTableModel.TracerTableColumn
 import com.google.idea.perf.util.formatNsInMs
 import com.google.idea.perf.util.formatNum
 import com.intellij.openapi.editor.ex.util.EditorUtil
@@ -76,7 +76,7 @@ class TracerTable(private val model: TracerTableModel) : JBTable(model) {
     class MyTableRowSorter(model: TableModel) : TableRowSorter<TableModel>(model) {
         init {
             sortsOnUpdates = true
-            toggleSortOrder(Column.WALL_TIME.ordinal)
+            toggleSortOrder(TracerTableColumn.WALL_TIME.ordinal)
         }
 
         // Limit sorting directions.
@@ -85,9 +85,9 @@ class TracerTable(private val model: TracerTableModel) : JBTable(model) {
                 it.column == col && it.sortOrder != SortOrder.UNSORTED
             }
             if (alreadySorted) return
-            val order = when (Column.valueOf(col)) {
-                Column.TRACEPOINT -> SortOrder.ASCENDING
-                Column.CALLS, Column.WALL_TIME, Column.MAX_WALL_TIME -> SortOrder.DESCENDING
+            val order = when (TracerTableColumn.valueOf(col)) {
+                TracerTableColumn.TRACEPOINT -> SortOrder.ASCENDING
+                else -> SortOrder.DESCENDING
             }
             sortKeys = listOf(SortKey(col, order))
         }
@@ -128,24 +128,25 @@ class TracerTable(private val model: TracerTableModel) : JBTable(model) {
             // Column rendering.
             val tableColumns = table.columnModel.columns.toList()
             for (tableColumn in tableColumns) {
-                val col = Column.valueOf(tableColumn.modelIndex)
+                val col = TracerTableColumn.valueOf(tableColumn.modelIndex)
 
                 // Hide some less-important columns for now.
                 // Eventually we may give the user the ability to choose which columns are visible.
-                if (col == Column.MAX_WALL_TIME) {
+                if (col == TracerTableColumn.MAX_WALL_TIME) {
                     table.removeColumn(tableColumn)
                 }
 
                 // Column widths.
                 tableColumn.minWidth = 100
                 tableColumn.preferredWidth = when (col) {
-                    Column.TRACEPOINT -> Integer.MAX_VALUE
-                    Column.CALLS, Column.WALL_TIME, Column.MAX_WALL_TIME -> 100
+                    TracerTableColumn.TRACEPOINT -> Integer.MAX_VALUE
+                    else -> 100
                 }
 
                 // Locale-aware and unit-aware rendering for numbers.
                 when (col) {
-                    Column.CALLS, Column.WALL_TIME, Column.MAX_WALL_TIME -> {
+                    TracerTableColumn.TRACEPOINT -> {}
+                    else -> {
                         tableColumn.cellRenderer = object : DefaultTableCellRenderer() {
                             init {
                                 horizontalAlignment = SwingConstants.RIGHT
@@ -154,16 +155,15 @@ class TracerTable(private val model: TracerTableModel) : JBTable(model) {
                             override fun setValue(value: Any?) {
                                 if (value == null) return super.setValue(value)
                                 val formatted = when (col) {
-                                    Column.CALLS -> formatNum(value as Long)
-                                    Column.WALL_TIME,
-                                    Column.MAX_WALL_TIME -> formatNsInMs(value as Long)
-                                    Column.TRACEPOINT -> error("tracepoints are not numbers")
+                                    TracerTableColumn.CALLS -> formatNum(value as Long)
+                                    TracerTableColumn.WALL_TIME,
+                                    TracerTableColumn.MAX_WALL_TIME -> formatNsInMs(value as Long)
+                                    TracerTableColumn.TRACEPOINT -> error("tracepoints are not numbers")
                                 }
                                 super.setValue(formatted)
                             }
                         }
                     }
-                    Column.TRACEPOINT -> {}
                 }
             }
         }

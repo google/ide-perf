@@ -52,7 +52,13 @@ import javax.swing.Icon
 object TracerCompletionUtil {
 
     /** Creates auto-completion results for all loaded classes and their packages. */
-    fun addLookupElementsForLoadedClasses(result: CompletionResultSet) {
+    fun addLookupElementsForPackagesAndLoadedClasses(result: CompletionResultSet, withMethodCompletion: Boolean) =
+        addLookupElementsForLoadedClasses(result, true, withMethodCompletion)
+
+    fun addLookupElementsForLoadedClasses(result: CompletionResultSet, withMethodCompletion: Boolean) =
+        addLookupElementsForLoadedClasses(result, false, withMethodCompletion)
+
+    private fun addLookupElementsForLoadedClasses(result: CompletionResultSet, withPackages: Boolean, withMethodCompletion: Boolean) {
         val instrumentation = AgentLoader.instrumentation ?: return
         val seenPackages = mutableSetOf<String>()
 
@@ -65,7 +71,7 @@ object TracerCompletionUtil {
 
             // Class name completion: com.example.Class
             if (!shouldHideClassFromCompletionResults(classInfo)) {
-                result.addElement(createClassLookupElement(classInfo))
+                result.addElement(createClassLookupElement(classInfo, withMethodCompletion))
                 if (prefixIsEmpty && ++numResultsForEmptyPrefix >= 100) {
                     result.restartCompletionOnAnyPrefixChange()
                     break
@@ -73,7 +79,7 @@ object TracerCompletionUtil {
             }
 
             // Package wildcard completion: com.example.*
-            if (!prefixIsEmpty) {
+            if (withPackages && !prefixIsEmpty) {
                 val pkgName = classInfo.packageName
                 if (pkgName.isNotEmpty() && seenPackages.add(pkgName)) {
                     val lookup = LookupElementBuilder.create("$pkgName.*").withIcon(PACKAGE_ICON)
@@ -82,6 +88,7 @@ object TracerCompletionUtil {
             }
         }
     }
+
 
     /** Creates auto-completion results for all methods in the given class. */
     fun addLookupElementsForMethods(className: String, result: CompletionResultSet) {
@@ -142,12 +149,12 @@ object TracerCompletionUtil {
         }
     }
 
-    fun createClassLookupElement(clazz: Class<*>): LookupElement? {
+    fun createClassLookupElement(clazz: Class<*>, withMethodCompletion: Boolean): LookupElement? {
         val classInfo = ClassInfo.tryCreate(clazz) ?: return null
-        return createClassLookupElement(classInfo)
+        return createClassLookupElement(classInfo, withMethodCompletion)
     }
 
-    private fun createClassLookupElement(c: ClassInfo): LookupElement {
+    private fun createClassLookupElement(c: ClassInfo, withMethodCompletion: Boolean): LookupElement {
         val shortName = when {
             c.simpleName.isBlank() -> c.fqName.substringAfterLast('.') // For anonymous classes.
             else -> c.simpleName
@@ -162,7 +169,7 @@ object TracerCompletionUtil {
             c.isAbstract -> ABSTRACT_CLASS_ICON
             else -> CLASS_ICON
         }
-        return ClassLookupElement(c.fqName, shortName, contextString, icon)
+        return ClassLookupElement(c.fqName, shortName, contextString, icon, withMethodCompletion)
     }
 
     private fun computeClassContextString(fqName: String, simpleName: String): String {
@@ -174,7 +181,8 @@ object TracerCompletionUtil {
         private val fqName: String,
         private val shortName: String,
         private val contextString: String, // Like package name, but includes enclosing classes.
-        private val icon: Icon
+        private val icon: Icon,
+        private val startCompletingMethod: Boolean
     ) : LookupElement() {
 
         override fun getLookupString(): String = shortName
@@ -190,7 +198,11 @@ object TracerCompletionUtil {
             // Insert fqName and immediately start completing the method.
             val editor = context.editor
             editor.document.replaceString(context.startOffset, context.tailOffset, fqName)
-            EditorModificationUtil.insertStringAtCaret(editor, "#")
+            if (startCompletingMethod) {
+                EditorModificationUtil.insertStringAtCaret(editor, "#")
+            } else {
+                EditorModificationUtil.insertStringAtCaret(editor, " ")
+            }
             AutoPopupController.getInstance(context.project).scheduleAutoPopup(editor)
         }
 

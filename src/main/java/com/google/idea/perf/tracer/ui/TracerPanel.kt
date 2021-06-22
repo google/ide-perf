@@ -16,6 +16,10 @@
 
 package com.google.idea.perf.tracer.ui
 
+import com.google.idea.perf.allocation.sampling.AllocationSamplingManagerController
+import com.google.idea.perf.allocation.sampling.ui.AllocationSamplingTable
+import com.google.idea.perf.allocation.sampling.ui.AllocationSamplingTableModel
+import com.google.idea.perf.allocation.sampling.ui.SamplingInfo
 import com.google.idea.perf.tracer.CallTreeManager
 import com.google.idea.perf.tracer.CallTreeUtil
 import com.google.idea.perf.tracer.TracerController
@@ -25,6 +29,7 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
@@ -78,6 +83,8 @@ class TracerPanel(
     private var showingEdtOnly = false
     private val listView: TracerTable
     private val treeView: TracerTree
+    private val allocationSamplingTable: AllocationSamplingTable
+    private val allocationSamplingTab: TabInfo
     private val tracingOverheadLabel: JBLabel
     private val uiOverheadLabel: JBLabel
     private var uiOverhead = 0L
@@ -158,6 +165,14 @@ class TracerPanel(
             .setSideComponent(createTabSideComponent())
         tabs.addTab(treeTab)
 
+        // Allocation sampling table.
+        allocationSamplingTable = AllocationSamplingTable(AllocationSamplingTableModel())
+        allocationSamplingTab = TabInfo(JBScrollPane(allocationSamplingTable))
+            .setText("Allocation Sampling")
+            .setSideComponent(createTabSideComponent())
+        allocationSamplingTab.isHidden = true
+        tabs.addTab(allocationSamplingTab)
+
         // Tracing overhead label.
         val overheadFont = JBFont
             .create(EditorUtil.getEditorFont())
@@ -181,7 +196,8 @@ class TracerPanel(
 
         // Schedule tree data updates.
         val refreshFuture = EdtExecutorService.getScheduledExecutorInstance()
-            .scheduleWithFixedDelay(::updateCallTree, 0, REFRESH_DELAY_MS, MILLISECONDS)
+            .scheduleWithFixedDelay(::updateInfo, 0, REFRESH_DELAY_MS, MILLISECONDS)
+
         parentDisposable.attach { refreshFuture.cancel(false) }
 
         // Condense all components except the tab view.
@@ -213,6 +229,35 @@ class TracerPanel(
                     progressBar.maximum = 100
                     progressBar.value = (fraction * 100).toInt().coerceIn(0, 100)
                 }
+            }
+        }
+    }
+
+    private fun updateInfo() {
+        updateSamplingInfo()
+        updateCallTree()
+    }
+
+    private fun updateSamplingInfo() {
+        val samplingManager = AllocationSamplingManagerController.getManager() ?: return
+        val samplingInfos = samplingManager.classNameToAllocationInfo.map { (name, info) ->
+            SamplingInfo(name, info.allocationCount, info.totalAllocationSize)
+        }
+        allocationSamplingTable.setSamplingInfo(samplingInfos)
+    }
+
+    fun showAllocationSamplingTab()  {
+        if (allocationSamplingTab.isHidden) {
+            runInEdt {
+                allocationSamplingTab.isHidden = false
+            }
+        }
+    }
+
+    fun hideAllocationSamplingTab() {
+        if (!allocationSamplingTab.isHidden) {
+            runInEdt {
+                allocationSamplingTab.isHidden = true
             }
         }
     }
