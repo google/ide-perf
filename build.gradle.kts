@@ -22,7 +22,7 @@ import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("1.0")
+    id("org.jetbrains.intellij").version("1.1.6")
     id("org.jetbrains.kotlin.jvm").version("1.4.32")
 }
 
@@ -41,7 +41,7 @@ java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
 val javac = javaToolchains.compilerFor(java.toolchain).get()
 val javaHome: Directory = javac.metadata.installationPath
 
-val kotlinStdlibVersion = "1.4.32" // Should match the version bundled with IDEA.
+val kotlinStdlibVersion = "1.5.10" // Should match the version bundled with IDEA.
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
@@ -57,7 +57,7 @@ tasks.withType<KotlinCompile> {
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     pluginName.set("ide-perf")
-    version.set("211.6693.111")
+    version.set("212.5080.55")
     downloadSources.set(!isCI)
     updateSinceUntilBuild.set(false) // So that we can leave the until-build blank.
 }
@@ -90,7 +90,7 @@ tasks.runPluginVerifier {
     // https://jb.gg/intellij-platform-builds-list for the list of platform versions.
     ideVersions.set(
         listOf(
-            // "2021.1", // Should match the since-build from plugin.xml.
+            "211.7628.21", // Should match the since-build from plugin.xml.
             intellij.version.get() // We check the current version too for deprecations, etc.
         )
     )
@@ -205,9 +205,10 @@ val checkIdeaDependencyVersions by tasks.registering {
     doFirst {
         fun findIdeaDependencyVersion(jarPrefix: String): String {
             // We cannot inspect maven coordinates because IDEA bundles dependencies as simple jars.
+            // So this code is relatively hacky.
             for (file in configurations.idea.get()) {
                 if (file.name.startsWith("$jarPrefix-")) {
-                    val version = file.name.removePrefix("$jarPrefix-").removeSuffix(".jar")
+                    val version = file.name.removePrefix("$jarPrefix-").removeSuffix(".jar").substringBefore('-')
                     if (version.isNotEmpty() && version.first().isDigit()) {
                         return version
                     }
