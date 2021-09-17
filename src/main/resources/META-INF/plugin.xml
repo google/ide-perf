@@ -31,6 +31,10 @@
 
     <depends>com.intellij.modules.platform</depends>
 
+    <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="Tracer" displayType="STICKY_BALLOON"/>
+    </extensions>
+
     <actions>
         <group id="com.google.ide-perf.PerfTools">
             <add-to-group group-id="HelpDiagnosticTools" anchor="last"/>
