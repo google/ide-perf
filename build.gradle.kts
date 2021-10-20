@@ -41,12 +41,10 @@ java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
 val javac = javaToolchains.compilerFor(java.toolchain).get()
 val javaHome: Directory = javac.metadata.installationPath
 
-val kotlinStdlibVersion = "1.5.10" // Should match the version bundled with IDEA.
-
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         languageVersion = "1.4"
-        apiVersion = "1.4"
+        apiVersion = "1.4" // Should match the Kotlin stdlib version in IntelliJ.
         jvmTarget = "11"
         kotlinOptions.jdkHome = javaHome.asFile.absolutePath
         // allWarningsAsErrors = true
@@ -170,12 +168,6 @@ dependencies {
     implementation("org.ow2.asm:asm-util:8.0.1")
     implementation("org.ow2.asm:asm-commons:8.0.1")
 
-    // Add 'compileOnly' dependencies to get sources for certain IDEA dependencies.
-    // This is a workaround for https://github.com/JetBrains/gradle-intellij-plugin/issues/264.
-    // If you add something here, update the 'checkIdeaDependencyVersions' task as well.
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinStdlibVersion")
-    compileOnly("org.jetbrains.kotlin:kotlin-reflect:$kotlinStdlibVersion")
-
     testImplementation("junit:junit:4.12")
     testImplementation("com.google.truth:truth:1.0.1")
     testImplementation("com.google.truth.extensions:truth-java8-extension:1.0.1")
@@ -195,39 +187,3 @@ sourceSets.all {
     compileClasspath = pluginLibs + compileClasspath
     runtimeClasspath = pluginLibs + runtimeClasspath
 }
-
-/**
- * As a workaround for https://github.com/JetBrains/gradle-intellij-plugin/issues/264
- * we add 'compileOnly' dependencies on certain IDEA dependencies in order to get their sources.
- * This task checks that the versions we use are the same as the ones bundled in IDEA.
- */
-val checkIdeaDependencyVersions by tasks.registering {
-    doFirst {
-        fun findIdeaDependencyVersion(jarPrefix: String): String {
-            // We cannot inspect maven coordinates because IDEA bundles dependencies as simple jars.
-            // So this code is relatively hacky.
-            for (file in configurations.idea.get()) {
-                if (file.name.startsWith("$jarPrefix-")) {
-                    val version = file.name.removePrefix("$jarPrefix-").removeSuffix(".jar").substringBefore('-')
-                    if (version.isNotEmpty() && version.first().isDigit()) {
-                        return version
-                    }
-                }
-            }
-            error("Failed to find the version of $jarPrefix in IDEA dependencies")
-        }
-
-        fun checkIdeaDependencyVersion(jarPrefix: String, expectedVersion: String) {
-            val ideaVersion = findIdeaDependencyVersion(jarPrefix)
-            check(ideaVersion == expectedVersion) {
-                "Our version of $jarPrefix ($expectedVersion) " +
-                        "does not match the one bundled in IDEA ($ideaVersion)"
-            }
-        }
-
-        checkIdeaDependencyVersion("kotlin-reflect", kotlinStdlibVersion)
-        // TODO: the jar for kotlin-stdlib does not include a version in its name.
-    }
-}
-
-tasks.check { dependsOn(checkIdeaDependencyVersions) }
