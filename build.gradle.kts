@@ -22,8 +22,8 @@ import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("1.1.6")
-    id("org.jetbrains.kotlin.jvm").version("1.4.32")
+    id("org.jetbrains.intellij").version("1.2.0")
+    id("org.jetbrains.kotlin.jvm").version("1.5.31")
 }
 
 val isCI = System.getenv("CI") != null
@@ -38,15 +38,12 @@ repositories {
 }
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
-val javac = javaToolchains.compilerFor(java.toolchain).get()
-val javaHome: Directory = javac.metadata.installationPath
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         languageVersion = "1.4"
         apiVersion = "1.4" // Should match the Kotlin stdlib version in IntelliJ.
-        jvmTarget = "11"
-        kotlinOptions.jdkHome = javaHome.asFile.absolutePath
+        jvmTarget = "11" // Should match the JetBrains Runtime.
         // allWarningsAsErrors = true
         freeCompilerArgs = listOf("-Xjvm-default=enable")
     }
@@ -172,7 +169,7 @@ dependencies {
     testImplementation("com.google.truth:truth:1.0.1")
     testImplementation("com.google.truth.extensions:truth-java8-extension:1.0.1")
 
-    // For simplicity we assume all 'compileOnly' dependencies should be 'testCompileOnly' as well.
+    // For simplicity, we assume all 'compileOnly' dependencies should be 'testCompileOnly' as well.
     configurations.testCompileOnly.get().extendsFrom(configurations.compileOnly.get())
 }
 
