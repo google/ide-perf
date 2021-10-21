@@ -63,5 +63,6 @@ Contributing
 ---
 See [dev-guide.md](docs/dev-guide.md) for development tips, and see
 [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request. If you plan to make any
-large-scale changes, it is a good idea to [file an issue](https://github.com/google/ide-perf/issues)
-first to discuss!
+large-scale changes, it is a good idea to [start a discussion](https://github.com/google/ide-perf/discussions)
+first! If you need ideas on what to implement, check out the "future work" discussion
+[here](https://github.com/google/ide-perf/discussions/41).
