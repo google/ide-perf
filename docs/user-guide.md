@@ -37,6 +37,7 @@ or press `enter` on a selected row in the `List` view.
 #### Caveats
 * Only concrete methods can be traced. Tracing abstract methods has no effect.
 * Class name completion only works for classes which have already been loaded by the JVM.
+* Tracing data will continue to be collected even when the tracer window is closed.
 
 #### Other commands
 * `clear` - Clear the current call tree data
