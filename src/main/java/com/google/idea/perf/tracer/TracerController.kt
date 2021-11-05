@@ -86,13 +86,12 @@ class TracerController(
             // Special case: handle this command while we're still on the EDT.
             val path = cmd.substringAfter("save").trim()
             savePngFromEdt(path)
-        }
-        else {
+        } else {
             executor.execute { handleCommand(cmd) }
         }
     }
 
-    private fun handleCommand(commandString: String) {
+    fun handleCommand(commandString: String) {
         val command = parseMethodTracerCommand(commandString)
         val errors = command.errors
 
@@ -100,7 +99,6 @@ class TracerController(
             displayWarning(errors.joinToString("\n"))
             return
         }
-
         handleCommand(command)
     }
 
@@ -109,7 +107,9 @@ class TracerController(
             is TracerCommand.Clear -> {
                 CallTreeManager.clearCallTrees()
             }
+
             is TracerCommand.Reset -> {
+                TracerUserConfig.resetAll()
                 runWithProgress { progress ->
                     val oldRequests = TracerConfig.clearAllRequests()
                     val affectedClasses = TracerConfigUtil.getAffectedClasses(oldRequests)
@@ -117,9 +117,9 @@ class TracerController(
                     CallTreeManager.clearCallTrees()
                 }
             }
+
             is TracerCommand.Trace -> {
                 val countOnly = command.traceOption == TraceOption.COUNT_ONLY
-
                 when (command.target) {
                     is TraceTarget.All -> {
                         when {
@@ -127,7 +127,14 @@ class TracerController(
                             else -> handleCommand(TracerCommand.Reset)
                         }
                     }
+
                     is TraceTarget.Method -> {
+                        if (command.enable) {
+                            TracerUserConfig.addUserTraceRequest(command.target)
+                        } else {
+                            command.target.traceOption = TraceOption.UNTRACE
+                            TracerUserConfig.addUserUntraceRequest(command.target)
+                        }
                         runWithProgress { progress ->
                             val clazz = command.target.className
                             val method = command.target.methodName ?: "*"
@@ -145,6 +152,7 @@ class TracerController(
                     }
                 }
             }
+
             else -> {
                 displayWarning("Command not implemented")
             }
@@ -165,11 +173,9 @@ class TracerController(
             progress.checkCanceled()
             try {
                 instrumentation.retransformClasses(clazz)
-            }
-            catch (e: UnmodifiableClassException) {
+            } catch (e: UnmodifiableClassException) {
                 LOG.info("Cannot instrument non-modifiable class: ${clazz.name}")
-            }
-            catch (e: Throwable) {
+            } catch (e: Throwable) {
                 LOG.error("Failed to retransform class: ${clazz.name}", e)
             }
             if (!progress.isIndeterminate) {
@@ -195,8 +201,7 @@ class TracerController(
         getApplication().executeOnPooledThread {
             try {
                 ImageIO.write(img, "png", file)
-            }
-            catch (e: IOException) {
+            } catch (e: IOException) {
                 displayWarning("Failed to write png to $path", e)
             }
         }

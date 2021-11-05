@@ -129,7 +129,7 @@ tasks.runIde {
     jvmArgs("-ea")
 
     // Copy over some JVM args from IntelliJ.
-    jvmArgs("-XX:ReservedCodeCacheSize=240m")
+    jvmArgs("-XX:ReservedCodeCacheSize=512m")
     jvmArgs("-XX:+UseConcMarkSweepGC")
     jvmArgs("-XX:SoftRefLRUPolicyMSPerMB=50")
     jvmArgs("-XX:CICompilerCount=2")
