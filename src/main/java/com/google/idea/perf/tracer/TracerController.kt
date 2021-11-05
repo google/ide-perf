@@ -86,12 +86,69 @@ class TracerController(
             // Special case: handle this command while we're still on the EDT.
             val path = cmd.substringAfter("save").trim()
             savePngFromEdt(path)
+        } else if (cmd.startsWith("load")) {
+            val path = cmd.substringAfter("load").trim()
+            // TODO(baskakov): handle file not found error
+            executor.execute { handleLoadConfig(path) }
+        } else if (cmd.startsWith("stacktrace")) {
+            val path = cmd.substringAfter("stacktrace").trim()
+            // TODO(baskakov): handle file not found error
+            executor.execute { handleLoadStacktrace(path) }
         } else {
             executor.execute { handleCommand(cmd) }
         }
     }
 
-    fun handleCommand(commandString: String) {
+    private fun handleLoadConfig(path: String) {
+        val lines = linesFromPathOrConfig(path)
+        if (lines.isEmpty()) {
+            displayWarning("config is empty")
+            return
+        }
+        handleCommand("reset")
+        lines.forEach {
+            displayInfo("processing: $it")
+            handleCommand(it)
+        }
+    }
+
+    private fun linesFromPathOrConfig(path: String): List<String> {
+        return if (path.isBlank()) {
+            view.configView.text.split("\n")
+        } else {
+            val file = File(path)
+            if (!file.isFile) {
+                displayWarning("File not found: $path")
+                return emptyList()
+            }
+            file.readLines()
+        }
+            .filter { it.isNotBlank() }
+    }
+
+    private fun handleLoadStacktrace(path: String) {
+        val lines = linesFromPathOrConfig(path)
+        if (lines.isEmpty()) {
+            displayWarning("stacktrace is empty")
+            return
+        }
+        handleCommand("reset")
+        for (line in lines) {
+            val oneTraceLine = line.trim().substringAfter("at ", "")
+            if (oneTraceLine.isBlank()) continue
+            val classAndMethod = oneTraceLine
+                .substringAfter("/")
+                .substringBefore("(")
+            val fqClassName = classAndMethod.substringBeforeLast(".")
+            val functionName = classAndMethod.substringAfterLast(".")
+            // TODO(baskakov): add unit test for:
+            // at org.jetbrains.kotlin.types.StarProjectionImpl$_type$2.invoke(StarProjectionImpl.kt:35)
+            val commandString = "trace ${fqClassName}#${functionName}"
+            handleCommand(commandString)
+        }
+    }
+
+    private fun handleCommand(commandString: String) {
         val command = parseMethodTracerCommand(commandString)
         val errors = command.errors
 
@@ -145,7 +202,8 @@ class TracerController(
                                 tracedParams = command.target.parameterIndexes!!
                             )
                             val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
-                            val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
+                            val affectedClasses =
+                                TracerConfigUtil.getAffectedClasses(listOf(request))
                             retransformClasses(affectedClasses, progress)
                             CallTreeManager.clearCallTrees()
                         }
@@ -211,6 +269,13 @@ class TracerController(
         LOG.warn(warning, e)
         invokeLater {
             view.showCommandLinePopup(warning, MessageType.WARNING)
+        }
+    }
+
+    private fun displayInfo(infoString: String, e: Throwable? = null) {
+        LOG.info(infoString, e)
+        invokeLater {
+            view.showCommandLinePopup(infoString, MessageType.INFO)
         }
     }
 

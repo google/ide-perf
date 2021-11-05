@@ -24,12 +24,14 @@ import java.util.*
  */
 object TracerUserConfig {
 
-    private val userTraceRequests = Collections.synchronizedMap(LinkedHashMap<String, TraceTarget.Method>())
+    private val userTraceRequests = LinkedHashMap<String, TraceTarget.Method>()
 
+    @Synchronized
     fun cloneUserTraceRequests(): List<TraceTarget.Method> {
         return userTraceRequests.values.toList()
     }
 
+    @Synchronized
     fun addUserTraceRequest(entry: TraceTarget.Method) {
         val plainTextKey = concatClassAndMethod(entry)
         userTraceRequests[plainTextKey] = entry
@@ -38,8 +40,8 @@ object TracerUserConfig {
     @Synchronized
     fun addUserUntraceRequest(entry: TraceTarget.Method) {
         val classAndMethod = concatClassAndMethod(entry)
-        val value = userTraceRequests[classAndMethod]
-        if (value != null && value.traceOption != TraceOption.UNTRACE) {
+        val oldValue = userTraceRequests[classAndMethod]
+        if (oldValue != null && oldValue.traceOption != TraceOption.UNTRACE) {
             userTraceRequests.remove(classAndMethod)
         } else {
             userTraceRequests[classAndMethod] = entry
@@ -48,10 +50,7 @@ object TracerUserConfig {
 
     @Synchronized
     fun resetAll() {
-        val keys = userTraceRequests.keys.toList()
-        for (key in keys) {
-            userTraceRequests.remove(key)
-        }
+        userTraceRequests.clear()
     }
 
     private fun concatClassAndMethod(entry: TraceTarget.Method): String {

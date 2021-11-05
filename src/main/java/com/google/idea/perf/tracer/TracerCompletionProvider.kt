@@ -66,12 +66,14 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
         when (tokenIndex) {
             0 -> {
                 // We want all commands to be shown regardless of the prefix (for discoverability).
-                val allCommands = setOf("clear", "reset", "trace", "untrace")
+                val allCommands = setOf("clear", "load", "reset", "stacktrace", "trace", "untrace")
                 val prefixMatcher = LenientPrefixMatcher(result.prefixMatcher, allCommands)
                 result = result.withPrefixMatcher(prefixMatcher)
 
                 result.addElement(LookupElementBuilder.create("clear"))
+                result.addElement(LookupElementBuilder.create("load"))
                 result.addElement(LookupElementBuilder.create("reset"))
+                result.addElement(LookupElementBuilder.create("stacktrace"))
                 result.addElement(
                     LookupElementBuilder.create("trace")
                         .withTailText(" <method>")
