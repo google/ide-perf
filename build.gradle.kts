@@ -134,6 +134,9 @@ tasks.runIde {
     jvmArgs("-Djdk.module.illegalAccess.silent=true")
     jvmArgs("-XX:+UseCompressedOops")
 
+    jvmArgs("-Xms512m")
+    jvmArgs("-Xmx2048m")
+
     enableAgent()
 }
 

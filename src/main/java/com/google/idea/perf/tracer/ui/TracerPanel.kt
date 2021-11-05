@@ -83,7 +83,7 @@ class TracerPanel(
     private var uiOverhead = 0L
 
     companion object {
-        private const val REFRESH_DELAY_MS = 30L
+        private const val REFRESH_DELAY_MS = 100L
     }
 
     init {

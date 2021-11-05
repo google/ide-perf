@@ -33,7 +33,7 @@ class VfsTracerController(
 ) : Disposable {
     companion object {
         private val LOG = Logger.getInstance(VfsTracerController::class.java)
-        private const val REFRESH_DELAY_MS = 30L
+        private const val REFRESH_DELAY_MS = 100L
     }
 
     // For simplicity we run all tasks on a single-thread executor.
