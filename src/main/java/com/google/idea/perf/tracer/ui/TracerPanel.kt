@@ -29,7 +29,7 @@ import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.rd.attach
+import com.google.idea.perf.util.onDispose
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.util.PopupUtil
@@ -182,7 +182,7 @@ class TracerPanel(
         // Schedule tree data updates.
         val refreshFuture = EdtExecutorService.getScheduledExecutorInstance()
             .scheduleWithFixedDelay(::updateCallTree, 0, REFRESH_DELAY_MS, MILLISECONDS)
-        parentDisposable.attach { refreshFuture.cancel(false) }
+        parentDisposable.onDispose { refreshFuture.cancel(false) }
 
         // Condense all components except the tab view.
         for (child in components) {

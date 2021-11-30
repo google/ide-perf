@@ -16,6 +16,8 @@
 
 package com.google.idea.perf.util
 
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.util.Disposer
 import java.text.NumberFormat
 import kotlin.math.absoluteValue
 
@@ -44,4 +46,13 @@ fun formatNsInBestUnit(ns: Long): String {
         in 10_000 until 10_000_000 -> formatNum(ns / 1_000, "μs")
         else -> formatNum(ns / 1_000_000, "ms")
     }
+}
+
+inline fun Disposable.onDispose(crossinline disposable: () -> Unit) {
+    @Suppress("ObjectLiteralToLambda") // Disposer cares about object identity.
+    Disposer.register(this, object : Disposable {
+        override fun dispose() {
+            disposable()
+        }
+    })
 }

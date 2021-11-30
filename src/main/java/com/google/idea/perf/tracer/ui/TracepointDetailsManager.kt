@@ -20,7 +20,7 @@ import com.google.idea.perf.tracer.Tracepoint
 import com.google.idea.perf.tracer.TracepointStats
 import com.google.idea.perf.util.formatNsInBestUnit
 import com.google.idea.perf.util.formatNum
-import com.intellij.openapi.rd.attach
+import com.google.idea.perf.util.onDispose
 import javax.swing.JTextArea
 
 /** Manages the tracepoint details shown via [TracepointDetailsDialog]. */
@@ -37,7 +37,7 @@ class TracepointDetailsManager(private val table: TracerTable) {
         } else {
             val newDialog = TracepointDetailsDialog(table, detailText)
             currentDialog = newDialog
-            newDialog.disposable.attach { currentDialog = null }
+            newDialog.disposable.onDispose { currentDialog = null }
             newDialog.show()
         }
     }

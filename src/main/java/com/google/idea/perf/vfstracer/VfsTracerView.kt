@@ -23,7 +23,7 @@ import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
-import com.intellij.openapi.rd.attach
+import com.google.idea.perf.util.onDispose
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.util.PopupUtil
@@ -54,7 +54,7 @@ class VfsTracerAction: DumbAwareAction() {
             val project = e.project ?: ProjectManager.getInstance().defaultProject
             val newTracer = VfsTracerDialog(project)
             currentTracer = newTracer
-            newTracer.disposable.attach { currentTracer = null }
+            newTracer.disposable.onDispose { currentTracer = null }
             newTracer.show()
         }
     }
