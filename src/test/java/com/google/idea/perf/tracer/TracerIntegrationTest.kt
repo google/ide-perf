@@ -20,7 +20,6 @@ import com.google.idea.perf.sample.ComplexSuperConstructorCall
 import com.google.idea.perf.sample.Sample
 import com.google.idea.perf.sample.SimpleSuperConstructorCall
 import com.google.idea.perf.tracer.ui.TracerPanel
-import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import org.junit.Test
@@ -233,7 +232,7 @@ class TracerIntegrationTest : BasePlatformTestCase() {
         )
 
         val callTree = CallTreeManager.getCallTreeSnapshotAllThreadsMerged()
-        val totalCalls = callTree.allNodesInSubtree().sumByLong { it.callCount }
+        val totalCalls = callTree.allNodesInSubtree().sumOf { it.callCount }
         val callsPerOp = totalCalls / n
         check(callsPerOp == 12L)
 

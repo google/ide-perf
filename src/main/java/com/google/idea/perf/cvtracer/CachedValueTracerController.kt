@@ -19,7 +19,6 @@ package com.google.idea.perf.cvtracer
 import com.google.idea.perf.util.ExecutorWithExceptionLogging
 import com.google.idea.perf.util.GlobMatcher
 import com.google.idea.perf.util.formatNsInMs
-import com.google.idea.perf.util.sumByLong
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager.getApplication
 import com.intellij.openapi.diagnostic.Logger
@@ -121,9 +120,9 @@ class CachedValueTracerController(
             .map { (description, stats) ->
                 MutableCachedValueStats(
                     description,
-                    computeTimeNs = stats.sumByLong { it.computeTimeNs },
-                    hits = stats.sumByLong { it.hits },
-                    misses = stats.sumByLong { it.computeCount }
+                    computeTimeNs = stats.sumOf { it.computeTimeNs },
+                    hits = stats.sumOf { it.hits },
+                    misses = stats.sumOf { it.computeCount }
                 )
             }
     }
