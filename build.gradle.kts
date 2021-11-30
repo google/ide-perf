@@ -52,7 +52,7 @@ tasks.withType<KotlinCompile> {
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     pluginName.set("ide-perf")
-    version.set("212.5080.55")
+    version.set("213.5744.223")
     downloadSources.set(!isCI)
     updateSinceUntilBuild.set(false) // So that we can leave the until-build blank.
 }
@@ -86,6 +86,7 @@ tasks.runPluginVerifier {
     ideVersions.set(
         listOf(
             "211.7628.21", // Should match the since-build from plugin.xml.
+            "212.5080.55",
             intellij.version.get() // We check the current version too for deprecations, etc.
         )
     )
