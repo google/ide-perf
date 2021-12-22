@@ -18,6 +18,8 @@ package com.google.idea.perf.tracer.ui
 
 import com.google.idea.perf.tracer.CallTreeManager
 import com.google.idea.perf.tracer.CallTreeUtil
+import com.google.idea.perf.tracer.MutableCallTree
+import com.google.idea.perf.tracer.Tracepoint
 import com.google.idea.perf.tracer.TracerController
 import com.google.idea.perf.util.formatNsInMs
 import com.intellij.CommonBundle
@@ -76,6 +78,7 @@ class TracerPanel(
     private val commandLine: TracerCommandLine
     private val progressBar: JProgressBar
     private var showingEdtOnly = false
+    private val treeSnapshot : MutableCallTree
     private val listView: TracerTable
     private val treeView: TracerTree
     private val tracingOverheadLabel: JBLabel
@@ -89,6 +92,7 @@ class TracerPanel(
     init {
         preferredSize = Dimension(500, 500) // Only applies to first open.
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        treeSnapshot = MutableCallTree(Tracepoint.ROOT)
 
         // Command line.
         commandLine = TracerCommandLine(project, controller)
@@ -111,6 +115,7 @@ class TracerPanel(
                 val choseEdt = item == edtStr
                 if (choseEdt != showingEdtOnly) {
                     showingEdtOnly = choseEdt
+                    treeSnapshot.clear()
                     updateCallTree()
                 }
             }
@@ -232,9 +237,10 @@ class TracerPanel(
         }
 
         // Compute the new call tree.
-        val treeSnapshot = when {
-            showingEdtOnly -> CallTreeManager.getCallTreeSnapshotEdtOnly()
-            else -> CallTreeManager.getCallTreeSnapshotAllThreadsMerged()
+        treeSnapshot.resetCounters()
+        when {
+            showingEdtOnly -> CallTreeManager.accumulateEDTCallTree(treeSnapshot)
+            else -> CallTreeManager.accumulateAllThreadsCallTree(treeSnapshot)
         }
         val stats = CallTreeUtil.computeFlatTracepointStats(treeSnapshot)
         listView.setTracepointStats(stats)

@@ -63,23 +63,24 @@ object CallTreeManager {
 
     fun getCallTreeSnapshotAllThreadsMerged(): CallTree {
         val mergedTree = MutableCallTree(Tracepoint.ROOT)
+        accumulateAllThreadsCallTree(mergedTree)
+        return mergedTree
+    }
+
+    fun accumulateAllThreadsCallTree(mergedTree: MutableCallTree) {
         for (threadState in allThreadState) {
             threadState.lock.withLock {
                 val localTree = threadState.callTreeBuilder.borrowUpToDateTree()
                 mergedTree.accumulate(localTree)
             }
         }
-        return mergedTree
     }
 
-    fun getCallTreeSnapshotEdtOnly(): CallTree {
+    fun accumulateEDTCallTree(target: MutableCallTree) {
         val edtState = allThreadState.firstOrNull { it.isEdt }
-        if (edtState == null) {
-            return MutableCallTree(Tracepoint.ROOT)
-        }
-        edtState.lock.withLock {
+        edtState?.lock?.withLock {
             val tree = edtState.callTreeBuilder.borrowUpToDateTree()
-            return tree.copy()
+            return target.accumulate(tree)
         }
     }
 

@@ -68,4 +68,22 @@ class MutableCallTree(
             child.accumulate(otherChild)
         }
     }
+
+    /** Clear data for tree tracepoint: counters and children. */
+    fun clear() {
+        callCount = 0L
+        wallTime = 0L
+        maxWallTime = 0L
+        children.clear()
+    }
+
+    /** Reset counters recursively - for this tracepoint and all children */
+    fun resetCounters() {
+        callCount = 0L
+        wallTime = 0L
+        maxWallTime = 0L
+        for ((_, child) in children) {
+            child.resetCounters()
+        }
+    }
 }
