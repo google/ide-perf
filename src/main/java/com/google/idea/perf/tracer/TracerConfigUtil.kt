@@ -47,11 +47,16 @@ class MethodFqMatcher(methodPattern: MethodFqName) {
     private val classMatcher = GlobMatcher.create(methodPattern.clazz)
     private val methodMatcher = GlobMatcher.create(methodPattern.method)
     private val descMatcher = GlobMatcher.create(methodPattern.desc)
+    private val pattern = methodPattern
 
     fun matches(m: MethodFqName): Boolean {
         return classMatcher.matches(m.clazz) &&
                 methodMatcher.matches(m.method) &&
                 descMatcher.matches(m.desc)
+    }
+
+    fun matchClassExact(className: String): Boolean {
+        return pattern.clazz == className
     }
 
     fun mightMatchMethodInClass(className: String): Boolean {
@@ -91,11 +96,26 @@ class MethodFqMatcher(methodPattern: MethodFqName) {
 
 object TracerConfigUtil {
 
-    fun appendTraceRequest(methodPattern: MethodFqName, methodConfig: MethodConfig): TraceRequest {
+    fun appendTraceRequest(methodPattern: MethodFqName, methodConfig: MethodConfig): List<TraceRequest> {
         val matcher = MethodFqMatcher(methodPattern)
-        val request = TraceRequest(matcher, methodConfig)
-        TracerConfig.appendTraceRequest(request)
-        return request
+        val traceRequests = mutableListOf(TraceRequest(matcher, methodConfig))
+
+        //trace all overriding methods if class name match exactly
+        val baseClass = AgentLoader.instrumentation?.allLoadedClasses?.firstOrNull() {
+            matcher.matchClassExact(it.name)
+        }
+        if (baseClass != null) {
+            AgentLoader.instrumentation?.allLoadedClasses
+                ?.filter { baseClass.isAssignableFrom(it) }
+                ?.forEach {
+                    val childPattern =
+                        MethodFqName(it.name, methodPattern.method, methodPattern.desc)
+                    val childRequest = TraceRequest(MethodFqMatcher(childPattern), methodConfig)
+                    traceRequests += childRequest
+                }
+        }
+        traceRequests.forEach(TracerConfig::appendTraceRequest)
+        return traceRequests
     }
 
     // This may be slow if there are many trace requests or if they use broad glob patterns.
