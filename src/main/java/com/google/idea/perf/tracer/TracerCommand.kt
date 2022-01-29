@@ -30,6 +30,9 @@ sealed class TracerCommand {
     /** Zero out all tracepoint data and reset the call tree. */
     object Reset: TracerCommand()
 
+    /** Scan classpath. */
+    object Scan: TracerCommand()
+
     /** Trace or untrace a set of methods. */
     data class Trace(
         val enable: Boolean,
@@ -91,6 +94,7 @@ fun parseMethodTracerCommand(text: String): TracerCommand {
     return when (tokens.first()) {
         ClearKeyword -> TracerCommand.Clear
         ResetKeyword -> TracerCommand.Reset
+        ScanKeyword -> TracerCommand.Scan
         TraceKeyword -> parseTraceCommand(tokens.advance(), true)
         UntraceKeyword -> parseTraceCommand(tokens.advance(), false)
         else -> TracerCommand.Unknown
@@ -176,6 +180,7 @@ private object EndOfLine: Token()
 private object ClearKeyword: Token()
 private object ResetKeyword: Token()
 private object TraceKeyword: Token()
+private object ScanKeyword: Token()
 private object UntraceKeyword: Token()
 private object AllKeyword: Token()
 private object CountKeyword: Token()
@@ -213,6 +218,7 @@ private fun tokenize(text: CharSequence): List<Token> {
                     "clear" -> tokens.add(ClearKeyword)
                     "reset" -> tokens.add(ResetKeyword)
                     "trace" -> tokens.add(TraceKeyword)
+                    "scan" -> tokens.add(ScanKeyword)
                     "untrace" -> tokens.add(UntraceKeyword)
                     "all" -> tokens.add(AllKeyword)
                     "count" -> tokens.add(CountKeyword)

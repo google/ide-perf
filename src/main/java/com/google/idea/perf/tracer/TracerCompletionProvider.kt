@@ -66,7 +66,7 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
         when (tokenIndex) {
             0 -> {
                 // We want all commands to be shown regardless of the prefix (for discoverability).
-                val allCommands = setOf("clear", "reset", "trace", "untrace")
+                val allCommands = setOf("clear", "reset", "trace", "scan", "untrace")
                 val prefixMatcher = LenientPrefixMatcher(result.prefixMatcher, allCommands)
                 result = result.withPrefixMatcher(prefixMatcher)
 
@@ -77,6 +77,7 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
                         .withTailText(" <method>")
                         .withInsertHandler(AddSpaceInsertHandler.INSTANCE_WITH_AUTO_POPUP)
                 )
+                result.addElement(LookupElementBuilder.create("scan"))
                 result.addElement(
                     LookupElementBuilder.create("untrace")
                         .withTailText(" <method>")
@@ -92,13 +93,12 @@ class TracerCompletionProvider : TextCompletionProvider, DumbAware {
                         result.addElement(wildcard)
 
                         val traceRequests = TracerConfig.getAllRequests()
-                        val affectedClasses = TracerConfigUtil.getAffectedClasses(traceRequests)
+                        val affectedClasses = ClassRegistry.affectedClasses(traceRequests)
                         for (clazz in affectedClasses) {
                             ProgressManager.checkCanceled()
                             val lookup = TracerCompletionUtil.createClassLookupElement(clazz)
-                            if (lookup != null) {
-                                result.addElement(lookup)
-                            }
+                            result.addElement(lookup)
+
                         }
                     }
                 }

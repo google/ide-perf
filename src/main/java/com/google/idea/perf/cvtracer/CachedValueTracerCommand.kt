@@ -24,6 +24,8 @@ sealed class CachedValueTracerCommand {
     /** Remove all cached value stats, and clear filters. */
     object Reset: CachedValueTracerCommand()
 
+    object Scan: CachedValueTracerCommand()
+
     /** Filter cached values by class name. */
     data class Filter(val pattern: String?): CachedValueTracerCommand()
 
@@ -50,6 +52,7 @@ fun parseCachedValueTracerCommand(text: String): CachedValueTracerCommand? {
         "filter" -> parseFilterCommand(tokens.advance())
         "clear-filters" -> CachedValueTracerCommand.ClearFilters
         "group-by" -> parseGroupByCommand(tokens.advance())
+        "scan" -> CachedValueTracerCommand.Scan
         else -> null
     }
 }

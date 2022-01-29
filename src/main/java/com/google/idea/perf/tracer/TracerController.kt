@@ -71,6 +71,8 @@ class TracerController(
                 displayWarning("Failed to install instrumentation agent (see idea.log)")
             }
         }
+
+
     }
 
     override fun dispose() {
@@ -112,7 +114,7 @@ class TracerController(
             is TracerCommand.Reset -> {
                 runWithProgress { progress ->
                     val oldRequests = TracerConfig.clearAllRequests()
-                    val affectedClasses = TracerConfigUtil.getAffectedClasses(oldRequests)
+                    val affectedClasses = ClassRegistry.affectedLoadedClasses(oldRequests)
                     retransformClasses(affectedClasses, progress)
                     CallTreeManager.clearCallTrees()
                 }
@@ -138,10 +140,20 @@ class TracerController(
                                 tracedParams = command.target.parameterIndexes!!
                             )
                             val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
-                            val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
+                            val affectedClasses = ClassRegistry.affectedLoadedClasses(listOf(request))
                             retransformClasses(affectedClasses, progress)
                             CallTreeManager.clearCallTrees()
                         }
+                    }
+                }
+            }
+            is  TracerCommand.Scan -> {
+                executor.execute {
+                    runWithProgress { progress ->
+                        progress.text = "Scanning classpath...";
+                        progress.isIndeterminate = false
+                        progress.fraction = 0.3
+                        ClassRegistry.scanClassPath()
                     }
                 }
             }

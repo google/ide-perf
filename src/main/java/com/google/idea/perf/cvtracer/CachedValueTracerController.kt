@@ -107,6 +107,10 @@ class CachedValueTracerController(
                     updateUi()
                 }
             }
+            is CachedValueTracerCommand.Scan -> {
+                eventConsumer.clear()
+                updateUi()
+            }
             else -> {
                 LOG.warn("Unknown command: $text")
             }
