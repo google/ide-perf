@@ -77,10 +77,10 @@ object CallTreeManager {
     }
 
     fun accumulateEDTCallTree(target: MutableCallTree) {
-        val edtState = allThreadState.firstOrNull { it.isEdt }
-        edtState?.lock?.withLock {
+        val edtState = allThreadState.firstOrNull { it.isEdt } ?: return
+        edtState.lock.withLock {
             val tree = edtState.callTreeBuilder.borrowUpToDateTree()
-            return target.accumulate(tree)
+            target.accumulate(tree)
         }
     }
 

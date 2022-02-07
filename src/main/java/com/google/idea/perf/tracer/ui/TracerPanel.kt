@@ -115,7 +115,6 @@ class TracerPanel(
                 val choseEdt = item == edtStr
                 if (choseEdt != showingEdtOnly) {
                     showingEdtOnly = choseEdt
-                    treeSnapshot.clear()
                     updateCallTree()
                 }
             }
@@ -237,11 +236,15 @@ class TracerPanel(
         }
 
         // Compute the new call tree.
+        // To reduce memory churn we reuse existing call tree nodes when possible.
         treeSnapshot.resetCounters()
         when {
             showingEdtOnly -> CallTreeManager.accumulateEDTCallTree(treeSnapshot)
             else -> CallTreeManager.accumulateAllThreadsCallTree(treeSnapshot)
         }
+        treeSnapshot.pruneEmptyNodes() // Needed after a 'reset' command, for example.
+
+        // Update the displayed stats.
         val stats = CallTreeUtil.computeFlatTracepointStats(treeSnapshot)
         listView.setTracepointStats(stats)
         treeView.setCallTree(treeSnapshot)
