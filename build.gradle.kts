@@ -22,8 +22,8 @@ import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("1.2.0")
-    id("org.jetbrains.kotlin.jvm").version("1.5.31")
+    id("org.jetbrains.intellij").version("1.5.3")
+    id("org.jetbrains.kotlin.jvm").version("1.6.20")
 }
 
 val isCI = System.getenv("CI") != null
@@ -45,14 +45,13 @@ tasks.withType<KotlinCompile> {
         apiVersion = "1.4" // Should match the Kotlin stdlib version in IntelliJ.
         jvmTarget = "11" // Should match the JetBrains Runtime.
         // allWarningsAsErrors = true
-        freeCompilerArgs = listOf("-Xjvm-default=enable")
     }
 }
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     pluginName.set("ide-perf")
-    version.set("213.5744.223")
+    version.set("221.5080.210")
     downloadSources.set(!isCI)
     updateSinceUntilBuild.set(false) // So that we can leave the until-build blank.
 }
@@ -87,13 +86,15 @@ tasks.runPluginVerifier {
         listOf(
             "211.7628.21", // Should match the since-build from plugin.xml.
             "212.5080.55",
+            "213.5744.223",
             intellij.version.get() // We check the current version too for deprecations, etc.
         )
     )
 
     val suppressedFailures = listOf(
         RunPluginVerifierTask.FailureLevel.EXPERIMENTAL_API_USAGES, // TODO: VfsStatTreeTable uses JBTreeTable.
-        RunPluginVerifierTask.FailureLevel.INTERNAL_API_USAGES // See CachedValueEventConsumer.
+        RunPluginVerifierTask.FailureLevel.INTERNAL_API_USAGES, // See CachedValueEventConsumer.
+        RunPluginVerifierTask.FailureLevel.DEPRECATED_API_USAGES, // Using PropertiesComponent.getValues.
     )
     failureLevel.set(EnumSet.copyOf(RunPluginVerifierTask.FailureLevel.ALL - suppressedFailures))
 
@@ -166,6 +167,7 @@ dependencies {
     implementation("org.ow2.asm:asm-util:8.0.1")
     implementation("org.ow2.asm:asm-commons:8.0.1")
 
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.6.20")
     testImplementation("junit:junit:4.12")
     testImplementation("com.google.truth:truth:1.0.1")
     testImplementation("com.google.truth.extensions:truth-java8-extension:1.0.1")
