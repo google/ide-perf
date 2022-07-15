@@ -68,27 +68,4 @@ class MutableCallTree(
             child.accumulate(otherChild)
         }
     }
-
-    /** Reset counters recursively - for this tracepoint and all children */
-    fun resetCounters() {
-        callCount = 0L
-        wallTime = 0L
-        maxWallTime = 0L
-        for (child in children.values) {
-            child.resetCounters()
-        }
-    }
-
-    /** Remove all descendants having zero call count. */
-    fun pruneEmptyNodes() {
-        val childIterator = children.values.iterator()
-        while (childIterator.hasNext()) {
-            val child = childIterator.next()
-            if (child.callCount == 0L) {
-                childIterator.remove()
-            } else {
-                child.pruneEmptyNodes()
-            }
-        }
-    }
 }
