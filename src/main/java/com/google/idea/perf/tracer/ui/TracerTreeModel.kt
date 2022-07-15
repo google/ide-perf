@@ -109,5 +109,7 @@ class TracerTreeModel : DefaultTreeModel(null), TreeTableModel {
                 insertNodeInto(newUiChild, uiNode, uiNode.childCount)
             }
         }
+
+        check(uiNode.childCount == callTree.children.size)
     }
 }
