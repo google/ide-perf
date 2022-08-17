@@ -16,7 +16,6 @@
 
 package com.google.idea.perf.tracer
 
-import com.google.idea.perf.AgentLoader
 import com.intellij.codeInsight.AutoPopupController
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.InsertionContext
@@ -38,7 +37,6 @@ import com.intellij.util.PlatformIcons.INTERFACE_ICON
 import com.intellij.util.PlatformIcons.METHOD_ICON
 import com.intellij.util.PlatformIcons.PACKAGE_ICON
 import com.intellij.util.containers.ArrayListSet
-import java.lang.reflect.Modifier
 import javax.swing.Icon
 
 // Things to improve:
@@ -51,17 +49,16 @@ import javax.swing.Icon
 
 object TracerCompletionUtil {
 
-    /** Creates auto-completion results for all loaded classes and their packages. */
+
+    /** Creates auto-completion results for all classes and their packages. */
     fun addLookupElementsForLoadedClasses(result: CompletionResultSet) {
-        val instrumentation = AgentLoader.instrumentation ?: return
         val seenPackages = mutableSetOf<String>()
 
         val prefixIsEmpty = result.prefixMatcher.prefix.isEmpty()
         var numResultsForEmptyPrefix = 0
 
-        for (clazz in instrumentation.allLoadedClasses) {
+        for (classInfo in ClassRegistry.allClasses()) {
             ProgressManager.checkCanceled()
-            val classInfo = ClassInfo.tryCreate(clazz) ?: continue
 
             // Class name completion: com.example.Class
             if (!shouldHideClassFromCompletionResults(classInfo)) {
@@ -85,15 +82,10 @@ object TracerCompletionUtil {
 
     /** Creates auto-completion results for all methods in the given class. */
     fun addLookupElementsForMethods(className: String, result: CompletionResultSet) {
-        val instrumentation = AgentLoader.instrumentation ?: return
-        val allClasses = instrumentation.allLoadedClasses
-        val clazz = allClasses.firstOrNull { it.name == className } ?: return
+        val clazz = ClassRegistry.classDetails(className) ?: return
 
         // Declared methods.
         for (method in clazz.declaredMethods) {
-            if (Modifier.isAbstract(method.modifiers)) {
-                continue // Tracing abstract methods is not yet supported.
-            }
             result.addElement(LookupElementBuilder.create(method.name).withIcon(METHOD_ICON))
         }
 
@@ -142,17 +134,12 @@ object TracerCompletionUtil {
         }
     }
 
-    fun createClassLookupElement(clazz: Class<*>): LookupElement? {
-        val classInfo = ClassInfo.tryCreate(clazz) ?: return null
-        return createClassLookupElement(classInfo)
-    }
-
-    private fun createClassLookupElement(c: ClassInfo): LookupElement {
+    fun createClassLookupElement(c: ClassInfo): LookupElement {
         val shortName = when {
-            c.simpleName.isBlank() -> c.fqName.substringAfterLast('.') // For anonymous classes.
+            c.simpleName.isBlank() -> c.name.substringAfterLast('.') // For anonymous classes.
             else -> c.simpleName
         }
-        val contextString = computeClassContextString(c.fqName, shortName)
+        val contextString = computeClassContextString(c.name, shortName)
         val icon = when {
             c.isInterface -> INTERFACE_ICON
             c.isEnum -> ENUM_ICON
@@ -162,7 +149,7 @@ object TracerCompletionUtil {
             c.isAbstract -> ABSTRACT_CLASS_ICON
             else -> CLASS_ICON
         }
-        return ClassLookupElement(c.fqName, shortName, contextString, icon)
+        return ClassLookupElement(c.name, shortName, contextString, icon)
     }
 
     private fun computeClassContextString(fqName: String, simpleName: String): String {
@@ -209,50 +196,9 @@ object TracerCompletionUtil {
                 c.isLocalClass ||
                 c.isSynthetic ||
                 c.simpleName.isBlank() ||
-                c.fqName.startsWith("java.lang.invoke.") ||
-                c.fqName.startsWith("com.sun.proxy.") ||
-                c.fqName.startsWith("jdk.internal.reflect.") ||
-                c.fqName.contains("$$")
-    }
-
-    // Interacting with arbitrary user classes is dangerous, because exceptions like
-    // NoClassDefFoundError may be thrown in certain corner cases. So we compute any info
-    // we need upfront and fail gracefully if exceptions are thrown.
-    private class ClassInfo private constructor(
-        val fqName: String,
-        val simpleName: String,
-        val packageName: String,
-        val isArray: Boolean,
-        val isAnonymousClass: Boolean,
-        val isLocalClass: Boolean,
-        val isSynthetic: Boolean,
-        val isInterface: Boolean,
-        val isAbstract: Boolean,
-        val isEnum: Boolean,
-        val isAnnotation: Boolean,
-        val isThrowable: Boolean
-    ) {
-        companion object {
-            fun tryCreate(c: Class<*>): ClassInfo? {
-                try {
-                    return ClassInfo(
-                        fqName = c.name,
-                        simpleName = c.simpleName,
-                        packageName = c.packageName,
-                        isArray = c.isArray,
-                        isAnonymousClass = c.isAnonymousClass,
-                        isLocalClass = c.isLocalClass,
-                        isSynthetic = c.isSynthetic,
-                        isInterface = c.isInterface,
-                        isAbstract = Modifier.isAbstract(c.modifiers),
-                        isEnum = c.isEnum,
-                        isAnnotation = c.isAnnotation,
-                        isThrowable = Throwable::class.java.isAssignableFrom(c)
-                    )
-                } catch (ignored: Throwable) {
-                    return null
-                }
-            }
-        }
+                c.name.startsWith("java.lang.invoke.") ||
+                c.name.startsWith("com.sun.proxy.") ||
+                c.name.startsWith("jdk.internal.reflect.") ||
+                c.name.contains("$$")
     }
 }

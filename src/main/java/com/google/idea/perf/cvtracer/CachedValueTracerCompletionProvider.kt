@@ -54,7 +54,7 @@ class CachedValueTracerCompletionProvider : TextCompletionProvider {
         }
 
         val elements = when (tokenIndex) {
-            0 -> listOf("clear", "reset", "filter", "clear-filters", "group-by")
+            0 -> listOf("clear", "reset", "filter", "clear-filters", "group-by", "scan")
             1 -> when (command) {
                 is CachedValueTracerCommand.GroupBy -> listOf("class", "stack-trace")
                 else -> emptyList()

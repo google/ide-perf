@@ -166,6 +166,7 @@ dependencies {
     implementation("org.ow2.asm:asm:8.0.1")
     implementation("org.ow2.asm:asm-util:8.0.1")
     implementation("org.ow2.asm:asm-commons:8.0.1")
+    implementation("io.github.classgraph:classgraph:4.8.138")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.6.20")
     testImplementation("junit:junit:4.12")

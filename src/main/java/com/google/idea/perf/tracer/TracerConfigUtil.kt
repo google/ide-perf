@@ -16,10 +16,7 @@
 
 package com.google.idea.perf.tracer
 
-import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.util.GlobMatcher
-import com.intellij.openapi.progress.ProgressManager
-import org.objectweb.asm.Type
 
 class TraceRequest(
     val matcher: MethodFqMatcher,
@@ -58,14 +55,14 @@ class MethodFqMatcher(methodPattern: MethodFqName) {
         return classMatcher.matches(className)
     }
 
-    fun matchesMethodInClass(clazz: Class<*>): Boolean {
+    fun matchesMethodInClass(clazz: ClassMethods): Boolean {
         try {
             if (!classMatcher.matches(clazz.name)) return false
 
             // getDeclaredMethods() is quite slow, but it seems to be the only option.
-            for (m in clazz.declaredMethods) {
-                if (methodMatcher.matches(m.name) &&
-                    descMatcher.matches(Type.getMethodDescriptor(m))
+            for (method in clazz.declaredMethods) {
+                if (methodMatcher.matches(method.name) &&
+                    descMatcher.matches(method.descriptor)
                 ) {
                     return true
                 }
@@ -73,7 +70,7 @@ class MethodFqMatcher(methodPattern: MethodFqName) {
 
             if (methodMatcher.matches("<init>")) {
                 for (c in clazz.declaredConstructors) {
-                    if (descMatcher.matches(Type.getConstructorDescriptor(c))) {
+                    if (descMatcher.matches(c)) {
                         return true
                     }
                 }
@@ -98,16 +95,4 @@ object TracerConfigUtil {
         return request
     }
 
-    // This may be slow if there are many trace requests or if they use broad glob patterns.
-    fun getAffectedClasses(traceRequests: Collection<TraceRequest>): List<Class<*>> {
-        if (traceRequests.isEmpty()) return emptyList()
-        val instrumentation = AgentLoader.instrumentation ?: return emptyList()
-
-        fun classMightBeAffected(clazz: Class<*>): Boolean {
-            ProgressManager.checkCanceled()
-            return traceRequests.any { it.matcher.matchesMethodInClass(clazz) }
-        }
-
-        return instrumentation.allLoadedClasses.filter(::classMightBeAffected)
-    }
 }
