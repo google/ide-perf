@@ -83,8 +83,8 @@ object TracerCompletionUtil {
         }
     }
 
-    /** Creates auto-completion results for all methods in the given class. */
-    fun addLookupElementsForMethods(className: String, result: CompletionResultSet) {
+    /** Creates auto-completion results for all members in the given class. */
+    fun addLookupElementsForMembers(className: String, result: CompletionResultSet) {
         val instrumentation = AgentLoader.instrumentation ?: return
         val allClasses = instrumentation.allLoadedClasses
         val clazz = allClasses.firstOrNull { it.name == className } ?: return
@@ -100,6 +100,15 @@ object TracerCompletionUtil {
         // Constructors.
         if (clazz.declaredConstructors.isNotEmpty()) {
             result.addElement(LookupElementBuilder.create("<init>").withIcon(METHOD_ICON))
+        }
+
+        // Nested classes.
+        for (nestedClass in clazz.declaredClasses) {
+            val classInfo = ClassInfo.tryCreate(nestedClass) ?: continue
+            val shortName = computeClassShortName(classInfo)
+            val icon = computeClassIcon(classInfo)
+            val lookup = NestedClassLookupElement(classInfo.fqName, shortName, icon)
+            result.addElement(PrioritizedLookupElement.withPriority(lookup, -1.0))
         }
     }
 
@@ -208,6 +217,32 @@ object TracerCompletionUtil {
             if (contextString.isNotEmpty()) {
                 presentation.tailText = " (${contextString})"
             }
+        }
+    }
+
+    /**
+     * An auto-completion result for a class nested inside another.
+     * Example: com.example.SomeClass#NestedCl<caret> => com.example.SomeClass$NestedClass#<caret>
+     */
+    private class NestedClassLookupElement(
+        private val fqName: String,
+        private val shortName: String,
+        private val icon: Icon
+    ) : LookupElement() {
+
+        override fun getLookupString(): String = shortName
+
+        override fun handleInsert(context: InsertionContext) {
+            val text = context.document.charsSequence.subSequence(0, context.tailOffset)
+            val fqNameIdx = text.lastIndexOfAny(charArrayOf(' ', '\t', '\n')) + 1
+            context.document.replaceString(fqNameIdx, context.tailOffset, fqName)
+            EditorModificationUtil.insertStringAtCaret(context.editor, "#")
+            AutoPopupController.getInstance(context.project).scheduleAutoPopup(context.editor)
+        }
+
+        override fun renderElement(presentation: LookupElementPresentation) {
+            presentation.itemText = lookupString
+            presentation.icon = icon
         }
     }
 

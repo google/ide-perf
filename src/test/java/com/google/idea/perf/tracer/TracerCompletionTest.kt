@@ -31,6 +31,12 @@ class TracerCompletionTest : BasePlatformTestCase() {
     private class UniqueClass1729 {
         fun foo() {}
         fun bar() {}
+        private class NestedClass {
+            fun foo() {}
+            private class DoublyNestedClass {
+                fun foo() {}
+            }
+        }
     }
 
     override fun setUp() {
@@ -63,15 +69,20 @@ class TracerCompletionTest : BasePlatformTestCase() {
     }
 
     @Test
-    fun testMethodCompletion() {
+    fun testMemberCompletion() {
         val fqName = UniqueClass1729::class.java.name
         checkInsert("trace $fqName#b", "trace $fqName#bar")
         checkInsert("trace $fqName#foo", "trace $fqName#foo")
         checkInsert("trace $fqName#<", "trace $fqName#<init>")
+        checkInsert("trace $fqName#Nested", "trace $fqName\$NestedClass#")
+        checkInsert("trace $fqName\$NestedClass#f", "trace $fqName\$NestedClass#foo")
+        checkInsert("trace $fqName\$NestedClass#DoublyNested", "trace $fqName\$NestedClass\$DoublyNestedClass#")
+        checkInsert("trace $fqName\$NestedClass\$DoublyNestedClass#f", "trace $fqName\$NestedClass\$DoublyNestedClass#foo")
         checkInsert("trace $fqName#all", "trace $fqName#*")
         checkInsert("trace $fqName#nonExistentMethod", null)
         checkInsert("trace $fqName#toString", null)
-        assertThat(complete("trace $fqName#")).containsExactly("all", "foo", "bar", "<init>")
+        assertThat(complete("trace $fqName#"))
+            .containsExactly("all", "foo", "bar", "<init>", "NestedClass")
     }
 
     @Test
