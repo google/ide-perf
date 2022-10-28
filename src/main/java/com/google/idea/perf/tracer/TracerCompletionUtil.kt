@@ -148,12 +148,21 @@ object TracerCompletionUtil {
     }
 
     private fun createClassLookupElement(c: ClassInfo): LookupElement {
-        val shortName = when {
+        val shortName = computeClassShortName(c)
+        val contextString = computeClassContextString(c.fqName, shortName)
+        val icon = computeClassIcon(c)
+        return ClassLookupElement(c.fqName, shortName, contextString, icon)
+    }
+
+    private fun computeClassShortName(c: ClassInfo): String {
+        return when {
             c.simpleName.isBlank() -> c.fqName.substringAfterLast('.') // For anonymous classes.
             else -> c.simpleName
         }
-        val contextString = computeClassContextString(c.fqName, shortName)
-        val icon = when {
+    }
+
+    private fun computeClassIcon(c: ClassInfo): Icon {
+        return when {
             c.isInterface -> INTERFACE_ICON
             c.isEnum -> ENUM_ICON
             c.isAnnotation -> ANNOTATION_TYPE_ICON
@@ -162,7 +171,6 @@ object TracerCompletionUtil {
             c.isAbstract -> ABSTRACT_CLASS_ICON
             else -> CLASS_ICON
         }
-        return ClassLookupElement(c.fqName, shortName, contextString, icon)
     }
 
     private fun computeClassContextString(fqName: String, simpleName: String): String {
