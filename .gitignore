@@ -8,6 +8,7 @@ build/
 /.idea/dictionaries
 /.idea/gradle.xml
 /.idea/compiler.xml
+/.idea/kotlinc.xml
 /.idea/jarRepositories.xml
 /.idea/uiDesigner.xml
 /.idea/*.iml
