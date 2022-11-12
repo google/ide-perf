@@ -18,6 +18,7 @@ package com.google.idea.perf.tracer
 
 import com.google.idea.perf.tracer.TraceOption.COUNT_AND_WALL_TIME
 import com.google.idea.perf.tracer.TraceOption.COUNT_ONLY
+import com.google.idea.perf.tracer.TraceOption.UNTRACE
 
 /** A tracer CLI command */
 sealed class TracerCommand {
@@ -56,7 +57,8 @@ sealed class TracerCommand {
 /** Represents what to trace */
 enum class TraceOption {
     COUNT_AND_WALL_TIME,
-    COUNT_ONLY;
+    COUNT_ONLY,
+    UNTRACE;
 }
 
 /** A set of methods that the tracer will trace. */
@@ -68,7 +70,9 @@ sealed class TraceTarget {
     data class Method(
         val className: String,
         val methodName: String?,
-        val parameterIndexes: List<Int>? = emptyList()
+        val parameterIndexes: List<Int>? = emptyList(),
+        // a redundant option to support user config tab
+        var traceOption: TraceOption = COUNT_AND_WALL_TIME
     ): TraceTarget()
 
     val errors: List<String>

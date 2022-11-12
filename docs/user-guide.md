@@ -75,6 +75,12 @@ slightly more experimental than the main method tracer.
 
 <!-- TODO: Further explain these tracers and their subcommands. -->
 
+Config and stacktrace loaders
+---
+There are two new commands which could be used from a `Config` tab or with an absolute file path:
+* `load` loads commands such as `trace`/`untrace` in the same format as the tracer 
+* `stacktrace` loads functions from a given stacktrace in plain text form
+
 FAQ
 ---
 

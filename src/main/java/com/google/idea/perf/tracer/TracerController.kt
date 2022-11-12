@@ -86,9 +86,65 @@ class TracerController(
             // Special case: handle this command while we're still on the EDT.
             val path = cmd.substringAfter("save").trim()
             savePngFromEdt(path)
-        }
-        else {
+        } else if (cmd.startsWith("load")) {
+            val path = cmd.substringAfter("load").trim()
+            // TODO(baskakov): handle file not found error
+            executor.execute { handleLoadConfig(path) }
+        } else if (cmd.startsWith("stacktrace")) {
+            val path = cmd.substringAfter("stacktrace").trim()
+            // TODO(baskakov): handle file not found error
+            executor.execute { handleLoadStacktrace(path) }
+        } else {
             executor.execute { handleCommand(cmd) }
+        }
+    }
+
+    private fun handleLoadConfig(path: String) {
+        val lines = linesFromPathOrConfig(path)
+        if (lines.isEmpty()) {
+            displayWarning("config is empty")
+            return
+        }
+        handleCommand("reset")
+        lines.forEach {
+            displayInfo("processing: $it")
+            handleCommand(it)
+        }
+    }
+
+    private fun linesFromPathOrConfig(path: String): List<String> {
+        return if (path.isBlank()) {
+            view.configView.text.split("\n")
+        } else {
+            val file = File(path)
+            if (!file.isFile) {
+                displayWarning("File not found: $path")
+                return emptyList()
+            }
+            file.readLines()
+        }
+            .filter { it.isNotBlank() }
+    }
+
+    private fun handleLoadStacktrace(path: String) {
+        val lines = linesFromPathOrConfig(path)
+        if (lines.isEmpty()) {
+            displayWarning("stacktrace is empty")
+            return
+        }
+        handleCommand("reset")
+        for (line in lines) {
+            val oneTraceLine = line.trim().substringAfter("at ", "")
+            if (oneTraceLine.isBlank()) continue
+            val classAndMethod = oneTraceLine
+                .substringAfter("/")
+                .substringBefore("(")
+            val fqClassName = classAndMethod.substringBeforeLast(".")
+            val functionName = classAndMethod.substringAfterLast(".")
+            // TODO(baskakov): add unit test for:
+            // at org.jetbrains.kotlin.types.StarProjectionImpl$_type$2.invoke(StarProjectionImpl.kt:35)
+            val commandString = "trace ${fqClassName}#${functionName}"
+            handleCommand(commandString)
         }
     }
 
@@ -100,7 +156,6 @@ class TracerController(
             displayWarning(errors.joinToString("\n"))
             return
         }
-
         handleCommand(command)
     }
 
@@ -109,7 +164,9 @@ class TracerController(
             is TracerCommand.Clear -> {
                 CallTreeManager.clearCallTrees()
             }
+
             is TracerCommand.Reset -> {
+                TracerUserConfig.resetAll()
                 runWithProgress { progress ->
                     val oldRequests = TracerConfig.clearAllRequests()
                     val affectedClasses = TracerConfigUtil.getAffectedClasses(oldRequests)
@@ -117,9 +174,9 @@ class TracerController(
                     CallTreeManager.clearCallTrees()
                 }
             }
+
             is TracerCommand.Trace -> {
                 val countOnly = command.traceOption == TraceOption.COUNT_ONLY
-
                 when (command.target) {
                     is TraceTarget.All -> {
                         when {
@@ -127,7 +184,14 @@ class TracerController(
                             else -> handleCommand(TracerCommand.Reset)
                         }
                     }
+
                     is TraceTarget.Method -> {
+                        if (command.enable) {
+                            TracerUserConfig.addUserTraceRequest(command.target)
+                        } else {
+                            command.target.traceOption = TraceOption.UNTRACE
+                            TracerUserConfig.addUserUntraceRequest(command.target)
+                        }
                         runWithProgress { progress ->
                             val clazz = command.target.className
                             val method = command.target.methodName ?: "*"
@@ -138,13 +202,15 @@ class TracerController(
                                 tracedParams = command.target.parameterIndexes!!
                             )
                             val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
-                            val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
+                            val affectedClasses =
+                                TracerConfigUtil.getAffectedClasses(listOf(request))
                             retransformClasses(affectedClasses, progress)
                             CallTreeManager.clearCallTrees()
                         }
                     }
                 }
             }
+
             else -> {
                 displayWarning("Command not implemented")
             }
@@ -165,11 +231,9 @@ class TracerController(
             progress.checkCanceled()
             try {
                 instrumentation.retransformClasses(clazz)
-            }
-            catch (e: UnmodifiableClassException) {
+            } catch (e: UnmodifiableClassException) {
                 LOG.info("Cannot instrument non-modifiable class: ${clazz.name}")
-            }
-            catch (e: Throwable) {
+            } catch (e: Throwable) {
                 LOG.error("Failed to retransform class: ${clazz.name}", e)
             }
             if (!progress.isIndeterminate) {
@@ -195,8 +259,7 @@ class TracerController(
         getApplication().executeOnPooledThread {
             try {
                 ImageIO.write(img, "png", file)
-            }
-            catch (e: IOException) {
+            } catch (e: IOException) {
                 displayWarning("Failed to write png to $path", e)
             }
         }
@@ -206,6 +269,13 @@ class TracerController(
         LOG.warn(warning, e)
         invokeLater {
             view.showCommandLinePopup(warning, MessageType.WARNING)
+        }
+    }
+
+    private fun displayInfo(infoString: String, e: Throwable? = null) {
+        LOG.info(infoString, e)
+        invokeLater {
+            view.showCommandLinePopup(infoString, MessageType.INFO)
         }
     }
 
