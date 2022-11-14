@@ -31,7 +31,7 @@ val isRelease = project.findProperty("release") != null
 val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
 
 group = "com.google.idea.perf"
-version = "1.2.0$versionSuffix"
+version = "1.3.0$versionSuffix"
 
 repositories {
     mavenCentral()
@@ -68,8 +68,8 @@ tasks.patchPluginXml {
     changeNotes.set(
         """
         <ul>
-        <li>Fixed the CachedValue tracer when running on IntelliJ 2021.1.</li>
-        <li>The CachedValue tracer now reports how much time is spent computing each value.</li>
+        <li>Add support for tracing Java 17 bytecode.</li>
+        <li>Improve tracer code completion for nested classes.</li>
         </ul>
         """.trimIndent()
     )
