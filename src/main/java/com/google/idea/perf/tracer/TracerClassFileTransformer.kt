@@ -25,7 +25,7 @@ import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.ClassWriter.COMPUTE_MAXS
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
-import org.objectweb.asm.Opcodes.ASM8
+import org.objectweb.asm.Opcodes.ASM9
 import org.objectweb.asm.Type
 import org.objectweb.asm.commons.AdviceAdapter
 import org.objectweb.asm.commons.Method
@@ -33,7 +33,7 @@ import java.lang.instrument.ClassFileTransformer
 import java.security.ProtectionDomain
 import kotlin.reflect.jvm.javaMethod
 
-private const val ASM_API = ASM8
+private const val ASM_API = ASM9
 
 /**
  * [TracerClassFileTransformer] inserts calls (in JVM byte code) to the tracer hooks.

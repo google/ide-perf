@@ -164,9 +164,9 @@ dependencies {
     javaAgent(project(":agent", "runtimeElements"))
     compileOnly(project(":agent")) // 'compileOnly' because it is put on the bootclasspath later.
 
-    implementation("org.ow2.asm:asm:8.0.1")
-    implementation("org.ow2.asm:asm-util:8.0.1")
-    implementation("org.ow2.asm:asm-commons:8.0.1")
+    implementation("org.ow2.asm:asm:9.4")
+    implementation("org.ow2.asm:asm-util:9.4")
+    implementation("org.ow2.asm:asm-commons:9.4")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.6.20")
     testImplementation("junit:junit:4.12")

@@ -30,7 +30,7 @@ import org.objectweb.asm.ClassWriter.COMPUTE_FRAMES
 import org.objectweb.asm.ClassWriter.COMPUTE_MAXS
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
-import org.objectweb.asm.Opcodes.ASM8
+import org.objectweb.asm.Opcodes.ASM9
 import org.objectweb.asm.Type
 import org.objectweb.asm.commons.AdviceAdapter
 import org.objectweb.asm.commons.Method
@@ -163,7 +163,7 @@ private class VfsTracerClassFileTransformer: ClassFileTransformer {
         val HOOK_CLASS_JVM_NAME: String = Type.getInternalName(VfsTracerTrampoline::class.java)
         val ON_PSI_ELEMENT_CREATE: Method = Method.getMethod(VfsTracerTrampoline::onPsiElementCreate.javaMethod)
         val ON_STUB_INDEX_PROCESSOR_CREATE: Method = Method.getMethod(VfsTracerTrampoline::onStubIndexProcessorCreate.javaMethod)
-        const val ASM_API = ASM8
+        const val ASM_API = ASM9
     }
 
     val errorLog: List<String> get() = errorLogger
