@@ -36,7 +36,7 @@ import javax.swing.DefaultComboBoxModel
 class TracerCommandLine(project: Project, private val tracerController: TracerController) {
     private val textField: EditorTextField
     private val comboBox = ComboBox<String>()
-    private var history = emptyArray<String>()
+    private var history = emptyList<String>()
     val component get() = comboBox
 
     companion object {
@@ -60,13 +60,13 @@ class TracerCommandLine(project: Project, private val tracerController: TracerCo
         comboBox.prototypeDisplayValue = ""
 
         // Initial command history.
-        val restoredHistory = PropertiesComponent.getInstance().getValues(HISTORY_KEY)
+        val restoredHistory = PropertiesComponent.getInstance().getList(HISTORY_KEY)
         if (restoredHistory != null) {
             setHistory(restoredHistory)
         } else {
             // Just add some sample tracing commands.
             setHistory(
-                arrayOf(
+                listOf(
                     "trace com.intellij.openapi.progress.ProgressManager#checkCanceled",
                     "trace com.intellij.openapi.progress.ProgressManager#*",
                     "trace com.intellij.openapi.progress.*",
@@ -81,19 +81,19 @@ class TracerCommandLine(project: Project, private val tracerController: TracerCo
         } else {
             val text = textField.text
             tracerController.handleRawCommandFromEdt(text)
-            if (text.isNotBlank()) setHistory(arrayOf(text, *history))
+            if (text.isNotBlank()) setHistory(listOf(text) + history)
             textField.text = ""
         }
     }
 
-    private fun setHistory(items: Array<String>) {
-        history = items.toSet().take(HISTORY_SIZE).toTypedArray()
+    private fun setHistory(items: List<String>) {
+        history = items.toSet().take(HISTORY_SIZE)
 
-        val model = DefaultComboBoxModel(history)
+        val model = DefaultComboBoxModel(history.toTypedArray())
         model.selectedItem = null // Otherwise the first item is selected automatically.
         comboBox.model = model
 
-        PropertiesComponent.getInstance().setValues(HISTORY_KEY, history)
+        PropertiesComponent.getInstance().setList(HISTORY_KEY, history)
     }
 
     private class MyComboBoxEditor(private val textField: EditorTextField) : ComboBoxEditor {
