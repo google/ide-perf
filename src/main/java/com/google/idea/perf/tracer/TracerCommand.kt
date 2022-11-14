@@ -223,7 +223,7 @@ private fun tokenize(text: CharSequence): List<Token> {
             in '0'..'9' -> {
                 var value = 0
                 while (offset < text.length && text[offset] in '0'..'9') {
-                    value = (value * 10) + (text[offset].toInt() - '0'.toInt())
+                    value = (value * 10) + (text[offset].code - '0'.code)
                     offset++
                 }
                 tokens.add(IntLiteral(value))
