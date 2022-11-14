@@ -143,6 +143,9 @@ class TracerController(
                             CallTreeManager.clearCallTrees()
                         }
                     }
+                    null -> {
+                        displayWarning("Expected a trace target")
+                    }
                 }
             }
             else -> {
