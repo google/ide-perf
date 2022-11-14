@@ -22,8 +22,8 @@ import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("1.5.3")
-    id("org.jetbrains.kotlin.jvm").version("1.6.20")
+    id("org.jetbrains.intellij").version("1.9.0")
+    id("org.jetbrains.kotlin.jvm").version("1.7.21")
 }
 
 val isCI = System.getenv("CI") != null
@@ -41,8 +41,8 @@ java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        languageVersion = "1.4"
-        apiVersion = "1.4" // Should match the Kotlin stdlib version in IntelliJ.
+        languageVersion = "1.6"
+        apiVersion = "1.6" // Should match the Kotlin stdlib version in IntelliJ.
         jvmTarget = "11" // Should match the JetBrains Runtime.
         // allWarningsAsErrors = true
     }
@@ -63,7 +63,7 @@ tasks.buildSearchableOptions {
 
 tasks.patchPluginXml {
     // Should be tested occasionally (see runPluginVerifier).
-    sinceBuild.set("211")
+    sinceBuild.set("222")
     // Should describe changes in the latest release only.
     changeNotes.set(
         """
@@ -84,11 +84,8 @@ tasks.runPluginVerifier {
     // https://jb.gg/intellij-platform-builds-list for the list of platform versions.
     ideVersions.set(
         listOf(
-            "211.7628.21", // Should match the since-build from plugin.xml.
-            "212.5712.43",
-            "213.7172.25",
-            "221.6008.13",
-            intellij.version.get() // We check the current version too for deprecations, etc.
+            "222.4345.14", // Should match the since-build from plugin.xml.
+            // TODO: intellij.version.get() // We check the current version too for deprecations, etc.
         )
     )
 
