@@ -16,9 +16,6 @@
 
 package com.google.idea.perf.tracer
 
-import com.google.idea.perf.tracer.TraceOption.COUNT_AND_WALL_TIME
-import com.google.idea.perf.tracer.TraceOption.COUNT_ONLY
-
 /** A tracer CLI command */
 sealed class TracerCommand {
     /** Unrecognized command. */
@@ -33,7 +30,6 @@ sealed class TracerCommand {
     /** Trace or untrace a set of methods. */
     data class Trace(
         val enable: Boolean,
-        val traceOption: TraceOption?,
         val target: TraceTarget?
     ): TracerCommand()
 
@@ -44,19 +40,9 @@ sealed class TracerCommand {
     val errors: List<String>
         get() = when (this) {
             Unknown -> listOf("Unknown command")
-            is Trace -> when {
-                traceOption == null -> listOf("Expected a trace option")
-                target == null -> listOf("Expected a trace target")
-                else -> target.errors
-            }
+            is Trace -> if (target == null) listOf("Expected a trace target") else target.errors
             else -> emptyList()
         }
-}
-
-/** Represents what to trace */
-enum class TraceOption {
-    COUNT_AND_WALL_TIME,
-    COUNT_ONLY;
 }
 
 /** A set of methods that the tracer will trace. */
@@ -91,24 +77,9 @@ fun parseMethodTracerCommand(text: String): TracerCommand {
     return when (tokens.first()) {
         ClearKeyword -> TracerCommand.Clear
         ResetKeyword -> TracerCommand.Reset
-        TraceKeyword -> parseTraceCommand(tokens.advance(), true)
-        UntraceKeyword -> parseTraceCommand(tokens.advance(), false)
+        TraceKeyword -> TracerCommand.Trace(enable = true, parseTraceTarget(tokens.advance()))
+        UntraceKeyword -> TracerCommand.Trace(enable = false, parseTraceTarget(tokens.advance()))
         else -> TracerCommand.Unknown
-    }
-}
-
-private fun parseTraceCommand(tokens: List<Token>, enable: Boolean): TracerCommand {
-    return when (val option = parseTraceOption(tokens)) {
-        null -> TracerCommand.Trace(enable, COUNT_AND_WALL_TIME, parseTraceTarget(tokens))
-        else -> TracerCommand.Trace(enable, option, parseTraceTarget(tokens.advance()))
-    }
-}
-
-private fun parseTraceOption(tokens: List<Token>): TraceOption? {
-    return when (tokens.first()) {
-        CountKeyword -> COUNT_ONLY
-        AllKeyword -> COUNT_AND_WALL_TIME
-        else -> null
     }
 }
 

@@ -87,12 +87,7 @@ object TracerConfig {
                 tracepoints.append(MethodTracepoint(m))
             }
 
-            // Sync tracepoint flags.
-            val config = recentMatch.config
-            val tracepoint = getMethodTracepoint(methodId)
-            tracepoint.measureWallTime = !config.countOnly
-
-            return MethodTraceData(methodId, config)
+            return MethodTraceData(methodId, recentMatch.config)
         }
     }
 }

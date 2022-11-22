@@ -42,113 +42,103 @@ class TracerCommandParserTest {
         assertCommand(Clear, "  clear  ")
 
         // Basic untrace commands.
-        assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, null), "untrace")
-        assertCommand(Trace(false, TraceOption.COUNT_ONLY, null), "untrace count")
+        assertCommand(Trace(false, null), "untrace")
 
         // Wildcard untrace commands.
-        assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.All), "untrace *")
-        assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("Test*", "*")), "untrace Test*")
-        assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("Test", "*")), "untrace Test#*")
-        assertCommand(Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("Test", "get*")), "untrace Test#get*")
+        assertCommand(Trace(false, TraceTarget.All), "untrace *")
+        assertCommand(Trace(false, TraceTarget.Method("Test*", "*")), "untrace Test*")
+        assertCommand(Trace(false, TraceTarget.Method("Test", "*")), "untrace Test#*")
+        assertCommand(Trace(false, TraceTarget.Method("Test", "get*")), "untrace Test#get*")
 
         // Method untrace commands.
         assertCommand(
-            Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", emptyList())),
+            Trace(false, TraceTarget.Method("com.example.MyAction", "actionPerformed", emptyList())),
             "untrace com.example.MyAction#actionPerformed"
         )
         assertCommand(
-            Trace(
-                false,
-                TraceOption.COUNT_ONLY,
-                TraceTarget.Method("com.example.MyAction", "actionPerformed", emptyList())
-            ),
-            "untrace count com.example.MyAction#actionPerformed"
+            Trace(false, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0))),
+            "untrace com.example.MyAction#actionPerformed[0]"
         )
         assertCommand(
-            Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0))),
-            "untrace all com.example.MyAction#actionPerformed[0]"
-        )
-        assertCommand(
-            Trace(false, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
-            "untrace all com.example.MyAction#actionPerformed[0,1]"
+            Trace(false, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
+            "untrace com.example.MyAction#actionPerformed[0,1]"
         )
 
         // Basic trace commands.
-        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, null), "trace")
-        assertCommand(Trace(true, TraceOption.COUNT_ONLY, null), "trace count")
+        assertCommand(Trace(true, null), "trace")
 
         // Wildcard trace commands.
-        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.All), "trace *")
-        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("*Test", "*")), "trace *Test")
-        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("Test*", "*")), "trace Test*")
-        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("Test", "*")), "trace Test#*")
-        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("Test", "*Value")), "trace Test#*Value")
-        assertCommand(Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("Test", "get*")), "trace Test#get*")
+        assertCommand(Trace(true, TraceTarget.All), "trace *")
+        assertCommand(Trace(true, TraceTarget.Method("*Test", "*")), "trace *Test")
+        assertCommand(Trace(true, TraceTarget.Method("Test*", "*")), "trace Test*")
+        assertCommand(Trace(true, TraceTarget.Method("Test", "*")), "trace Test#*")
+        assertCommand(Trace(true, TraceTarget.Method("Test", "*Value")), "trace Test#*Value")
+        assertCommand(Trace(true, TraceTarget.Method("Test", "get*")), "trace Test#get*")
 
         // Method trace commands.
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "*")),
+            Trace(true, TraceTarget.Method("com.example.MyAction", "*")),
             "trace com.example.MyAction"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "")),
+            Trace(true, TraceTarget.Method("com.example.MyAction", "")),
             "trace com.example.MyAction#"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", emptyList())),
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", emptyList())),
             "trace com.example.MyAction#actionPerformed"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "*")),
-            "trace all com.example.MyAction"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "*")),
+            "trace com.example.MyAction"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "")),
-            "trace all com.example.MyAction#"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "")),
+            "trace com.example.MyAction#"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed")),
-            "trace all com.example.MyAction#actionPerformed"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed")),
+            "trace com.example.MyAction#actionPerformed"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", null)),
-            "trace all com.example.MyAction#actionPerformed["
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", null)),
+            "trace com.example.MyAction#actionPerformed["
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", null)),
-            "trace all com.example.MyAction#actionPerformed[0"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", null)),
+            "trace com.example.MyAction#actionPerformed[0"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0))),
-            "trace all com.example.MyAction#actionPerformed[0]"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0))),
+            "trace com.example.MyAction#actionPerformed[0]"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", null)),
-            "trace all com.example.MyAction#actionPerformed[0,"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", null)),
+            "trace com.example.MyAction#actionPerformed[0,"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", null)),
-            "trace all com.example.MyAction#actionPerformed[0,1"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", null)),
+            "trace com.example.MyAction#actionPerformed[0,1"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
-            "trace all com.example.MyAction#actionPerformed[0,1]"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
+            "trace com.example.MyAction#actionPerformed[0,1]"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
-            "trace all com.example.MyAction#actionPerformed[0, 1]"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
+            "trace com.example.MyAction#actionPerformed[0, 1]"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
-            "trace all com.example.MyAction#actionPerformed[0 , 1]"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
+            "trace com.example.MyAction#actionPerformed[0 , 1]"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
-            "trace all com.example.MyAction#actionPerformed[ 0,1 ]"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
+            "trace com.example.MyAction#actionPerformed[ 0,1 ]"
         )
         assertCommand(
-            Trace(true, TraceOption.COUNT_AND_WALL_TIME, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
-            "trace all com.example.MyAction#actionPerformed [0,1]"
+            Trace(true, TraceTarget.Method("com.example.MyAction", "actionPerformed", listOf(0, 1))),
+            "trace com.example.MyAction#actionPerformed [0,1]"
         )
     }
 }

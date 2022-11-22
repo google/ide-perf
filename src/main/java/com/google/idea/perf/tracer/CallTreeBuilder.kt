@@ -54,7 +54,6 @@ class CallTreeBuilder(clock: Clock = SystemClock) {
 
         var startWallTime: Long = 0
         var continueWallTime: Long = 0
-        var wallTimeMeasured: Boolean = false
 
         init {
             require(parent != null || tracepoint == Tracepoint.ROOT) {
@@ -69,14 +68,9 @@ class CallTreeBuilder(clock: Clock = SystemClock) {
 
         child.callCount++
 
-        if (tracepoint.measureWallTime) {
-            val now = clock.sample()
-            child.startWallTime = now
-            child.continueWallTime = now
-            child.wallTimeMeasured = true
-        } else {
-            child.wallTimeMeasured = false
-        }
+        val now = clock.sample()
+        child.startWallTime = now
+        child.continueWallTime = now
 
         currentNode = child
     }
@@ -87,11 +81,9 @@ class CallTreeBuilder(clock: Clock = SystemClock) {
 
         check(parent != null) { "The root node should never be popped" }
 
-        if (child.wallTimeMeasured) {
-            val now = clock.sample()
-            child.wallTime += now - child.continueWallTime
-            child.maxWallTime = maxOf(child.maxWallTime, now - child.startWallTime)
-        }
+        val now = clock.sample()
+        child.wallTime += now - child.continueWallTime
+        child.maxWallTime = maxOf(child.maxWallTime, now - child.startWallTime)
 
         currentNode = parent
     }
@@ -107,7 +99,7 @@ class CallTreeBuilder(clock: Clock = SystemClock) {
         val now = clock.sample()
         val stack = generateSequence(currentNode, Tree::parent)
         for (node in stack) {
-            if (node.tracepoint != Tracepoint.ROOT && node.wallTimeMeasured) {
+            if (node.tracepoint != Tracepoint.ROOT) {
                 node.wallTime += now - node.continueWallTime
                 node.maxWallTime = maxOf(node.maxWallTime, now - node.startWallTime)
                 node.continueWallTime = now

@@ -226,68 +226,6 @@ class CallTreeTest {
         )
     }
 
-    @Test
-    fun testConcurrentTracepointModification() {
-        val clock = TestClock()
-        val builder = CallTreeBuilder(clock)
-        val simple = MethodTracepoint(MethodFqName("Class", "simple1", "desc"))
-
-        fun buildAndCheckTree(expected: String) = buildAndCheckTree(builder, expected)
-
-        // Disable wall time midway.
-        builder.push(simple)
-        clock.time++
-        simple.measureWallTime = false
-        builder.pop()
-
-        buildAndCheckTree(
-            """
-            [root]: 0 calls, 0 ns, 0 ns
-              Class.simple1: 1 calls, 1 ns, 1 ns
-            """.trimIndent()
-        )
-
-        // Enable wall time midway.
-        builder.push(simple)
-        clock.time++
-        simple.measureWallTime = true
-        builder.pop()
-
-        buildAndCheckTree(
-            """
-            [root]: 0 calls, 0 ns, 0 ns
-              Class.simple1: 1 calls, 0 ns, 0 ns
-            """.trimIndent()
-        )
-
-        builder.push(simple)
-        clock.time++
-        simple.measureWallTime = false
-        buildAndCheckTree(
-            """
-            [root]: 0 calls, 0 ns, 0 ns
-              Class.simple1: 1 calls, 1 ns, 1 ns
-            """.trimIndent()
-        )
-
-        clock.time += 10
-        buildAndCheckTree(
-            """
-            [root]: 0 calls, 0 ns, 0 ns
-              Class.simple1: 1 calls, 0 ns, 0 ns
-            """.trimIndent()
-        )
-
-        clock.time++
-        builder.pop()
-        buildAndCheckTree(
-            """
-            [root]: 0 calls, 0 ns, 0 ns
-              Class.simple1: 1 calls, 0 ns, 0 ns
-            """.trimIndent()
-        )
-    }
-
     private fun StringBuilder.printTree(node: CallTree, indent: String) {
         with(node) {
             appendLine("$indent$tracepoint: $callCount calls, $wallTime ns, $maxWallTime ns")

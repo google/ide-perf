@@ -118,8 +118,6 @@ class TracerController(
                 }
             }
             is TracerCommand.Trace -> {
-                val countOnly = command.traceOption == TraceOption.COUNT_ONLY
-
                 when (command.target) {
                     is TraceTarget.All -> {
                         when {
@@ -134,7 +132,6 @@ class TracerController(
                             val methodPattern = MethodFqName(clazz, method, "*")
                             val config = MethodConfig(
                                 enabled = command.enable,
-                                countOnly = countOnly,
                                 tracedParams = command.target.parameterIndexes!!
                             )
                             val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)

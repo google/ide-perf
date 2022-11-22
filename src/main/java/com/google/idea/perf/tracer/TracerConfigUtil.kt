@@ -34,7 +34,6 @@ data class MethodFqName(
 
 class MethodConfig(
     val enabled: Boolean = true, // Whether the method should be traced.
-    val countOnly: Boolean = false, // Whether to skip measuring wall time.
     val tracedParams: List<Int> = emptyList(), // Support for parameter tracing.
 )
 

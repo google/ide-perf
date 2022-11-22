@@ -24,7 +24,6 @@ import kotlin.LazyThreadSafetyMode.PUBLICATION
 interface Tracepoint {
     val displayName: String
     val detailedName: String
-    val measureWallTime: Boolean
 
     companion object {
         val ROOT = SimpleTracepoint("[root]", "the synthetic root of the call tree")
@@ -35,7 +34,6 @@ interface Tracepoint {
 class SimpleTracepoint(
     override val displayName: String,
     override val detailedName: String = displayName,
-    override val measureWallTime: Boolean = true,
 ) : Tracepoint {
     override fun toString(): String = displayName
 }
@@ -54,9 +52,6 @@ class MethodTracepoint(
             append("Method: ${fqName.method}($argString)")
         }
     }
-
-    @Volatile // Value may change over time as new trace requests come in.
-    override var measureWallTime: Boolean = true
 
     // Note: reference equality is sufficient currently because TracerConfig maintains
     // a single canonical MethodTracepoint per traced method.
