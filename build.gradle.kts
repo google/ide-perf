@@ -22,7 +22,7 @@ import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("1.9.0")
+    id("org.jetbrains.intellij").version("1.12.0")
     id("org.jetbrains.kotlin.jvm").version("1.7.21")
 }
 
@@ -37,13 +37,13 @@ repositories {
     mavenCentral()
 }
 
-java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        languageVersion = "1.6"
-        apiVersion = "1.6" // Should match the Kotlin stdlib version in IntelliJ.
-        jvmTarget = "11" // Should match the JetBrains Runtime.
+        languageVersion = "1.7"
+        apiVersion = "1.7" // Should match the Kotlin stdlib version in IntelliJ.
+        jvmTarget = "17" // Should match the JetBrains Runtime.
         // allWarningsAsErrors = true
     }
 }
@@ -51,7 +51,7 @@ tasks.withType<KotlinCompile> {
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     pluginName.set("ide-perf")
-    version.set("222.4345.14")
+    version.set("223.8214.52")
     downloadSources.set(!isCI)
     updateSinceUntilBuild.set(false) // So that we can leave the until-build blank.
 }
@@ -63,7 +63,7 @@ tasks.buildSearchableOptions {
 
 tasks.patchPluginXml {
     // Should be tested occasionally (see runPluginVerifier).
-    sinceBuild.set("222")
+    sinceBuild.set("223")
     // Should describe changes in the latest release only.
     changeNotes.set(
         """
@@ -84,8 +84,8 @@ tasks.runPluginVerifier {
     // https://jb.gg/intellij-platform-builds-list for the list of platform versions.
     ideVersions.set(
         listOf(
-            "222.4345.14", // Should match the since-build from plugin.xml.
-            // TODO: intellij.version.get() // We check the current version too for deprecations, etc.
+            "223.8214.52", // Should match the since-build from plugin.xml.
+            // TODO: intellij.version.get(), // We check the current version too for deprecations, etc.
         )
     )
 
@@ -165,10 +165,10 @@ dependencies {
     implementation("org.ow2.asm:asm-util:9.4")
     implementation("org.ow2.asm:asm-commons:9.4")
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:1.6.20")
-    testImplementation("junit:junit:4.12")
-    testImplementation("com.google.truth:truth:1.0.1")
-    testImplementation("com.google.truth.extensions:truth-java8-extension:1.0.1")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.7.21")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("com.google.truth:truth:1.1.3")
+    testImplementation("com.google.truth.extensions:truth-java8-extension:1.1.3")
 
     // For simplicity, we assume all 'compileOnly' dependencies should be 'testCompileOnly' as well.
     configurations.testCompileOnly.get().extendsFrom(configurations.compileOnly.get())

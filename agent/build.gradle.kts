@@ -24,7 +24,7 @@ repositories {
     mavenCentral()
 }
 
-java.toolchain.languageVersion.set(JavaLanguageVersion.of(11))
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 
 tasks.jar {
     archiveFileName.set("agent.jar")
