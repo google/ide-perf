@@ -37,7 +37,7 @@ Steps to publish a new version of the plugin
 
 * Create a release build by running
   ```
-  ./gradlew -Prelease clean build
+  ./gradlew -Prelease clean buildPlugin
   ```
   The `-Prelease` flag ensures that the "SNAPSHOT" suffix is removed from the plugin version.
   The release build will end up under `build/distributions` as a zip file.

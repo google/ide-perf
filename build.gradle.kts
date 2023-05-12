@@ -31,7 +31,7 @@ val isRelease = project.findProperty("release") != null
 val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
 
 group = "com.google.idea.perf"
-version = "1.3.0$versionSuffix"
+version = "1.3.1$versionSuffix"
 
 repositories {
     mavenCentral()
@@ -68,8 +68,7 @@ tasks.patchPluginXml {
     changeNotes.set(
         """
         <ul>
-        <li>Add support for tracing Java 17 bytecode.</li>
-        <li>Improve tracer code completion for nested classes.</li>
+        <li>Fixed compatibility with IntelliJ EAP build 232.5150.116.</li>
         </ul>
         """.trimIndent()
     )
