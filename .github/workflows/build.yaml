@@ -17,18 +17,16 @@ jobs:
 
     steps:
     - name: Git checkout
-      uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
+      uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
     - name: JDK setup
-      uses: actions/setup-java@d202f5dbf7256730fb690ec59f6381650114feb2 # v1.4.3
+      uses: actions/setup-java@5ffc13f4174014e2d4d4572b3d74c3fa61aeb2c2 # v3.11.0
       with:
         java-version: 11.0.7
 
     - name: Build and test
-      uses: eskatos/gradle-command-action@90ccf054e6b9905f30f98c938bce4c6acd323b6b # v1.3.3
+      uses: gradle/gradle-build-action@749f47bda3e44aa060e82d7b3ef7e40d953bd629 # v2.4.2
       with:
-        arguments: build --no-daemon
-        wrapper-cache-enabled: true
-        dependencies-cache-enabled: true
+        arguments: build
       env:
         CI: true
