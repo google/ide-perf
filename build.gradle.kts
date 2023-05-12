@@ -85,6 +85,8 @@ tasks.runPluginVerifier {
     ideVersions.set(
         listOf(
             "223.8214.52", // Should match the since-build from plugin.xml.
+            "231.8770.65",
+            "232.5150.116",
             // TODO: intellij.version.get(), // We check the current version too for deprecations, etc.
         )
     )

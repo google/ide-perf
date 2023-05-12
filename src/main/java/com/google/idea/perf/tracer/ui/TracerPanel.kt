@@ -20,6 +20,7 @@ import com.google.idea.perf.tracer.CallTreeManager
 import com.google.idea.perf.tracer.CallTreeUtil
 import com.google.idea.perf.tracer.TracerController
 import com.google.idea.perf.util.formatNsInMs
+import com.google.idea.perf.util.onDispose
 import com.intellij.CommonBundle
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
@@ -29,7 +30,6 @@ import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
 import com.intellij.openapi.project.Project
-import com.google.idea.perf.util.onDispose
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.MessageType
 import com.intellij.openapi.ui.popup.util.PopupUtil
@@ -38,8 +38,8 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.tabs.JBTabs
+import com.intellij.ui.tabs.JBTabsFactory
 import com.intellij.ui.tabs.TabInfo
-import com.intellij.ui.tabs.impl.JBTabsImpl
 import com.intellij.util.concurrency.EdtExecutorService
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
@@ -132,7 +132,7 @@ class TracerPanel(
         }
 
         // Tabs.
-        val tabs: JBTabs = JBTabsImpl(null, null, parentDisposable)
+        val tabs: JBTabs = JBTabsFactory.createTabs(null, parentDisposable)
         add(tabs.component)
         // Each tab has its own side component, so to display a component on *all*
         // tabs we have to duplicate it several times. (Is there a better way?)
