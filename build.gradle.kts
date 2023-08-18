@@ -22,8 +22,8 @@ import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("1.12.0")
-    id("org.jetbrains.kotlin.jvm").version("1.7.21")
+    id("org.jetbrains.intellij").version("1.15.0")
+    id("org.jetbrains.kotlin.jvm").version("1.9.0")
 }
 
 val isCI = System.getenv("CI") != null
@@ -51,7 +51,7 @@ tasks.withType<KotlinCompile> {
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     pluginName.set("ide-perf")
-    version.set("223.8214.52")
+    version.set("232.8660.185")
     downloadSources.set(!isCI)
     updateSinceUntilBuild.set(false) // So that we can leave the until-build blank.
 }
@@ -83,10 +83,9 @@ tasks.runPluginVerifier {
     // https://jb.gg/intellij-platform-builds-list for the list of platform versions.
     ideVersions.set(
         listOf(
-            "223.8214.52", // Should match the since-build from plugin.xml.
-            "231.8770.65",
-            "232.5150.116",
-            // TODO: intellij.version.get(), // We check the current version too for deprecations, etc.
+            "223.8836.41", // Should match the since-build from plugin.xml.
+            "231.9392.1",
+            intellij.version.get(), // We check the current version too for deprecations, etc.
         )
     )
 
