@@ -142,6 +142,9 @@ tasks.test {
     testLogging.exceptionFormat = TestExceptionFormat.FULL
     testLogging.showStandardStreams = isCI
     enableAgent()
+
+    // Workaround for IDEA-325466 and https://github.com/JetBrains/gradle-intellij-plugin/issues/1433.
+    jvmArgs("-Djava.awt.headless=true")
 }
 
 fun JavaForkOptions.enableAgent() {
