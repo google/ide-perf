@@ -22,15 +22,14 @@ import com.google.idea.perf.agent.AgentMain
 import com.google.idea.perf.tracer.TracerClassFileTransformer
 import com.google.idea.perf.tracer.TracerHookImpl
 import com.google.idea.perf.agent.TracerTrampoline
-import com.intellij.execution.process.OSProcessUtil
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.extensions.PluginId
-import com.intellij.util.io.isFile
 import com.sun.tools.attach.VirtualMachine
 import java.lang.instrument.Instrumentation
+import kotlin.io.path.isRegularFile
 import kotlin.system.measureTimeMillis
 
 // Things to improve:
@@ -107,9 +106,10 @@ object AgentLoader {
         val agentDir = plugin.pluginPath.resolve("agent")
 
         val javaAgent = agentDir.resolve("agent.jar")
-        check(javaAgent.isFile()) { "Could not find agent.jar at $javaAgent" }
+        check(javaAgent.isRegularFile()) { "Could not find agent.jar at $javaAgent" }
 
-        val vm = VirtualMachine.attach(OSProcessUtil.getApplicationPid())
+        val pid = ProcessHandle.current().pid()
+        val vm = VirtualMachine.attach(pid.toString())
         try {
             vm.loadAgent(javaAgent.toAbsolutePath().toString())
         }
