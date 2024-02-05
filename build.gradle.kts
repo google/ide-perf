@@ -15,114 +15,92 @@
  */
 
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.jetbrains.intellij.tasks.PrepareSandboxTask
-import org.jetbrains.intellij.tasks.RunPluginVerifierTask
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.util.*
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij").version("1.15.0")
-    id("org.jetbrains.kotlin.jvm").version("1.9.0")
+    id("org.jetbrains.intellij.platform").version("2.0.0-beta7")
+    id("org.jetbrains.kotlin.jvm").version("1.9.24")
 }
 
 val isCI = System.getenv("CI") != null
 val isRelease = project.findProperty("release") != null
 val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
+val tokenProperty = "plugins.repository.token"
 
 group = "com.google.idea.perf"
 version = "1.3.1$versionSuffix"
 
-repositories {
-    mavenCentral()
-}
-
-java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        languageVersion = "1.7"
-        apiVersion = "1.7" // Should match the Kotlin stdlib version in IntelliJ.
-        jvmTarget = "17" // Should match the JetBrains Runtime.
-        // allWarningsAsErrors = true
+        languageVersion = "1.9"
+        apiVersion = "1.9" // Should match the Kotlin stdlib version in IntelliJ.
+        jvmTarget = "21" // Should match the JetBrains Runtime.
+        allWarningsAsErrors = true
     }
 }
 
-// See https://github.com/JetBrains/gradle-intellij-plugin/
-intellij {
-    pluginName.set("ide-perf")
-    version.set("232.8660.185")
-    downloadSources.set(!isCI)
-    updateSinceUntilBuild.set(false) // So that we can leave the until-build blank.
-}
+// See https://github.com/JetBrains/intellij-platform-gradle-plugin.
+intellijPlatform {
+    buildSearchableOptions = false // This task is too slow.
+    autoReload = false // Auto-reload does not work well for this plugin currently.
 
-tasks.buildSearchableOptions {
-    // Disable the (slow) 'buildSearchableOptions' task; we don't need it yet anyway.
-    enabled = false
-}
-
-tasks.patchPluginXml {
-    // Should be tested occasionally (see runPluginVerifier).
-    sinceBuild.set("223")
-    // Should describe changes in the latest release only.
-    changeNotes.set(
-        """
-        <ul>
-        <li>Fixed compatibility with IntelliJ EAP build 232.5150.116.</li>
-        </ul>
+    pluginConfiguration {
+        version = project.version.toString()
+        ideaVersion {
+            sinceBuild = "242" // Should be tested occasionally (see runPluginVerifier).
+            untilBuild = provider { null } // So that we can leave the until-build blank.
+        }
+        changeNotes = """
+            <ul>
+            <li>Fixed compatibility with IntelliJ EAP build 232.5150.116.</li>
+            </ul>
         """.trimIndent()
-    )
-}
+    }
 
-// Note: the plugin verifier does not run by default in a normal build.
-// Instead you have to run it explicitly with: ./gradlew runPluginVerifier
-tasks.runPluginVerifier {
-    downloadDir.set("$buildDir/pluginVerifier/ides")
+    publishing {
+        token = project.findProperty(tokenProperty) as? String
+    }
 
-    // See https://www.jetbrains.com/idea/download/other.html or
-    // https://jb.gg/intellij-platform-builds-list for the list of platform versions.
-    ideVersions.set(
-        listOf(
-            "223.8836.41", // Should match the since-build from plugin.xml.
-            "231.9392.1",
-            intellij.version.get(), // We check the current version too for deprecations, etc.
+    // Note: the plugin verifier does not run by default in a normal build.
+    // Instead, you have to run it explicitly with: ./gradlew verifyPlugin
+    verifyPlugin {
+        ides.recommended()
+        downloadDirectory = layout.buildDirectory.dir("pluginVerifier/ides")
+
+        val suppressedFailures = listOf(
+            VerifyPluginTask.FailureLevel.EXPERIMENTAL_API_USAGES, // TODO: VfsStatTreeTable uses JBTreeTable.
+            VerifyPluginTask.FailureLevel.INTERNAL_API_USAGES, // See CachedValueEventConsumer.
+            VerifyPluginTask.FailureLevel.DEPRECATED_API_USAGES, // Using PropertiesComponent.getValues.
         )
-    )
+        failureLevel = VerifyPluginTask.FailureLevel.ALL - suppressedFailures
 
-    val suppressedFailures = listOf(
-        RunPluginVerifierTask.FailureLevel.EXPERIMENTAL_API_USAGES, // TODO: VfsStatTreeTable uses JBTreeTable.
-        RunPluginVerifierTask.FailureLevel.INTERNAL_API_USAGES, // See CachedValueEventConsumer.
-        RunPluginVerifierTask.FailureLevel.DEPRECATED_API_USAGES, // Using PropertiesComponent.getValues.
-    )
-    failureLevel.set(EnumSet.copyOf(RunPluginVerifierTask.FailureLevel.ALL - suppressedFailures))
-
-    // Suppress false-positive NoSuchClassErrors; they are caused by the agent being
-    // loaded in the boot classloader rather than the plugin classloader.
-    externalPrefixes.set(listOf("com.google.idea.perf.agent"))
+        // Suppress false-positive NoSuchClassErrors; they are caused by the agent being
+        // loaded in the boot classloader rather than the plugin classloader.
+        externalPrefixes = listOf("com.google.idea.perf.agent")
+    }
 }
 
 val javaAgent: Configuration by configurations.creating
 
 tasks.withType<PrepareSandboxTask> {
     // Copy agent artifacts into the plugin home directory.
-    val agentDir = "${pluginName.get()}/agent"
-    from(javaAgent) { into(agentDir) }
+    from(javaAgent) { into("ide-perf/agent") }
 }
 
 tasks.publishPlugin {
-    val tokenProp = "plugins.repository.token"
-    val theToken = project.findProperty(tokenProp) as? String
-    token.set(theToken)
     doFirst {
         check(isRelease) { "Must do a release build when publishing the plugin" }
-        checkNotNull(theToken) { "Must specify an upload token via -P$tokenProp" }
+        checkNotNull(token.get()) { "Must specify an upload token via -P$tokenProperty" }
     }
 }
 
 tasks.runIde {
-    // Disable auto-reload until we make sure it works correctly for this plugin.
-    autoReloadPlugins.set(false)
-
     // Always enable assertions.
     jvmArgs("-ea")
 
@@ -142,9 +120,6 @@ tasks.test {
     testLogging.exceptionFormat = TestExceptionFormat.FULL
     testLogging.showStandardStreams = isCI
     enableAgent()
-
-    // Workaround for IDEA-325466 and https://github.com/JetBrains/gradle-intellij-plugin/issues/1433.
-    jvmArgs("-Djava.awt.headless=true")
 }
 
 fun JavaForkOptions.enableAgent() {
@@ -160,18 +135,35 @@ fun JavaForkOptions.enableAgent() {
     }
 }
 
+repositories {
+    mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
+}
+
 dependencies {
+    intellijPlatform {
+        // See task 'printProductsReleases' for available IntelliJ versions.
+        intellijIdeaCommunity("242.18071.24") // IntelliJ 2024.2 EAP 6.
+        pluginVerifier()
+        instrumentationTools()
+        testFramework(TestFrameworkType.Platform)
+    }
+
     javaAgent(project(":agent", "runtimeElements"))
     compileOnly(project(":agent")) // 'compileOnly' because it is put on the bootclasspath later.
 
-    implementation("org.ow2.asm:asm:9.4")
-    implementation("org.ow2.asm:asm-util:9.4")
-    implementation("org.ow2.asm:asm-commons:9.4")
+    implementation("org.ow2.asm:asm:9.7")
+    implementation("org.ow2.asm:asm-util:9.7")
+    implementation("org.ow2.asm:asm-commons:9.7")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.7.21")
-    testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.truth:truth:1.1.3")
     testImplementation("com.google.truth.extensions:truth-java8-extension:1.1.3")
+
+    // Workaround for https://youtrack.jetbrains.com/issue/IJPL-157292.
+    testRuntimeOnly("org.opentest4j:opentest4j:1.3.0")
 
     // For simplicity, we assume all 'compileOnly' dependencies should be 'testCompileOnly' as well.
     configurations.testCompileOnly.get().extendsFrom(configurations.compileOnly.get())

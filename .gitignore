@@ -13,3 +13,4 @@ build/
 /.idea/uiDesigner.xml
 /.idea/*.iml
 /.idea/modules.xml
+/.intellijPlatform
