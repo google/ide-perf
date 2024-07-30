@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij.platform").version("2.0.0-beta7")
+    id("org.jetbrains.intellij.platform").version("2.0.0")
     id("org.jetbrains.kotlin.jvm").version("1.9.24")
 }
 
@@ -53,7 +53,7 @@ intellijPlatform {
     pluginConfiguration {
         version = project.version.toString()
         ideaVersion {
-            sinceBuild = "242" // Should be tested occasionally (see runPluginVerifier).
+            sinceBuild = "242" // Should be tested occasionally (see pluginVerification).
             untilBuild = provider { null } // So that we can leave the until-build blank.
         }
         changeNotes = """
@@ -69,9 +69,8 @@ intellijPlatform {
 
     // Note: the plugin verifier does not run by default in a normal build.
     // Instead, you have to run it explicitly with: ./gradlew verifyPlugin
-    verifyPlugin {
+    pluginVerification {
         ides.recommended()
-        downloadDirectory = layout.buildDirectory.dir("pluginVerifier/ides")
 
         val suppressedFailures = listOf(
             VerifyPluginTask.FailureLevel.EXPERIMENTAL_API_USAGES, // TODO: VfsStatTreeTable uses JBTreeTable.
@@ -145,7 +144,7 @@ repositories {
 dependencies {
     intellijPlatform {
         // See task 'printProductsReleases' for available IntelliJ versions.
-        intellijIdeaCommunity("242.18071.24") // IntelliJ 2024.2 EAP 6.
+        intellijIdeaCommunity("2024.2")
         pluginVerifier()
         instrumentationTools()
         testFramework(TestFrameworkType.Platform)
