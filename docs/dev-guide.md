@@ -23,7 +23,7 @@ Steps to publish a new version of the plugin
 
     * Bump the plugin version number.
 
-    * Review the platform compatibility metadata (`setSinceBuild`).
+    * Review the platform compatibility metadata (`sinceBuild`).
 
     * Set the `changeNotes` field to a description of what changed since the last release.
 

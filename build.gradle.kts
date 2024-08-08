@@ -32,7 +32,7 @@ val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
 val tokenProperty = "plugins.repository.token"
 
 group = "com.google.idea.perf"
-version = "1.3.1$versionSuffix"
+version = "1.3.2$versionSuffix"
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 
@@ -58,7 +58,7 @@ intellijPlatform {
         }
         changeNotes = """
             <ul>
-            <li>Fixed compatibility with IntelliJ EAP build 232.5150.116.</li>
+            <li>Added support for tracing Java 21 bytecode.</li>
             </ul>
         """.trimIndent()
     }
