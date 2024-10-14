@@ -22,8 +22,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij.platform").version("2.0.0")
-    id("org.jetbrains.kotlin.jvm").version("1.9.24")
+    id("org.jetbrains.intellij.platform").version("2.2.1")
+    id("org.jetbrains.kotlin.jvm").version("2.0.21")
 }
 
 val isCI = System.getenv("CI") != null
@@ -38,8 +38,8 @@ java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        languageVersion = "1.9"
-        apiVersion = "1.9" // Should match the Kotlin stdlib version in IntelliJ.
+        languageVersion = "2.0"
+        apiVersion = "2.0" // Should match the Kotlin stdlib version in IntelliJ.
         jvmTarget = "21" // Should match the JetBrains Runtime.
         allWarningsAsErrors = true
     }
@@ -53,7 +53,7 @@ intellijPlatform {
     pluginConfiguration {
         version = project.version.toString()
         ideaVersion {
-            sinceBuild = "242" // Should be tested occasionally (see pluginVerification).
+            sinceBuild = "243" // Should be tested occasionally (see pluginVerification).
             untilBuild = provider { null } // So that we can leave the until-build blank.
         }
         changeNotes = """
@@ -144,7 +144,7 @@ repositories {
 dependencies {
     intellijPlatform {
         // See task 'printProductsReleases' for available IntelliJ versions.
-        intellijIdeaCommunity("2024.2")
+        intellijIdeaCommunity("2024.3")
         pluginVerifier()
         instrumentationTools()
         testFramework(TestFrameworkType.Platform)
