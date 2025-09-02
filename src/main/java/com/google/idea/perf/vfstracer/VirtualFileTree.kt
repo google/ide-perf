@@ -21,10 +21,6 @@ import java.util.*
 
 /** A tree containing VirtualFile statistics. */
 interface VirtualFileTree {
-    companion object {
-        val EMPTY: VirtualFileTree = MutableVirtualFileTree.createRoot()
-    }
-
     val name: String
     val stubIndexAccesses: Int
     val psiElementWraps: Int

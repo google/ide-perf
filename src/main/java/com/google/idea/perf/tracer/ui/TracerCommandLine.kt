@@ -101,9 +101,7 @@ class TracerCommandLine(project: Project, private val tracerController: TracerCo
         override fun selectAll() {
             // Inspired by EditorComboBoxEditor.
             textField.selectAll()
-            IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown {
-                IdeFocusManager.getGlobalInstance().requestFocus(textField, true)
-            }
+            IdeFocusManager.getGlobalInstance().requestFocus(textField, true)
         }
 
         override fun getEditorComponent(): EditorTextField = textField

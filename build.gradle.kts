@@ -18,12 +18,13 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij.platform").version("2.2.1")
-    id("org.jetbrains.kotlin.jvm").version("2.0.21")
+    id("org.jetbrains.intellij.platform").version("2.10.0")
+    id("org.jetbrains.kotlin.jvm").version("2.2.0")
 }
 
 val isCI = System.getenv("CI") != null
@@ -36,11 +37,11 @@ version = "1.3.2$versionSuffix"
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        languageVersion = "2.0"
-        apiVersion = "2.0" // Should match the Kotlin stdlib version in IntelliJ.
-        jvmTarget = "21" // Should match the JetBrains Runtime.
+kotlin {
+    compilerOptions {
+        languageVersion = KotlinVersion.KOTLIN_2_2
+        apiVersion = KotlinVersion.KOTLIN_2_2 // Should match the Kotlin stdlib version in IntelliJ.
+        jvmTarget = JvmTarget.JVM_21 // Should match the JetBrains Runtime.
         allWarningsAsErrors = true
     }
 }
@@ -53,7 +54,7 @@ intellijPlatform {
     pluginConfiguration {
         version = project.version.toString()
         ideaVersion {
-            sinceBuild = "243" // Should be tested occasionally (see pluginVerification).
+            sinceBuild = "252" // Should be tested occasionally (see pluginVerification).
             untilBuild = provider { null } // So that we can leave the until-build blank.
         }
         changeNotes = """
@@ -144,9 +145,8 @@ repositories {
 dependencies {
     intellijPlatform {
         // See task 'printProductsReleases' for available IntelliJ versions.
-        intellijIdeaCommunity("2024.3")
+        intellijIdeaCommunity("2025.2")
         pluginVerifier()
-        instrumentationTools()
         testFramework(TestFrameworkType.Platform)
     }
 
