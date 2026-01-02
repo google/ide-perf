@@ -33,7 +33,7 @@ val versionSuffix = if (isRelease) "" else "-SNAPSHOT"
 val tokenProperty = "plugins.repository.token"
 
 group = "com.google.idea.perf"
-version = "1.3.2$versionSuffix"
+version = "1.3.3$versionSuffix"
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 
@@ -59,7 +59,8 @@ intellijPlatform {
         }
         changeNotes = """
             <ul>
-            <li>Added support for tracing Java 21 bytecode.</li>
+            <li>Target IntelliJ 2025.3.</li>
+            <li>Use the platform-bundled ASM library.</li>
             </ul>
         """.trimIndent()
     }
