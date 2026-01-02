@@ -19,7 +19,7 @@ package com.google.idea.perf.tracer
 import com.google.idea.perf.AgentLoader
 import com.google.idea.perf.util.GlobMatcher
 import com.intellij.openapi.progress.ProgressManager
-import org.objectweb.asm.Type
+import org.jetbrains.org.objectweb.asm.Type
 
 class TraceRequest(
     val matcher: MethodFqMatcher,

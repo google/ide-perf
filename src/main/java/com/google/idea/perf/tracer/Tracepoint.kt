@@ -16,7 +16,7 @@
 
 package com.google.idea.perf.tracer
 
-import org.objectweb.asm.Type
+import org.jetbrains.org.objectweb.asm.Type
 import java.util.*
 import kotlin.LazyThreadSafetyMode.PUBLICATION
 
