@@ -26,10 +26,8 @@ import com.intellij.ui.EditorTextField
 import com.intellij.util.textCompletion.TextCompletionProvider
 import com.intellij.util.textCompletion.TextCompletionUtil
 import com.intellij.util.textCompletion.TextFieldWithCompletion
-import java.awt.KeyboardFocusManager
 import java.awt.event.ActionListener
 import java.awt.event.KeyEvent
-import javax.swing.JComponent
 import javax.swing.JComponent.WHEN_FOCUSED
 import javax.swing.KeyStroke
 
@@ -52,6 +50,9 @@ object TracerUIUtil {
     ) {
         check(textField.editor == null) { "Must be called before the editor is initialized" }
         textField.addSettingsProvider { editor ->
+            // Passing a disposable to addDocumentListener() is not needed here, hence the use
+            // of an older deprecated API. TBD whether EditorImpl.disposable could be used instead.
+            @Suppress("DEPRECATION")
             editor.document.addDocumentListener(object : BulkAwareDocumentListener.Simple {
                 override fun beforeDocumentChange(document: Document) {
                     ApplicationManager.getApplication().assertReadAccessAllowed()

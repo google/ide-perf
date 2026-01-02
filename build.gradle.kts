@@ -23,8 +23,8 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     id("java")
-    id("org.jetbrains.intellij.platform").version("2.10.0")
-    id("org.jetbrains.kotlin.jvm").version("2.2.0")
+    id("org.jetbrains.intellij.platform").version("2.10.5")
+    id("org.jetbrains.kotlin.jvm").version("2.2.21")
 }
 
 val isCI = System.getenv("CI") != null
@@ -54,7 +54,7 @@ intellijPlatform {
     pluginConfiguration {
         version = project.version.toString()
         ideaVersion {
-            sinceBuild = "252" // Should be tested occasionally (see pluginVerification).
+            sinceBuild = "253" // Should be tested occasionally (see pluginVerification).
             untilBuild = provider { null } // So that we can leave the until-build blank.
         }
         changeNotes = """
@@ -145,7 +145,7 @@ repositories {
 dependencies {
     intellijPlatform {
         // See task 'printProductsReleases' for available IntelliJ versions.
-        intellijIdeaCommunity("2025.2")
+        intellijIdea("2025.3")
         pluginVerifier()
         testFramework(TestFrameworkType.Platform)
     }
