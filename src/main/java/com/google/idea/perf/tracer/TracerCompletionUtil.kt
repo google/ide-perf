@@ -91,9 +91,6 @@ object TracerCompletionUtil {
 
         // Declared methods.
         for (method in clazz.declaredMethods) {
-            if (Modifier.isAbstract(method.modifiers)) {
-                continue // Tracing abstract methods is not yet supported.
-            }
             result.addElement(LookupElementBuilder.create(method.name).withIcon(METHOD_ICON))
         }
 

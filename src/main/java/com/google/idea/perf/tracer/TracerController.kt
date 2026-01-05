@@ -134,8 +134,8 @@ class TracerController(
                                 enabled = command.enable,
                                 tracedParams = command.target.parameterIndexes!!
                             )
-                            val request = TracerConfigUtil.appendTraceRequest(methodPattern, config)
-                            val affectedClasses = TracerConfigUtil.getAffectedClasses(listOf(request))
+                            val requests = TracerConfigUtil.appendTraceRequest(methodPattern, config)
+                            val affectedClasses = TracerConfigUtil.getAffectedClasses(requests)
                             retransformClasses(affectedClasses, progress)
                             CallTreeManager.clearCallTrees()
                         }
