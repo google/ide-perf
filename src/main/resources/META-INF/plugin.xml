@@ -30,6 +30,7 @@
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends optional="true" config-file="mcp-server.xml">com.intellij.mcpServer</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <notificationGroup id="Tracer" displayType="STICKY_BALLOON"/>
