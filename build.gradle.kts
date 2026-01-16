@@ -147,6 +147,7 @@ dependencies {
     intellijPlatform {
         // See task 'printProductsReleases' for available IntelliJ versions.
         intellijIdea("2025.3")
+        bundledPlugin("com.intellij.mcpServer")
         pluginVerifier()
         testFramework(TestFrameworkType.Platform)
     }
