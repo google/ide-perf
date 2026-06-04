@@ -47,36 +47,36 @@ object GlobMatcher {
     }
 
     private object AnyMatcher : Matcher {
-        override fun matches(s: String): Boolean = true
+        override fun matches(name: String): Boolean = true
     }
 
     private class PlainMatcher(private val pattern: String) : Matcher {
-        override fun matches(s: String): Boolean = s == pattern
+        override fun matches(name: String): Boolean = name == pattern
     }
 
     private class PrefixMatcher(private val prefix: String) : Matcher {
-        override fun matches(s: String): Boolean = s.startsWith(prefix)
+        override fun matches(name: String): Boolean = name.startsWith(prefix)
     }
 
     private class SuffixMatcher(private val suffix: String) : Matcher {
-        override fun matches(s: String): Boolean = s.endsWith(suffix)
+        override fun matches(name: String): Boolean = name.endsWith(suffix)
     }
 
     private class PrefixSuffixMatcher(
         private val prefix: String,
         private val suffix: String
     ) : Matcher {
-        override fun matches(s: String): Boolean = s.startsWith(prefix) && s.endsWith(suffix)
+        override fun matches(name: String): Boolean = name.startsWith(prefix) && name.endsWith(suffix)
     }
 
     private class InfixMatcher(private val infix: String): Matcher {
-        override fun matches(s: String): Boolean = s.contains(infix)
+        override fun matches(name: String): Boolean = name.contains(infix)
     }
 
     private class RegexMatcher(pattern: String) : Matcher {
         private val regexMatcher = PatternUtil.fromMask(pattern).matcher("")
 
         @Synchronized // regexMatcher is not thread safe.
-        override fun matches(s: String): Boolean = regexMatcher.reset(s).matches()
+        override fun matches(name: String): Boolean = regexMatcher.reset(name).matches()
     }
 }

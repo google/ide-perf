@@ -146,7 +146,7 @@ repositories {
 dependencies {
     intellijPlatform {
         // See task 'printProductsReleases' for available IntelliJ versions.
-        intellijIdea("2025.3")
+        intellijIdea("2026.1")
         pluginVerifier()
         testFramework(TestFrameworkType.Platform)
     }
@@ -154,7 +154,7 @@ dependencies {
     javaAgent(project(":agent", "runtimeElements"))
     compileOnly(project(":agent")) // 'compileOnly' because it is put on the bootclasspath later.
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:1.7.21")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.2.21")
     testImplementation("com.google.truth:truth:1.1.3")
     testImplementation("com.google.truth.extensions:truth-java8-extension:1.1.3")
 
